@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://meloqis.axenoraai.in/sitemap.xml
