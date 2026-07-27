@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1">
+  <meta name="author" content="Kaarthik Dass Arora">
+  <meta name="description" content="Download Meloqis Music APK: a free, ad-free Android music player with local playback, lyrics, offline listening and optional Now Capsule controls.">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Meloqis Music">
+  <meta property="og:url" content="https://meloqis.axenoraai.in/download/">
+  <meta property="og:title" content="Download Meloqis Music APK for Android">
+  <meta property="og:description" content="Direct free download for the Meloqis ad-free Android music player development preview.">
+  <link rel="canonical" href="https://meloqis.axenoraai.in/download/">
+  <title>Download Free Ad-Free Music Player APK | Meloqis</title>
+  <link rel="stylesheet" href="/styles.css">
+  <style>
+    .download-page{min-height:100svh;padding:140px clamp(22px,8vw,140px) 90px;background:radial-gradient(circle at 76% 24%,rgba(157,113,255,.18),transparent 27%)}
+    .download-grid{max-width:900px;margin:0 auto}
+    .download-page h1{max-width:800px;font-size:clamp(54px,8vw,112px)}
+    .download-page h1 span{color:var(--signal)}
+    .lede{max-width:660px;color:var(--muted);font-size:20px;line-height:1.65}
+    .thank-you{margin-top:54px;padding:28px;border:1px solid rgba(157,113,255,.24);border-radius:26px;background:linear-gradient(135deg,rgba(157,113,255,.12),rgba(255,255,255,.025))}
+    .thank-you h2{margin:0;font-size:clamp(26px,3vw,40px)}
+    .thank-you p{margin:12px 0 0;color:var(--muted);line-height:1.65}
+    .support-id{display:block;margin-top:16px;color:var(--signal-soft);font-family:monospace;font-size:14px;word-break:break-all}
+    .amount-label{display:block;margin-top:26px;font-size:12px;font-weight:700;letter-spacing:.14em;text-transform:uppercase}
+    .amount-options{display:flex;flex-wrap:wrap;gap:9px;margin-top:12px}
+    .amount-option{min-width:66px;padding:11px 14px;border:1px solid var(--line);border-radius:999px;background:rgba(255,255,255,.025);color:var(--ink);font:inherit;font-weight:700;cursor:pointer;transition:180ms ease}
+    .amount-option:hover,.amount-option.active{border-color:var(--signal);background:rgba(157,113,255,.16);color:var(--signal-soft);transform:translateY(-1px)}
+    .custom-amount{display:grid;grid-template-columns:auto 1fr;align-items:center;max-width:230px;margin-top:12px;border:1px solid var(--line);border-radius:14px;background:#0b0910;overflow:hidden}
+    .custom-amount span{padding-left:15px;color:var(--muted);font-weight:700}
+    .custom-amount input{min-width:0;padding:13px 15px 13px 8px;border:0;outline:0;background:transparent;color:var(--ink);font:inherit;font-weight:700}
+    .payment-qr{display:none;max-width:310px;margin-top:24px;padding:18px;border:1px solid rgba(157,113,255,.25);border-radius:22px;background:#fff;color:#111;text-align:center}
+    .payment-qr.ready{display:block}
+    .payment-qr canvas,.payment-qr img{display:block;width:100%!important;height:auto!important;border-radius:8px}
+    .payment-qr p{margin:12px 0 0;color:#34303a;font-size:12px;line-height:1.45}
+    .support-action{display:none!important;max-width:310px;text-align:center}
+    .support-action.ready{display:inline-flex!important}
+  </style>
+</head>
+<body>
+  <header class="site-header"><a class="brand" href="/">Meloqis</a><nav><a href="/capsule/">Now Capsule</a><a href="/privacy/">Privacy</a><a href="/source/">Source</a></nav><a class="header-cta" href="/">Home</a></header>
+  <main class="download-page">
+    <div class="download-grid">
+      <section>
+        <p class="eyebrow">Meloqis Music for Android</p>
+        <h1>Your music, now <span>alive.</span></h1>
+        <p class="lede">We hope Meloqis makes every listening session feel more personal, fluid, and beautifully focused.</p>
+        <div class="hero-actions">
+          <a class="button primary" href="https://pub-7cad9af12a364d3f928f96a083db320f.r2.dev/previews/0.1.4/meloqis-music-0.1.4-release-preview.apk">Download Meloqis 0.1.4</a>
+        </div>
+        <div class="thank-you" id="support">
+          <h2>Thanks for downloading our app ❤️</h2>
+          <p>If Meloqis adds something special to your day, you can support its independent development through UPI.</p>
+          <span class="support-id">kaarthikdassarorasahabji@oksbi</span>
+          <label class="amount-label" for="custom-support">Select a support amount</label>
+          <div class="amount-options" role="group" aria-label="Preset support amounts">
+            <button class="amount-option" type="button" data-amount="49">₹49</button>
+            <button class="amount-option" type="button" data-amount="99">₹99</button>
+            <button class="amount-option" type="button" data-amount="199">₹199</button>
+            <button class="amount-option" type="button" data-amount="499">₹499</button>
+          </div>
+          <label class="custom-amount"><span>₹</span><input id="custom-support" type="number" min="1" max="100000" step="1" inputmode="numeric" placeholder="Custom amount" aria-label="Custom support amount in Indian rupees"></label>
+          <div class="payment-qr" id="payment-qr" aria-live="polite">
+            <div id="qr-code"><img src="data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=" alt="" hidden></div>
+            <p id="qr-caption"></p>
+          </div>
+          <a class="button quiet support-action" id="support-action" href="#">Pay with any UPI app</a>
+        </div>
+      </section>
+    </div>
+  </main>
+  <footer><div><a class="brand footer-brand" href="/">Meloqis Music</a><p>Developed with ❤️ by Kaarthik Dass Arora</p></div><div class="footer-links"><a href="https://axenoraai.in">Axenora AI</a><a href="https://www.instagram.com/kaarthikarora">Instagram</a><a href="https://www.linkedin.com/in/kaarthikdassarora">LinkedIn</a></div></footer>
+  <script>
+    const upiId = "kaarthikdassarorasahabji@oksbi";
+    const qrPanel = document.querySelector("#payment-qr");
+    const qrImage = document.querySelector("#qr-code img");
+    const qrCaption = document.querySelector("#qr-caption");
+    const supportAction = document.querySelector("#support-action");
+    const customAmount = document.querySelector("#custom-support");
+    const amountButtons = [...document.querySelectorAll(".amount-option")];
+
+    function renderPayment(rawAmount) {
+      const amount = Math.round(Number(rawAmount));
+      if (!Number.isFinite(amount) || amount < 1 || amount > 100000) {
+        qrPanel.classList.remove("ready");
+        supportAction.classList.remove("ready");
+        return;
+      }
+
+      const params = new URLSearchParams({
+        pa: upiId,
+        pn: "Kaarthik Dass Arora",
+        am: amount.toFixed(2),
+        cu: "INR",
+        tn: "Support Meloqis Music"
+      });
+      const paymentUrl = `upi://pay?${params.toString()}`;
+
+      qrImage.src = `https://api.qrserver.com/v1/create-qr-code/?size=520x520&margin=18&data=${encodeURIComponent(paymentUrl)}`;
+      qrImage.alt = `UPI QR code to support Meloqis with ₹${amount}`;
+      qrImage.hidden = false;
+      qrCaption.textContent = `Scan to support Meloqis with ₹${amount}`;
+      qrPanel.classList.add("ready");
+
+      supportAction.href = paymentUrl;
+      supportAction.textContent = `Pay ₹${amount} with any UPI app`;
+      supportAction.classList.add("ready");
+    }
+
+    amountButtons.forEach((button) => {
+      button.addEventListener("click", () => {
+        amountButtons.forEach((item) => item.classList.toggle("active", item === button));
+        customAmount.value = "";
+        renderPayment(button.dataset.amount);
+      });
+    });
+
+    customAmount.addEventListener("input", () => {
+      amountButtons.forEach((item) => item.classList.remove("active"));
+      renderPayment(customAmount.value);
+    });
+  </script>
+</body>
+</html>
