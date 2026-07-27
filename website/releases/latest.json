@@ -1,0 +1,10 @@
+{
+  "product": "Meloqis Music",
+  "version": "0.1.2",
+  "versionCode": 3,
+  "channel": "preview",
+  "publishedAt": "2026-07-27T00:00:00+05:30",
+  "releaseUrl": "https://github.com/kaarthikarorasahabji/Meloqis-Music/releases/tag/v0.1.2",
+  "downloadUrl": "https://pub-7cad9af12a364d3f928f96a083db320f.r2.dev/previews/0.1.2/meloqis-music-0.1.2-release-preview.apk",
+  "sha256": "dbc3ff735dfdaba9f621fd6880ba56d2f115592c8cba7451c088b2d34b3b04fd"
+}
