@@ -267,6 +267,7 @@ private class NowCapsuleView(
 
     init {
         isClickable = true
+        setBackgroundColor(Color.TRANSPARENT)
         setLayerType(LAYER_TYPE_SOFTWARE, null)
     }
 
@@ -400,9 +401,7 @@ private class NowCapsuleView(
             null,
             Shader.TileMode.CLAMP,
         )
-        backgroundPaint.setShadowLayer(16.dp.toFloat(), 0f, 7.dp.toFloat(), Color.argb(165, 0, 0, 0))
         canvas.drawRoundRect(capsuleRect, radius, radius, backgroundPaint)
-        backgroundPaint.clearShadowLayer()
 
         borderPaint.shader = LinearGradient(
             0f,
