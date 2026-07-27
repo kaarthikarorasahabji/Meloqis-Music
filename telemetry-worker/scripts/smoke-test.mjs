@@ -37,7 +37,7 @@ const eventResponse = await fetch(`${baseUrl}/api/events`, {
       {
         eventId: "223e4567-e89b-42d3-a456-426614174000",
         name: "first_open",
-        appVersion: "0.1.8",
+        appVersion: "0.1.9",
         versionCode: 9,
         androidVersion: "13",
         sdkInt: 33,

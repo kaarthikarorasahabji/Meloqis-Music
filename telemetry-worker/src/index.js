@@ -321,7 +321,7 @@ async function trackedDownload(request, env) {
     headers: {
       accept: "application/json",
       "cache-control": "no-cache",
-      "user-agent": "Meloqis-Insights/0.1.8",
+      "user-agent": "Meloqis-Insights/0.1.9",
     },
     cf: { cacheTtl: 0 },
   });
@@ -347,14 +347,14 @@ async function trackedDownload(request, env) {
 }
 
 async function adminArtifact(env) {
-  const object = await env.ADMIN_ARTIFACTS.get("meloqis-insights-admin-0.1.8.apk");
+  const object = await env.ADMIN_ARTIFACTS.get("meloqis-insights-admin-0.1.9.apk");
   if (!object) return json({ error: "Admin artifact is not available yet" }, 404);
   const headers = new Headers();
   object.writeHttpMetadata(headers);
   headers.set("content-type", "application/vnd.android.package-archive");
   headers.set(
     "content-disposition",
-    'attachment; filename="meloqis-insights-admin-0.1.8.apk"',
+    'attachment; filename="meloqis-insights-admin-0.1.9.apk"',
   );
   headers.set("cache-control", "private, no-store");
   headers.set("x-content-type-options", "nosniff");

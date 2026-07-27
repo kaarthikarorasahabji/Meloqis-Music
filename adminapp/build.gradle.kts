@@ -10,8 +10,8 @@ android {
         applicationId = "in.axenoraai.meloqis.admin"
         minSdk = 26
         targetSdk = 36
-        versionCode = 1
-        versionName = "0.1.8"
+        versionCode = 2
+        versionName = "0.1.9"
     }
 
     signingConfigs {
