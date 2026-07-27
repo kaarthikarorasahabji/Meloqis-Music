@@ -66,6 +66,7 @@ val ResumeOnBluetoothConnectKey = booleanPreferencesKey("resumeOnBluetoothConnec
 val KeepScreenOn = booleanPreferencesKey("keepScreenOn")
 val DeveloperModeKey = booleanPreferencesKey("developerMode")
 val NowCapsuleEnabledKey = booleanPreferencesKey("meloqis_now_capsule_enabled")
+val AnonymousTelemetryEnabledKey = booleanPreferencesKey("meloqis_anonymous_telemetry_enabled")
 
 enum class SliderStyle {
     DEFAULT,

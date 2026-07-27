@@ -526,4 +526,7 @@
     <string name="ai_recommendations">AI Recommendations</string>
     <string name="ai_recommendations_desc">Daily update of a custom playlist based on your taste</string>
     <string name="ai_recommendations_refresh">Refresh Recommendations</string>
+    <string name="anonymous_insights">Anonymous insights</string>
+    <string name="anonymous_insights_title">Share anonymous app insights</string>
+    <string name="anonymous_insights_desc">Help improve Meloqis by sharing a random installation ID, app and Android versions, update results, crashes and playback failures. No IMEI, phone number, advertising ID, account data, song titles or listening history is sent.</string>
 </resources>

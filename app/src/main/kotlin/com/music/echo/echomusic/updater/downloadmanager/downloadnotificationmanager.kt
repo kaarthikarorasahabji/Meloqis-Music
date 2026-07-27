@@ -11,6 +11,7 @@ import androidx.annotation.RequiresApi
 import androidx.core.app.NotificationCompat
 import androidx.core.graphics.toColorInt
 import iad1tya.echo.music.R
+import iad1tya.echo.music.telemetry.MeloqisTelemetry
 
 object DownloadNotificationManager {
     private lateinit var notificationManager: NotificationManager
@@ -61,6 +62,11 @@ object DownloadNotificationManager {
 
     
     fun showDownloadComplete(version: String, filePath: String) {
+        MeloqisTelemetry.recordUpdateEvent(
+            name = "update_ready_to_install",
+            fromVersion = iad1tya.echo.music.BuildConfig.VERSION_NAME,
+            toVersion = version,
+        )
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.BAKLAVA) {
             showDownloadCompleteModern(version, filePath)
         } else {

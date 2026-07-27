@@ -51,6 +51,7 @@ import java.net.Proxy
 import java.util.Locale
 import javax.inject.Inject
 import iad1tya.echo.music.echomusic.MeloqisReleaseAlerts
+import iad1tya.echo.music.telemetry.MeloqisTelemetry
 
 @HiltAndroidApp
 class App : Application(), SingletonImageLoader.Factory {
@@ -74,6 +75,7 @@ class App : Application(), SingletonImageLoader.Factory {
 
     override fun onCreate() {
         super.onCreate()
+        MeloqisTelemetry.prepare(this)
         MeloqisReleaseAlerts.schedule(this)
 
         // Removed destructive database deletion to preserve user data
@@ -90,6 +92,13 @@ class App : Application(), SingletonImageLoader.Factory {
 
         applicationScope.launch(Dispatchers.IO) {
             cachedCoilCacheSize = dataStore.data.map { it[MaxImageCacheSizeKey] ?: 512 }.first()
+        }
+
+        applicationScope.launch(Dispatchers.IO) {
+            val telemetryEnabled = dataStore.data
+                .map { it[AnonymousTelemetryEnabledKey] ?: true }
+                .first()
+            MeloqisTelemetry.initialize(this@App, telemetryEnabled)
         }
 
         applicationScope.launch {

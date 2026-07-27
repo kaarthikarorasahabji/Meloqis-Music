@@ -19,6 +19,7 @@ import java.io.IOException
 import java.net.SocketTimeoutException
 import java.security.MessageDigest
 import java.util.zip.ZipInputStream
+import iad1tya.echo.music.telemetry.MeloqisTelemetry
 class UpdateDownloadWorker(private val context: Context, workerParams: WorkerParameters) :
     CoroutineWorker(context, workerParams) {
 
@@ -29,6 +30,11 @@ class UpdateDownloadWorker(private val context: Context, workerParams: WorkerPar
         val expectedSha256 = inputData.getString("sha256").orEmpty().lowercase()
 
         if (!expectedSha256.matches(Regex("[0-9a-f]{64}"))) {
+            MeloqisTelemetry.recordUpdateEvent(
+                name = "update_verification_failed",
+                code = "manifest_sha_invalid",
+                toVersion = version,
+            )
             DownloadNotificationManager.initialize(context)
             DownloadNotificationManager.showDownloadFailed(
                 version,
@@ -64,6 +70,11 @@ class UpdateDownloadWorker(private val context: Context, workerParams: WorkerPar
             connection.connect()
 
             if (connection.responseCode != HttpURLConnection.HTTP_OK) {
+                MeloqisTelemetry.recordUpdateEvent(
+                    name = "update_download_failed",
+                    code = "http_${connection.responseCode}",
+                    toVersion = version,
+                )
                 DownloadNotificationManager.showDownloadFailed(
                     version,
                     context.getString(R.string.server_error, connection.responseCode)
@@ -153,6 +164,11 @@ class UpdateDownloadWorker(private val context: Context, workerParams: WorkerPar
                         }
                     }
                 } catch (e: Exception) {
+                    MeloqisTelemetry.recordUpdateEvent(
+                        name = "update_verification_failed",
+                        code = "zip_extract_${e.javaClass.simpleName}",
+                        toVersion = version,
+                    )
                     if (downloadFile.exists()) downloadFile.delete()
                     DownloadNotificationManager.showDownloadFailed(
                         version,
@@ -165,6 +181,11 @@ class UpdateDownloadWorker(private val context: Context, workerParams: WorkerPar
                     }
                 }
                 if (!extracted) {
+                    MeloqisTelemetry.recordUpdateEvent(
+                        name = "update_verification_failed",
+                        code = "zip_missing_apk",
+                        toVersion = version,
+                    )
                     DownloadNotificationManager.showDownloadFailed(
                         version,
                         "Could not find APK in zip"
@@ -187,6 +208,11 @@ class UpdateDownloadWorker(private val context: Context, workerParams: WorkerPar
                 digest.digest().joinToString("") { "%02x".format(it) }
             }
             if (actualSha256 != expectedSha256) {
+                MeloqisTelemetry.recordUpdateEvent(
+                    name = "update_verification_failed",
+                    code = "sha256_mismatch",
+                    toVersion = version,
+                )
                 finalFile.delete()
                 DownloadNotificationManager.showDownloadFailed(
                     version,
@@ -204,6 +230,12 @@ class UpdateDownloadWorker(private val context: Context, workerParams: WorkerPar
                 }
             }
 
+            MeloqisTelemetry.markPendingUpdate(version)
+            MeloqisTelemetry.recordUpdateEvent(
+                name = "update_download_completed",
+                fromVersion = iad1tya.echo.music.BuildConfig.VERSION_NAME,
+                toVersion = version,
+            )
             DownloadNotificationManager.showDownloadComplete(version, finalFile.absolutePath)
 
             Result.success(
@@ -214,12 +246,22 @@ class UpdateDownloadWorker(private val context: Context, workerParams: WorkerPar
                 ),
             )
         } catch (e: IOException) {
+            MeloqisTelemetry.recordUpdateEvent(
+                name = "update_download_failed",
+                code = e.javaClass.simpleName,
+                toVersion = version,
+            )
             DownloadNotificationManager.showDownloadFailed(
                 version,
                 e.message ?: context.getString(R.string.download_failed)
             )
             return@withContext Result.retry()
         } catch (e: Exception) {
+            MeloqisTelemetry.recordUpdateEvent(
+                name = "update_download_failed",
+                code = e.javaClass.simpleName,
+                toVersion = version,
+            )
             DownloadNotificationManager.showDownloadFailed(
                 version,
                 e.message ?: context.getString(R.string.download_failed)

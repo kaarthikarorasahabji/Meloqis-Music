@@ -1,0 +1,10 @@
+<resources>
+    <style name="Theme.MeloqisAdmin" parent="android:style/Theme.Material.NoActionBar">
+        <item name="android:fontFamily">sans</item>
+        <item name="android:windowActionModeOverlay">true</item>
+        <item name="android:windowLightStatusBar">false</item>
+        <item name="android:statusBarColor">#09080D</item>
+        <item name="android:navigationBarColor">#09080D</item>
+        <item name="android:windowBackground">#09080D</item>
+    </style>
+</resources>

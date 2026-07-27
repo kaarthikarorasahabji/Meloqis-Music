@@ -1,0 +1,22 @@
+name = "meloqis-insights"
+main = "src/index.js"
+compatibility_date = "2026-07-27"
+workers_dev = true
+preview_urls = false
+
+[vars]
+ADMIN_USERNAME = "kaarthik"
+APK_MANIFEST_URL = "https://meloqis.axenoraai.in/releases/latest.json"
+
+[triggers]
+crons = ["17 3 * * *"]
+
+[[d1_databases]]
+binding = "DB"
+database_name = "meloqis-telemetry"
+database_id = "3a980046-6248-4f42-b32b-a682da3db678"
+migrations_dir = "migrations"
+
+[[r2_buckets]]
+binding = "ADMIN_ARTIFACTS"
+bucket_name = "meloqis-admin-artifacts"

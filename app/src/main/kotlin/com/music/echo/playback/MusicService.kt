@@ -32,6 +32,7 @@ import androidx.media3.common.AudioAttributes
 import androidx.media3.common.C
 import androidx.media3.common.MediaItem
 import androidx.media3.common.PlaybackException
+import iad1tya.echo.music.telemetry.MeloqisTelemetry
 import androidx.media3.common.PlaybackParameters
 import androidx.media3.common.Player
 import androidx.media3.common.Player.EVENT_POSITION_DISCONTINUITY
@@ -2515,6 +2516,7 @@ class MusicService :
 
     override fun onPlayerError(error: PlaybackException) {
         super.onPlayerError(error)
+        MeloqisTelemetry.recordPlaybackFailure(error.errorCode)
 
         
         if (!playerInitialized.value) {

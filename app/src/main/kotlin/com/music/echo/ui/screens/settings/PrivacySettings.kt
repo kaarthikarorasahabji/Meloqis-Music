@@ -26,6 +26,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -34,6 +35,7 @@ import iad1tya.echo.music.LocalDatabase
 import iad1tya.echo.music.LocalPlayerAwareWindowInsets
 import iad1tya.echo.music.R
 import iad1tya.echo.music.constants.DisableScreenshotKey
+import iad1tya.echo.music.constants.AnonymousTelemetryEnabledKey
 import iad1tya.echo.music.constants.PauseListenHistoryKey
 import iad1tya.echo.music.constants.PauseSearchHistoryKey
 import iad1tya.echo.music.ui.component.DefaultDialog
@@ -42,6 +44,7 @@ import iad1tya.echo.music.ui.component.Material3SettingsGroup
 import iad1tya.echo.music.ui.component.Material3SettingsItem
 import iad1tya.echo.music.ui.utils.backToMain
 import iad1tya.echo.music.utils.rememberPreference
+import iad1tya.echo.music.telemetry.MeloqisTelemetry
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -52,6 +55,7 @@ highlightKey: String? = null) {
     val scrollState = androidx.compose.foundation.rememberScrollState()
 
     val database = LocalDatabase.current
+    val context = LocalContext.current
     val (pauseListenHistory, onPauseListenHistoryChange) = rememberPreference(
         key = PauseListenHistoryKey,
         defaultValue = false
@@ -63,6 +67,10 @@ highlightKey: String? = null) {
     val (disableScreenshot, onDisableScreenshotChange) = rememberPreference(
         key = DisableScreenshotKey,
         defaultValue = false
+    )
+    val (anonymousTelemetry, onAnonymousTelemetryChange) = rememberPreference(
+        key = AnonymousTelemetryEnabledKey,
+        defaultValue = true
     )
 
     var showClearListenHistoryDialog by remember {
@@ -182,6 +190,44 @@ highlightKey: String? = null) {
                     icon = painterResource(R.drawable.delete_history),
                     title = { Text(stringResource(R.string.clear_listen_history)) },
                     onClick = { showClearListenHistoryDialog = true }
+                )
+            )
+        )
+
+        Spacer(modifier = Modifier.height(27.dp))
+
+        Material3SettingsGroup(
+            scrollState = scrollState,
+            title = stringResource(R.string.anonymous_insights),
+            items = listOf(
+                Material3SettingsItem(
+                    isHighlighted = (highlightKey == stringResource(R.string.anonymous_insights_title)),
+                    icon = painterResource(R.drawable.ic_chart),
+                    title = { Text(stringResource(R.string.anonymous_insights_title)) },
+                    description = { Text(stringResource(R.string.anonymous_insights_desc)) },
+                    trailingContent = {
+                        Switch(
+                            checked = anonymousTelemetry,
+                            onCheckedChange = { newValue ->
+                                onAnonymousTelemetryChange(newValue)
+                                MeloqisTelemetry.setEnabled(context, newValue)
+                            },
+                            thumbContent = {
+                                Icon(
+                                    painter = painterResource(
+                                        id = if (anonymousTelemetry) R.drawable.check else R.drawable.close
+                                    ),
+                                    contentDescription = null,
+                                    modifier = Modifier.size(androidx.compose.material3.SwitchDefaults.IconSize)
+                                )
+                            }
+                        )
+                    },
+                    onClick = {
+                        val newValue = !anonymousTelemetry
+                        onAnonymousTelemetryChange(newValue)
+                        MeloqisTelemetry.setEnabled(context, newValue)
+                    }
                 )
             )
         )

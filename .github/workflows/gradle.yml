@@ -49,15 +49,20 @@ jobs:
           printf "%s" "$GOOGLE_SERVICES_CONTENT" > app/google-services.json
 
       - name: Set up Signing Keystore
-        if: env.HAS_KEYSTORE == 'true'
         env:
-          HAS_KEYSTORE: ${{ secrets.RELEASE_KEYSTORE_BASE64 != '' }}
           RELEASE_KEYSTORE_BASE64: ${{ secrets.RELEASE_KEYSTORE_BASE64 }}
         run: |
+          test -n "$RELEASE_KEYSTORE_BASE64"
           mkdir -p app/keystore
           echo "$RELEASE_KEYSTORE_BASE64" | base64 --decode > app/keystore/release.keystore
 
-      - name: Build and Sign Release APK (Push to main / Dispatch / Tag)
+      - name: Run 0.1.8 telemetry tests
+        run: |
+          ./gradlew testArm64FossDebugUnitTest
+          cd telemetry-worker
+          npm test
+
+      - name: Build and Sign Public and Admin APKs
         env:
           STORE_PASSWORD: ${{ secrets.RELEASE_STORE_PASSWORD }}
           KEY_ALIAS: ${{ secrets.RELEASE_KEY_ALIAS }}
@@ -66,24 +71,27 @@ jobs:
           LASTFM_SECRET: ${{ secrets.LASTFM_SECRET }}
           GH_CLIENT_ID: ${{ secrets.GH_CLIENT_ID }}
           GH_CLIENT_SECRET: ${{ secrets.GH_CLIENT_SECRET }}
-        run: ./gradlew assembleUniversalGmsRelease
+        run: ./gradlew assembleUniversalGmsRelease :adminapp:assembleRelease
 
       - name: Rename and Organize APKs
         run: |
           VERSION_NAME=$(grep "versionName =" app/build.gradle.kts | head -n 1 | awk -F '"' '{print $2}')
           echo "App Version: $VERSION_NAME"
           mkdir -p app/build/outputs/apk/release-artifacts
-          find app/build/outputs/apk/ -name "*.apk" ! -path "*/release-artifacts/*" | while read -r apk_path; do
-              target_name="Echo-${VERSION_NAME}-Universal.apk"
-              cp "$apk_path" "app/build/outputs/apk/release-artifacts/$target_name"
-              echo "Copied $apk_path -> app/build/outputs/apk/release-artifacts/$target_name"
-          done
+          mkdir -p adminapp/build/outputs/apk/private-artifacts
+          PUBLIC_APK=$(find app/build/outputs/apk/ -name "*.apk" -path "*universalGms*" -path "*release*" | head -n 1)
+          ADMIN_APK=$(find adminapp/build/outputs/apk/release/ -name "*.apk" | head -n 1)
+          test -n "$PUBLIC_APK" && test -f "$PUBLIC_APK"
+          test -n "$ADMIN_APK" && test -f "$ADMIN_APK"
+          cp "$PUBLIC_APK" "app/build/outputs/apk/release-artifacts/meloqis-music-${VERSION_NAME}-release.apk"
+          cp "$ADMIN_APK" "adminapp/build/outputs/apk/private-artifacts/meloqis-insights-admin-${VERSION_NAME}.apk"
 
-      - name: Upload APK Artifact
+      - name: Upload Meloqis Music APK
         uses: actions/upload-artifact@v4
         with:
-          name: Echo-Universal
+          name: Meloqis-Music-0.1.8
           path: app/build/outputs/apk/release-artifacts/*.apk
+          if-no-files-found: error
 
       - name: Parse Release Info
         if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
@@ -144,9 +152,7 @@ jobs:
           <b>Support the Project</b>
           If you'd like to support ongoing development, you can do so through any of the following:
 
-          • Buy Me a Coffee: https://buymeacoffee.com/iad1tya
-          • GitHub Sponsors: https://github.com/sponsors/iad1tya
-          • Support Page: https://support.iad1tya.cyou/
+          • Support Page: https://meloqis.axenoraai.in/download/#support
 
           Every contribution helps support continued development, maintenance, and future improvements.
 
@@ -192,7 +198,7 @@ jobs:
                 title: "Release Changelog",
                 description: $desc,
                 color: 16738660,
-                footer: { text: "Echo Music Automation System" }
+                footer: { text: "Meloqis Music Release System" }
               }]
             }' > discord-release-payload.json
 
@@ -241,7 +247,7 @@ jobs:
                 fields: [
                   { name: "Download APK", value: ("[" + $label + "](" + $link + ")"), inline: false }
                 ],
-                footer: { text: "Echo Music Automation System" }
+                footer: { text: "Meloqis Music Release System" }
               }]
             }' > discord-payload.json
 

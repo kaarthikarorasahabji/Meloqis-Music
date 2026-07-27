@@ -7,6 +7,7 @@ import android.content.Intent
 import android.os.Build
 import iad1tya.echo.music.BuildConfig
 import iad1tya.echo.music.ui.screens.CrashActivity
+import iad1tya.echo.music.telemetry.MeloqisTelemetry
 import timber.log.Timber
 import java.io.PrintWriter
 import java.io.StringWriter
@@ -21,6 +22,7 @@ class CrashHandler private constructor(
 
     override fun uncaughtException(thread: Thread, throwable: Throwable) {
         try {
+            MeloqisTelemetry.recordCrash(throwable)
             val crashLog = buildCrashLog(throwable)
             Timber.e(throwable, "App crashed")
             
@@ -47,7 +49,7 @@ class CrashHandler private constructor(
         }.toString()
 
         return buildString {
-            appendLine("echomusic Crash Report")
+            appendLine("Meloqis Music Crash Report")
             appendLine("=".repeat(50))
             appendLine()
             appendLine("Manufacturer: ${Build.MANUFACTURER}")

@@ -11,6 +11,7 @@ import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.workDataOf
 import iad1tya.echo.music.echomusic.updater.downloadmanager.UpdateDownloadWorker
+import iad1tya.echo.music.telemetry.MeloqisTelemetry
 
 /**
  * Starts only official Meloqis update downloads selected from the signed-in-app
@@ -30,6 +31,12 @@ class MeloqisUpdateActionReceiver : BroadcastReceiver() {
         ) {
             return
         }
+
+        MeloqisTelemetry.recordUpdateEvent(
+            name = "update_download_started",
+            fromVersion = iad1tya.echo.music.BuildConfig.VERSION_NAME,
+            toVersion = version,
+        )
 
         val request = OneTimeWorkRequestBuilder<UpdateDownloadWorker>()
             .setConstraints(

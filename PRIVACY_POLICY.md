@@ -46,19 +46,46 @@ does not intentionally collect passwords. Production releases must use secure
 token storage and an Axenora-controlled backend where a confidential OAuth
 client is required.
 
-## Diagnostics
+## Anonymous app insights
 
-The production policy must identify any crash-reporting or analytics provider,
-the fields sent, legal basis, retention period, and opt-out controls. A release
-must not claim that no telemetry exists unless the shipped build has been
-verified accordingly.
+Meloqis 0.1.8 and later can send limited operational events to an
+Axenora-controlled Cloudflare Worker and D1 database. Anonymous insights are
+enabled by default and can be disabled at any time in **Settings > Privacy >
+Share anonymous app insights**.
+
+The app generates a random installation UUID. It does not use an IMEI, phone
+number, advertising ID, Android ID, account identifier, song title, artist,
+playlist, listening history, precise location, or contact data for analytics.
+The server immediately stores only a SHA-256 hash of the random UUID.
+
+The following fields may be sent:
+
+- first open and a maximum daily active signal;
+- Meloqis version and version code;
+- Android version and SDK level;
+- update download, checksum, readiness, and confirmed-install outcomes;
+- crash class and top application method, without a full stack trace; and
+- Media3 playback error codes, without media identifiers or titles.
+
+Cloudflare necessarily processes normal connection data such as an IP address
+to deliver and protect the service. Meloqis does not write raw IP addresses to
+its analytics database. For abuse prevention only, the service creates a
+non-reversible keyed hash of the connection address and time window. These
+short-lived rate-limit records are deleted within 48 hours. Detailed
+operational events are automatically deleted after 90 days. Anonymous
+installation activity and download counts are deleted after 400 days of
+inactivity or collection.
+
+Disabling anonymous insights stops future uploads and removes queued,
+not-yet-uploaded events from the device. Previously aggregated counts cannot be
+linked back to a person. Clearing Meloqis app data creates a new random
+installation UUID if insights are later enabled.
 
 ## Children, deletion, and contact
 
-Age limits, regional rights, deletion request handling, and the privacy contact
-will be added before public release. Until those details and the production
-service inventory are complete, Meloqis is a development build and should not be
-offered as a global consumer service.
+Age limits, regional rights, deletion request handling, and a dedicated privacy
+contact must be finalized before a global consumer release. Meloqis 0.1.8
+remains a development preview.
 
 Official website: https://axenoraai.in
 

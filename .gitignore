@@ -256,3 +256,6 @@ graph.html
 .integrations/
 .omx/
 .wrangler/
+.wrangler-dry-run/
+
+.vercel

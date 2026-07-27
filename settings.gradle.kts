@@ -19,6 +19,7 @@ dependencyResolutionManagement {
 rootProject.name = "echomusic"
 include(
     ":app",
+    ":adminapp",
     ":innertube",
     ":paxsenixlyrics",
     ":kugou",
