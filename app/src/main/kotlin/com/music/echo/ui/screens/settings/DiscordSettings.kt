@@ -180,8 +180,44 @@ fun DiscordSettings(
         }
 
     val launchAuthorization: () -> Unit = {
-        authorizationMessage = null
-        authorizationUiModeName = DiscordAuthorizationUiMode.Waiting.name
+        if (DiscordOAuthRepository.applicationId == 0L) {
+            authorizationMessage = "Discord sign-in is not configured for this Meloqis build."
+            authorizationUiModeName = DiscordAuthorizationUiMode.Failure.name
+        } else {
+            val newSession = DiscordOAuthRepository.createAuthorizationSession()
+            authorizationSession = newSession
+            authorizationMessage = null
+            authorizationUiModeName = DiscordAuthorizationUiMode.Waiting.name
+            runCatching {
+                context.startActivity(Intent(Intent.ACTION_VIEW, newSession.authorizationUri))
+            }.onFailure {
+                authorizationMessage = "No browser is available to complete Discord sign-in."
+                authorizationUiModeName = DiscordAuthorizationUiMode.Failure.name
+            }
+        }
+    }
+
+    LaunchedEffect(Unit) {
+        DiscordAuthCoordinator.redirects.collectLatest { redirect ->
+            if (authorizationUiModeName != DiscordAuthorizationUiMode.Waiting.name) {
+                return@collectLatest
+            }
+            DiscordOAuthRepository
+                .completeAuthorization(context, authorizationSession, redirect)
+                .onSuccess { session ->
+                    authorizedToken = session.accessToken
+                    discordToken = session.accessToken
+                    authorizedUsername = session.account?.username.orEmpty()
+                    authorizedName = session.account?.displayName.orEmpty()
+                    authorizedAvatarUrl = session.account?.avatarUrl.orEmpty()
+                    authorizationMessage = context.getString(R.string.discord_authorization_success)
+                    authorizationUiModeName = DiscordAuthorizationUiMode.Success.name
+                }
+                .onFailure { error ->
+                    authorizationMessage = error.message ?: "Discord authorization failed."
+                    authorizationUiModeName = DiscordAuthorizationUiMode.Failure.name
+                }
+        }
     }
 
 
@@ -679,27 +715,6 @@ fun DiscordSettings(
             )
         }
 
-        if (authorizationUiMode == DiscordAuthorizationUiMode.Waiting) {
-            androidx.compose.ui.window.Dialog(
-                onDismissRequest = {
-                    authorizationUiModeName = DiscordAuthorizationUiMode.Idle.name
-                    authorizationMessage = null
-                },
-                properties = androidx.compose.ui.window.DialogProperties(usePlatformDefaultWidth = false)
-            ) {
-                Surface(modifier = Modifier.fillMaxSize()) {
-                    DiscordTokenWebView(
-                        onTokenExtracted = { token ->
-                            authorizedToken = token
-                            discordToken = token
-                            authorizationMessage = context.getString(R.string.discord_authorization_success)
-                            authorizationUiModeName = DiscordAuthorizationUiMode.Success.name
-                            // Account details are fetched in LaunchedEffect(discordToken) automatically
-                        }
-                    )
-                }
-            }
-        }
     }
 }
 

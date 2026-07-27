@@ -55,7 +55,11 @@ class LosslessContributeViewModel @Inject constructor(
     @ApplicationContext private val context: Context
 ) : ViewModel() {
 
-    private val _uiState = MutableStateFlow<LosslessContributeState>(LosslessContributeState.NotLoggedIn)
+    private val _uiState = MutableStateFlow<LosslessContributeState>(
+        LosslessContributeState.Error(
+            "Lossless contribution is unavailable until Meloqis has a rights-cleared catalog and secure backend."
+        )
+    )
     val uiState: StateFlow<LosslessContributeState> = _uiState.asStateFlow()
 
     private val httpClient = OkHttpClient.Builder()
@@ -68,8 +72,7 @@ class LosslessContributeViewModel @Inject constructor(
 
     companion object {
         val GITHUB_CLIENT_ID = iad1tya.echo.music.BuildConfig.GH_CLIENT_ID
-        val GITHUB_CLIENT_SECRET = iad1tya.echo.music.BuildConfig.GH_CLIENT_SECRET
-        const val REDIRECT_URI = "echomusic://oauth2callback"
+        const val REDIRECT_URI = "meloqis://oauth2callback"
         
         const val TARGET_OWNER = "EchoMusicApp"
         const val TARGET_REPO = "Lossless-Database"
@@ -89,8 +92,8 @@ class LosslessContributeViewModel @Inject constructor(
     val totalTracks: StateFlow<Int> = _totalTracks.asStateFlow()
 
     init {
-        fetchRecentTracks()
-        loadSavedSession()
+        // The upstream contribution backend and catalog are intentionally disabled
+        // until Meloqis has its own rights-cleared service.
     }
     
     private fun loadSavedSession() {
@@ -143,17 +146,13 @@ class LosslessContributeViewModel @Inject constructor(
     }
 
     fun getAuthUrl(): String {
-        if (GITHUB_CLIENT_ID.isBlank()) return ""
-        return "https://github.com/login/oauth/authorize?client_id=$GITHUB_CLIENT_ID&redirect_uri=$REDIRECT_URI&scope=public_repo%20workflow"
+        return ""
     }
 
     fun handleOAuthRedirect(uri: Uri) {
-        val code = uri.getQueryParameter("code")
-        if (code != null) {
-            exchangeCodeForToken(code)
-        } else {
-            _uiState.value = LosslessContributeState.Error("OAuth authorization code missing.")
-        }
+        _uiState.value = LosslessContributeState.Error(
+            "Lossless contribution is unavailable in this Meloqis build."
+        )
     }
     
     fun logout() {
@@ -169,47 +168,9 @@ class LosslessContributeViewModel @Inject constructor(
     }
 
     private fun exchangeCodeForToken(code: String) {
-        viewModelScope.launch(Dispatchers.IO) {
-            _uiState.value = LosslessContributeState.Uploading("Authenticating with GitHub...")
-            try {
-                val mediaType = "application/json; charset=utf-8".toMediaType()
-                val requestBody = """
-                    {
-                        "client_id": "$GITHUB_CLIENT_ID",
-                        "client_secret": "$GITHUB_CLIENT_SECRET",
-                        "code": "$code",
-                        "redirect_uri": "$REDIRECT_URI"
-                    }
-                """.trimIndent().toRequestBody(mediaType)
-
-                val request = Request.Builder()
-                    .url("https://github.com/login/oauth/access_token")
-                    .post(requestBody)
-                    .addHeader("Accept", "application/json")
-                    .build()
-
-                val response = httpClient.newCall(request).execute()
-                if (response.isSuccessful) {
-                    val responseBody = response.body?.string()
-                    if (responseBody != null) {
-                        val jsonObject = json.parseToJsonElement(responseBody).jsonObject
-                        val token = jsonObject["access_token"]?.toString()?.replace("\"", "")
-                        
-                        if (token != null) {
-                            accessToken = token
-                            fetchUserProfile()
-                        } else {
-                            _uiState.value = LosslessContributeState.Error("Failed to parse access token.")
-                        }
-                    }
-                } else {
-                    _uiState.value = LosslessContributeState.Error("Authentication failed.")
-                }
-            } catch (e: Exception) {
-                Timber.e(e, "OAuth exchange error")
-                _uiState.value = LosslessContributeState.Error("Authentication error: ${e.message}")
-            }
-        }
+        _uiState.value = LosslessContributeState.Error(
+            "GitHub OAuth token exchange must run on a secure Meloqis backend."
+        )
     }
 
     private suspend fun fetchUserProfile() {

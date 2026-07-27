@@ -24,20 +24,29 @@ if (hasGoogleServicesConfig) {
 }
 
 android {
+    // Keep the legacy source namespace while the fork is migrated incrementally.
+    // The install identity is independent and owned by Axenora AI.
     namespace = "iad1tya.echo.music"
     compileSdk = 36
     ndkVersion = "27.0.12077973"
 
 
     defaultConfig {
-        applicationId = "iad1tya.echo.music"
+        applicationId = "in.axenoraai.meloqis"
         minSdk = 26
         targetSdk = 36
-        versionCode = 524
-        versionName = "5.2.82"
+        versionCode = 1
+        versionName = "0.1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables.useSupportLibrary = true
+
+        buildConfigField("String", "BRAND_NAME", "\"Meloqis Music\"")
+        buildConfigField("String", "BRAND_WEBSITE", "\"https://meloqis.axenoraai.in\"")
+        buildConfigField("String", "COMPANY_WEBSITE", "\"https://axenoraai.in\"")
+        buildConfigField("String", "DEVELOPER_INSTAGRAM", "\"https://www.instagram.com/kaarthikarora\"")
+        buildConfigField("String", "DEVELOPER_LINKEDIN", "\"https://www.linkedin.com/in/kaarthikdassarora\"")
+        buildConfigField("String", "DEVELOPER_NAME", "\"Kaarthik Dass Arora\"")
 
         // LastFM API keys from GitHub Secrets
         val lastFmKey = localProperties.getProperty("LASTFM_API_KEY") ?: System.getenv("LASTFM_API_KEY") ?: ""
@@ -46,11 +55,10 @@ android {
         buildConfigField("String", "LASTFM_API_KEY", "\"$lastFmKey\"")
         buildConfigField("String", "LASTFM_SECRET", "\"$lastFmSecret\"")
 
-        // GitHub OAuth keys
+        // GitHub OAuth public client id. Secret-bearing OAuth exchanges must happen
+        // on an Axenora-controlled backend and are intentionally not compiled into the APK.
         val githubClientId = localProperties.getProperty("GH_CLIENT_ID") ?: System.getenv("GH_CLIENT_ID") ?: ""
-        val githubClientSecret = localProperties.getProperty("GH_CLIENT_SECRET") ?: System.getenv("GH_CLIENT_SECRET") ?: ""
         buildConfigField("String", "GH_CLIENT_ID", "\"$githubClientId\"")
-        buildConfigField("String", "GH_CLIENT_SECRET", "\"$githubClientSecret\"")
 
         buildConfigField("String", "FLOW_NEURO_BASE_URL", project.findProperty("FLOW_NEURO_BASE_URL")?.toString()?.let { "\"$it\"" } ?: "\"https://api.flowneuroengine.com\"")
         buildConfigField("String", "FLOW_NEURO_API_KEY", project.findProperty("FLOW_NEURO_API_KEY")?.toString()?.let { "\"$it\"" } ?: "\"\"")
@@ -59,9 +67,12 @@ android {
         val isNightly = project.hasProperty("nightly") && project.property("nightly") == "true"
         buildConfigField("Boolean", "IS_NIGHTLY", isNightly.toString())
 
-        val discordApplicationId = "1518210534070292541"
-        val discordApplicationIdLong = 1518210534070292541L
-        val discordRedirectScheme = "discord-$discordApplicationId"
+        val discordApplicationId =
+            localProperties.getProperty("DISCORD_APPLICATION_ID")
+                ?: System.getenv("DISCORD_APPLICATION_ID")
+                ?: ""
+        val discordApplicationIdLong = discordApplicationId.toLongOrNull() ?: 0L
+        val discordRedirectScheme = "meloqis-discord"
 
         buildConfigField("String", "DISCORD_APPLICATION_ID", "\"$discordApplicationId\"")
         buildConfigField("long", "DISCORD_APPLICATION_ID_LONG", "${discordApplicationIdLong}L")

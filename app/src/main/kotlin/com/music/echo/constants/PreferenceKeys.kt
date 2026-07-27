@@ -65,6 +65,7 @@ val PauseOnMute = booleanPreferencesKey("pauseOnMute")
 val ResumeOnBluetoothConnectKey = booleanPreferencesKey("resumeOnBluetoothConnect")
 val KeepScreenOn = booleanPreferencesKey("keepScreenOn")
 val DeveloperModeKey = booleanPreferencesKey("developerMode")
+val NowCapsuleEnabledKey = booleanPreferencesKey("meloqis_now_capsule_enabled")
 
 enum class SliderStyle {
     DEFAULT,

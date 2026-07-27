@@ -23,6 +23,7 @@ import android.media.audiofx.LoudnessEnhancer
 import android.net.ConnectivityManager
 import android.os.Binder
 import android.os.Build
+import android.provider.Settings
 import androidx.core.app.NotificationCompat
 import androidx.core.content.getSystemService
 import androidx.core.net.toUri
@@ -99,6 +100,7 @@ import iad1tya.echo.music.constants.HistoryDuration
 import iad1tya.echo.music.constants.LastFMSessionKey
 import iad1tya.echo.music.constants.LastFMUseNowPlaying
 import iad1tya.echo.music.constants.LastFMUseSendLikes
+import iad1tya.echo.music.constants.NowCapsuleEnabledKey
 import iad1tya.echo.music.constants.MediaSessionConstants.CommandToggleLike
 import iad1tya.echo.music.constants.MediaSessionConstants.CommandToggleRepeatMode
 import iad1tya.echo.music.constants.MediaSessionConstants.CommandToggleShuffle
@@ -455,6 +457,7 @@ class MusicService :
     private var discordUpdateJob: kotlinx.coroutines.Job? = null
 
     private var scrobbleManager: ScrobbleManager? = null
+    private var nowCapsuleOverlayController: NowCapsuleOverlayController? = null
 
     private var listenBrainzEnabled = false
     private var listenBrainzToken = ""
@@ -608,7 +611,7 @@ class MusicService :
             val notification: Notification = NotificationCompat.Builder(this, CHANNEL_ID)
                 .setContentTitle(getString(R.string.music_player))
                 .setContentText("")
-                .setSmallIcon(R.drawable.ic_launcher_nobg)  
+                .setSmallIcon(R.drawable.meloqis_mark)
                 .setContentIntent(pending)
                 .setOngoing(true)
                 .build()
@@ -626,7 +629,7 @@ class MusicService :
                 R.string.music_player
             )
                 .apply {
-                    setSmallIcon(R.drawable.ic_launcher_nobg)
+                    setSmallIcon(R.drawable.meloqis_mark)
                 },
         )
         player = createExoPlayer()
@@ -635,6 +638,35 @@ class MusicService :
         player.addListener(sleepTimer)
         playerInitialized.value = true
         Timber.tag(TAG).d("Player successfully initialized")
+
+        scope.launch {
+            dataStore.data
+                .map { it[NowCapsuleEnabledKey] ?: false }
+                .distinctUntilChanged()
+                .collect { enabled ->
+                    if (enabled && Settings.canDrawOverlays(this@MusicService)) {
+                        val controller = nowCapsuleOverlayController
+                            ?: NowCapsuleOverlayController(
+                                context = this@MusicService,
+                                onTogglePlayback = {
+                                    if (player.isPlaying) player.pause() else player.play()
+                                },
+                                onPrevious = { player.seekToPreviousMediaItem() },
+                                onNext = { player.seekToNextMediaItem() },
+                                onOpenApp = {
+                                    startActivity(
+                                        Intent(this@MusicService, MainActivity::class.java)
+                                            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP)
+                                    )
+                                },
+                            ).also { nowCapsuleOverlayController = it }
+                        controller.showOrUpdate(player.currentMetadata, player.isPlaying)
+                    } else {
+                        nowCapsuleOverlayController?.dispose()
+                        nowCapsuleOverlayController = null
+                    }
+                }
+        }
 
         audioManager = getSystemService(Context.AUDIO_SERVICE) as AudioManager
         abandonAudioFocus()
@@ -2154,6 +2186,17 @@ class MusicService :
         if (events.containsAny(
                 Player.EVENT_PLAYBACK_STATE_CHANGED,
                 Player.EVENT_PLAY_WHEN_READY_CHANGED,
+                Player.EVENT_IS_PLAYING_CHANGED,
+                Player.EVENT_MEDIA_ITEM_TRANSITION,
+                Player.EVENT_MEDIA_METADATA_CHANGED,
+            )
+        ) {
+            nowCapsuleOverlayController?.showOrUpdate(player.currentMetadata, player.isPlaying)
+        }
+
+        if (events.containsAny(
+                Player.EVENT_PLAYBACK_STATE_CHANGED,
+                Player.EVENT_PLAY_WHEN_READY_CHANGED,
                 Player.EVENT_MEDIA_ITEM_TRANSITION,
                 EVENT_TIMELINE_CHANGED,
                 EVENT_POSITION_DISCONTINUITY
@@ -3260,6 +3303,8 @@ class MusicService :
 
     override fun onDestroy() {
         isRunning = false
+        nowCapsuleOverlayController?.dispose()
+        nowCapsuleOverlayController = null
         releasePrebuffered()
 
         try {

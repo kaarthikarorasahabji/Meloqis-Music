@@ -250,3 +250,9 @@ node_modules/
 graphify-out/
 graph.html
 !app/libs/discord_partner_sdk.aar
+
+# Local Codex review, deployment, and integration workspaces
+.artifacts/
+.integrations/
+.omx/
+.wrangler/

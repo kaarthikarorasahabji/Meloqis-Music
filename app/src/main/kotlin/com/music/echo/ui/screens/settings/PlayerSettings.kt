@@ -51,6 +51,7 @@ import iad1tya.echo.music.constants.DisableLoadMoreWhenRepeatAllKey
 import iad1tya.echo.music.constants.EnableGoogleCastKey
 import iad1tya.echo.music.constants.HistoryDuration
 import iad1tya.echo.music.constants.KeepScreenOn
+import iad1tya.echo.music.constants.NowCapsuleEnabledKey
 import iad1tya.echo.music.constants.PauseOnMute
 import iad1tya.echo.music.constants.PersistentQueueKey
 import iad1tya.echo.music.constants.PersistentShuffleAcrossQueuesKey
@@ -83,6 +84,8 @@ import iad1tya.echo.music.utils.rememberPreference
 import kotlin.math.roundToInt
 import android.content.Intent
 import android.net.Uri
+import android.provider.Settings
+import android.widget.Toast
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -166,6 +169,35 @@ highlightKey: String? = null) {
     )
 
     val context = androidx.compose.ui.platform.LocalContext.current
+    val (nowCapsuleEnabled, onNowCapsuleEnabledChange) = rememberPreference(
+        key = NowCapsuleEnabledKey,
+        defaultValue = false
+    )
+    val overlayPermissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.StartActivityForResult()
+    ) {
+        val granted = Settings.canDrawOverlays(context)
+        onNowCapsuleEnabledChange(granted)
+        if (!granted) {
+            Toast.makeText(
+                context,
+                R.string.now_capsule_permission_required,
+                Toast.LENGTH_LONG
+            ).show()
+        }
+    }
+    val requestNowCapsuleChange: (Boolean) -> Unit = { enabled ->
+        when {
+            !enabled -> onNowCapsuleEnabledChange(false)
+            Settings.canDrawOverlays(context) -> onNowCapsuleEnabledChange(true)
+            else -> overlayPermissionLauncher.launch(
+                Intent(
+                    Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
+                    Uri.parse("package:${context.packageName}")
+                )
+            )
+        }
+    }
 
     val (enableGoogleCast, onEnableGoogleCastChange) = rememberPreference(
         key = EnableGoogleCastKey,
@@ -426,6 +458,29 @@ highlightKey: String? = null) {
         Material3SettingsGroup(scrollState = scrollState, 
             title = stringResource(R.string.player),
             items = buildList {
+                add(Material3SettingsItem(
+                    isHighlighted = (highlightKey == stringResource(R.string.now_capsule_title)),
+                    icon = painterResource(R.drawable.graphic_eq),
+                    title = { Text(stringResource(R.string.now_capsule_title)) },
+                    description = { Text(stringResource(R.string.now_capsule_description)) },
+                    trailingContent = {
+                        Switch(
+                            checked = nowCapsuleEnabled,
+                            onCheckedChange = requestNowCapsuleChange,
+                            thumbContent = {
+                                Icon(
+                                    painter = painterResource(
+                                        id = if (nowCapsuleEnabled) R.drawable.check else R.drawable.close
+                                    ),
+                                    contentDescription = null,
+                                    modifier = Modifier.size(SwitchDefaults.IconSize)
+                                )
+                            }
+                        )
+                    },
+                    onClick = { requestNowCapsuleChange(!nowCapsuleEnabled) }
+                ))
+
                 add(Material3SettingsItem(
     isHighlighted = (highlightKey == stringResource(R.string.audio_quality)),
                     icon = painterResource(R.drawable.graphic_eq),

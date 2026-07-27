@@ -1312,6 +1312,36 @@ class MainActivity : ComponentActivity() {
                         }
                     }
 
+                    val footerAboveMainNavigation =
+                        !showRail &&
+                            currentRoute != "update" &&
+                            currentRoute != "listen_together/chat" &&
+                            currentRoute != "ambient_mode" &&
+                            currentRoute != "uptime" &&
+                            currentRoute?.startsWith("settings") != true
+                    Surface(
+                        modifier = Modifier
+                            .align(Alignment.BottomCenter)
+                            .padding(
+                                bottom = if (footerAboveMainNavigation) {
+                                    bottomInset + NavigationBarHeight + 6.dp
+                                } else {
+                                    bottomInset + 6.dp
+                                }
+                            ),
+                        shape = RoundedCornerShape(999.dp),
+                        color = MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.88f),
+                        contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                        tonalElevation = 2.dp,
+                    ) {
+                        Text(
+                            text = stringResource(R.string.developer_footer),
+                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 3.dp),
+                            fontSize = 9.sp,
+                            maxLines = 1,
+                        )
+                    }
+
                     BottomSheetMenu(
                         state = LocalMenuState.current,
                         modifier = Modifier.align(Alignment.BottomCenter)
