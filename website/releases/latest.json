@@ -1,10 +1,10 @@
 {
   "product": "Meloqis Music",
-  "version": "0.1.6",
-  "versionCode": 7,
+  "version": "0.1.7",
+  "versionCode": 8,
   "channel": "preview",
   "publishedAt": "2026-07-27T00:00:00+05:30",
-  "releaseUrl": "https://github.com/kaarthikarorasahabji/Meloqis-Music/releases/tag/v0.1.6",
-  "downloadUrl": "https://pub-7cad9af12a364d3f928f96a083db320f.r2.dev/previews/0.1.6/meloqis-music-0.1.6-release-preview.apk",
-  "sha256": "1db4d11db7ede1558e98c1ce947bd67a875a3e2190a6eb3eebd48d0d8166e078"
+  "releaseUrl": "https://github.com/kaarthikarorasahabji/Meloqis-Music/releases/tag/v0.1.7",
+  "downloadUrl": "https://pub-7cad9af12a364d3f928f96a083db320f.r2.dev/previews/0.1.7/meloqis-music-0.1.7-release-preview.apk",
+  "sha256": "f65487a5bec03fa3f8f14c6b8de46e5cfcb325a6c79731d8a28d1ea1c934894d"
 }

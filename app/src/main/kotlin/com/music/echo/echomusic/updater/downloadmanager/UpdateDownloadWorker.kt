@@ -28,6 +28,15 @@ class UpdateDownloadWorker(private val context: Context, workerParams: WorkerPar
         val fileSize = inputData.getString("file_size") ?: ""
         val expectedSha256 = inputData.getString("sha256").orEmpty().lowercase()
 
+        if (!expectedSha256.matches(Regex("[0-9a-f]{64}"))) {
+            DownloadNotificationManager.initialize(context)
+            DownloadNotificationManager.showDownloadFailed(
+                version,
+                "The release manifest did not include a valid SHA-256 checksum",
+            )
+            return@withContext Result.failure()
+        }
+
         DownloadNotificationManager.initialize(context)
 
         try {
@@ -167,25 +176,23 @@ class UpdateDownloadWorker(private val context: Context, workerParams: WorkerPar
                 downloadFile
             }
 
-            if (expectedSha256.matches(Regex("[0-9a-f]{64}"))) {
-                val actualSha256 = finalFile.inputStream().use { input ->
-                    val digest = MessageDigest.getInstance("SHA-256")
-                    val hashBuffer = ByteArray(DEFAULT_BUFFER_SIZE)
-                    while (true) {
-                        val count = input.read(hashBuffer)
-                        if (count <= 0) break
-                        digest.update(hashBuffer, 0, count)
-                    }
-                    digest.digest().joinToString("") { "%02x".format(it) }
+            val actualSha256 = finalFile.inputStream().use { input ->
+                val digest = MessageDigest.getInstance("SHA-256")
+                val hashBuffer = ByteArray(DEFAULT_BUFFER_SIZE)
+                while (true) {
+                    val count = input.read(hashBuffer)
+                    if (count <= 0) break
+                    digest.update(hashBuffer, 0, count)
                 }
-                if (actualSha256 != expectedSha256) {
-                    finalFile.delete()
-                    DownloadNotificationManager.showDownloadFailed(
-                        version,
-                        "The downloaded APK failed signature-manifest verification",
-                    )
-                    return@withContext Result.failure()
-                }
+                digest.digest().joinToString("") { "%02x".format(it) }
+            }
+            if (actualSha256 != expectedSha256) {
+                finalFile.delete()
+                DownloadNotificationManager.showDownloadFailed(
+                    version,
+                    "The downloaded APK failed signature-manifest verification",
+                )
+                return@withContext Result.failure()
             }
 
             if (version.startsWith("nightly-r")) {
@@ -199,7 +206,13 @@ class UpdateDownloadWorker(private val context: Context, workerParams: WorkerPar
 
             DownloadNotificationManager.showDownloadComplete(version, finalFile.absolutePath)
 
-            Result.success(workDataOf("file_path" to finalFile.absolutePath))
+            Result.success(
+                workDataOf(
+                    "file_path" to finalFile.absolutePath,
+                    "version" to version,
+                    "sha256" to actualSha256,
+                ),
+            )
         } catch (e: IOException) {
             DownloadNotificationManager.showDownloadFailed(
                 version,

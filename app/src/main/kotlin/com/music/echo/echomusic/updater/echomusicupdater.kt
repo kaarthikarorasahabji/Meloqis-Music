@@ -66,6 +66,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import iad1tya.echo.music.echomusic.updater.downloadmanager.UpdateDownloadWorker
 import iad1tya.echo.music.echomusic.updater.downloadmanager.DownloadNotificationManager
+import iad1tya.echo.music.echomusic.MeloqisUpdateActionReceiver
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -74,8 +75,10 @@ import org.json.JSONArray
 import org.json.JSONObject
 import java.io.File
 import java.net.URL
+import java.net.HttpURLConnection
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
+import java.util.Locale
 import java.util.regex.Pattern
 import iad1tya.echo.music.ui.component.ChangelogItem
 import iad1tya.echo.music.ui.component.leadingItemShape
@@ -110,6 +113,68 @@ import androidx.compose.ui.text.style.TextDecoration
 
 data class ChangelogSection(val title: String, val items: List<String>)
 
+private data class MeloqisReleaseManifest(
+    val version: String,
+    val publishedAt: String,
+    val downloadUrl: String,
+    val sha256: String,
+    val sizeMb: String,
+)
+
+private suspend fun fetchOfficialMeloqisRelease(): MeloqisReleaseManifest =
+    withContext(Dispatchers.IO) {
+        val connection = URL(MELOQIS_RELEASE_MANIFEST).openConnection().apply {
+            connectTimeout = 8_000
+            readTimeout = 8_000
+            setRequestProperty("User-Agent", "Meloqis/${BuildConfig.VERSION_NAME}")
+            useCaches = false
+        }
+        val json = connection.getInputStream().bufferedReader().use { JSONObject(it.readText()) }
+        val version = json.getString("version").trim()
+        val publishedAt = json.optString("publishedAt").trim()
+        val downloadUrl = json.getString("downloadUrl").trim()
+        val sha256 = json.getString("sha256").trim().lowercase()
+        val downloadUri = Uri.parse(downloadUrl)
+
+        require(version.isNotBlank()) { "Missing release version" }
+        require(
+            downloadUri.scheme == "https" &&
+                downloadUri.host == MELOQIS_R2_HOST &&
+                downloadUri.path.orEmpty().startsWith("/previews/") &&
+                downloadUri.path.orEmpty().endsWith(".apk"),
+        ) { "Untrusted release artifact" }
+        require(sha256.matches(Regex("[0-9a-f]{64}"))) { "Invalid release checksum" }
+
+        val sizeBytes = runCatching {
+            (URL(downloadUrl).openConnection() as HttpURLConnection).run {
+                requestMethod = "HEAD"
+                connectTimeout = 8_000
+                readTimeout = 8_000
+                useCaches = false
+                connect()
+                contentLengthLong.also { disconnect() }
+            }
+        }.getOrDefault(-1L)
+        val sizeMb = if (sizeBytes > 0) {
+            String.format(Locale.US, "%.1f", sizeBytes / (1024.0 * 1024.0))
+        } else {
+            "—"
+        }
+
+        MeloqisReleaseManifest(
+            version = version,
+            publishedAt = publishedAt,
+            downloadUrl = downloadUrl,
+            sha256 = sha256,
+            sizeMb = sizeMb,
+        )
+    }
+
+private const val MELOQIS_RELEASE_MANIFEST =
+    "https://meloqis.axenoraai.in/releases/latest.json"
+private const val MELOQIS_R2_HOST =
+    "pub-7cad9af12a364d3f928f96a083db320f.r2.dev"
+
 sealed class EchoUpdateStatus {
     object Idle : EchoUpdateStatus()
     object Checking : EchoUpdateStatus()
@@ -120,7 +185,8 @@ sealed class EchoUpdateStatus {
         val releaseDate: String,
         val description: String?,
         val imageUrl: String?,
-        val apkUrl: String?
+        val apkUrl: String?,
+        val sha256: String,
     ) : EchoUpdateStatus()
 
     data class NoUpdate(val version: String) : EchoUpdateStatus()
@@ -143,41 +209,84 @@ fun UpdateScreen(navController: NavHostController) {
 
     LaunchedEffect(Unit) {
         DownloadNotificationManager.initialize(context)
+        status = EchoUpdateStatus.Checking
+        status = runCatching { fetchOfficialMeloqisRelease() }
+            .fold(
+                onSuccess = { release ->
+                    if (isNewerVersion(release.version, currentVersion)) {
+                        EchoUpdateStatus.Available(
+                            version = release.version,
+                            changelog = listOf(
+                                ChangelogSection(
+                                    "Verified Meloqis update",
+                                    listOf(
+                                        "Downloads directly inside Meloqis",
+                                        "SHA-256 integrity checked before installation",
+                                        "Android shows the final secure install confirmation",
+                                    ),
+                                ),
+                            ),
+                            size = release.sizeMb,
+                            releaseDate = release.publishedAt.substringBefore('T'),
+                            description = "Official Axenora release artifact. No browser or website redirect is used.",
+                            imageUrl = null,
+                            apkUrl = release.downloadUrl,
+                            sha256 = release.sha256,
+                        )
+                    } else {
+                        EchoUpdateStatus.NoUpdate(currentVersion)
+                    }
+                },
+                onFailure = {
+                    EchoUpdateStatus.Error("Could not reach the Meloqis release channel. Check your connection and reopen this page.")
+                },
+            )
     }
 
-    
     LaunchedEffect(Unit) {
-        WorkManager.getInstance(context)
-            .getWorkInfosForUniqueWorkLiveData("update_download")
-            .observeForever { workInfos ->
-                val workInfo = workInfos?.firstOrNull() ?: return@observeForever
-
-                when (workInfo.state) {
-                    WorkInfo.State.RUNNING -> {
-                        isDownloading = true
-                        downloadProgress = workInfo.progress.getFloat("progress", 0f)
-                    }
-                    WorkInfo.State.SUCCEEDED -> {
-                        isDownloading = false
-                        isDownloadComplete = true
-                        val filePath = workInfo.outputData.getString("file_path")
-                        if (filePath != null) {
-                            downloadedFile = File(filePath)
-                        }
-                    }
-                    WorkInfo.State.FAILED -> {
-                        isDownloading = false
-                        scope.launch {
-                            snackbarHostState.showSnackbar(context.getString(R.string.download_failed))
-                        }
-                    }
-                    WorkInfo.State.CANCELLED -> {
-                        isDownloading = false
-                        downloadProgress = 0f
-                    }
-                    else -> {}
-                }
+        val workManager = WorkManager.getInstance(context)
+        while (true) {
+            val workInfo = withContext(Dispatchers.IO) {
+                runCatching {
+                    workManager
+                        .getWorkInfosForUniqueWork(MeloqisUpdateActionReceiver.UPDATE_DOWNLOAD_WORK)
+                        .get()
+                        .firstOrNull()
+                }.getOrNull()
             }
+
+            when (workInfo?.state) {
+                WorkInfo.State.ENQUEUED, WorkInfo.State.BLOCKED, WorkInfo.State.RUNNING -> {
+                    isDownloading = true
+                    isDownloadComplete = false
+                    downloadProgress = workInfo.progress.getFloat("progress", 0f)
+                }
+                WorkInfo.State.SUCCEEDED -> {
+                    isDownloading = false
+                    val completedVersion = workInfo.outputData.getString("version")
+                    val filePath = workInfo.outputData.getString("file_path")
+                    val expectedVersion = (status as? EchoUpdateStatus.Available)?.version
+                    if (completedVersion != null && completedVersion == expectedVersion && filePath != null) {
+                        val file = File(filePath)
+                        isDownloadComplete = file.exists()
+                        downloadedFile = file.takeIf { it.exists() }
+                        downloadProgress = if (file.exists()) 1f else 0f
+                    }
+                }
+                WorkInfo.State.FAILED -> {
+                    if (isDownloading) {
+                        snackbarHostState.showSnackbar(context.getString(R.string.download_failed))
+                    }
+                    isDownloading = false
+                }
+                WorkInfo.State.CANCELLED -> {
+                    isDownloading = false
+                    downloadProgress = 0f
+                }
+                else -> Unit
+            }
+            delay(500)
+        }
     }
 
     
@@ -290,24 +399,18 @@ fun UpdateScreen(navController: NavHostController) {
                                                 ContextCompat.startActivity(context, installIntent, null)
                                             }
                                         } else {
-                                            val urlToDownload = currentStatus.apkUrl ?: BuildConfig.APK_DOWNLOAD
-                                            
-                                            val constraints = Constraints.Builder()
-                                                .setRequiredNetworkType(NetworkType.CONNECTED)
-                                                .build()
-
-                                            val downloadRequest = OneTimeWorkRequestBuilder<UpdateDownloadWorker>()
-                                                .setInputData(workDataOf("apk_url" to urlToDownload, "version" to currentStatus.version, "file_size" to currentStatus.size))
-                                                .setConstraints(constraints)
-                                                .setBackoffCriteria(
-                                                    BackoffPolicy.EXPONENTIAL,
-                                                    10,
-                                                    java.util.concurrent.TimeUnit.SECONDS
-                                                )
-                                                .addTag("update_download")
-                                                .build()
-                                            WorkManager.getInstance(context).enqueueUniqueWork("update_download", ExistingWorkPolicy.REPLACE, downloadRequest)
+                                            val urlToDownload = currentStatus.apkUrl ?: return@AnimatedActionButton
+                                            context.sendBroadcast(
+                                                Intent(context, MeloqisUpdateActionReceiver::class.java).apply {
+                                                    action = MeloqisUpdateActionReceiver.ACTION_DOWNLOAD_UPDATE
+                                                    putExtra(MeloqisUpdateActionReceiver.EXTRA_VERSION, currentStatus.version)
+                                                    putExtra(MeloqisUpdateActionReceiver.EXTRA_DOWNLOAD_URL, urlToDownload)
+                                                    putExtra(MeloqisUpdateActionReceiver.EXTRA_SHA256, currentStatus.sha256)
+                                                },
+                                            )
                                             isDownloading = true
+                                            isDownloadComplete = false
+                                            downloadProgress = 0f
                                         }
                                     },
                                     modifier = Modifier.weight(1f),

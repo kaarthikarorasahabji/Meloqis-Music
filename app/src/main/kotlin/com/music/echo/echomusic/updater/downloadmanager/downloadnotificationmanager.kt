@@ -19,6 +19,7 @@ object DownloadNotificationManager {
     const val CHANNEL_ID = "download_progress_channel"
     private const val CHANNEL_NAME = "Download Progress" 
     const val NOTIFICATION_ID = 5678
+    private const val READY_NOTIFICATION_ID = 5679
 
     fun initialize(context: Context) {
         appContext = context
@@ -222,7 +223,7 @@ object DownloadNotificationManager {
         setRequestPromotedOngoingSafely(builder, false)
         setShortCriticalTextSafely(builder, appContext.getString(R.string.done))
 
-        notificationManager.notify(NOTIFICATION_ID, builder.build())
+        notificationManager.notify(READY_NOTIFICATION_ID, builder.build())
     }
 
     private fun setShortCriticalTextSafely(builder: Notification.Builder, text: String) {
@@ -312,6 +313,6 @@ object DownloadNotificationManager {
             .setCategory(NotificationCompat.CATEGORY_STATUS)
             .build()
 
-        notificationManager.notify(NOTIFICATION_ID, notification)
+        notificationManager.notify(READY_NOTIFICATION_ID, notification)
     }
 }

@@ -68,6 +68,6 @@ class MeloqisUpdateActionReceiver : BroadcastReceiver() {
         const val EXTRA_SHA256 = "sha256"
 
         private const val OFFICIAL_R2_HOST = "pub-7cad9af12a364d3f928f96a083db320f.r2.dev"
-        private const val UPDATE_DOWNLOAD_WORK = "meloqis_verified_update_download"
+        const val UPDATE_DOWNLOAD_WORK = "meloqis_verified_update_download"
     }
 }

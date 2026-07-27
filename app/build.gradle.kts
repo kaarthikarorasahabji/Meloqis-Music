@@ -35,8 +35,8 @@ android {
         applicationId = "in.axenoraai.meloqis"
         minSdk = 26
         targetSdk = 36
-        versionCode = 7
-        versionName = "0.1.6"
+        versionCode = 8
+        versionName = "0.1.7"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables.useSupportLibrary = true
@@ -49,7 +49,7 @@ android {
         buildConfigField("String", "DEVELOPER_NAME", "\"Kaarthik Dass Arora\"")
         buildConfigField("String", "SOURCE_REPOSITORY", "\"https://github.com/kaarthikarorasahabji/Meloqis-Music\"")
         buildConfigField("String", "SUPPORT_PAGE", "\"https://meloqis.axenoraai.in/download/#support\"")
-        buildConfigField("String", "APK_DOWNLOAD", "\"https://pub-7cad9af12a364d3f928f96a083db320f.r2.dev/previews/0.1.6/meloqis-music-0.1.6-release-preview.apk\"")
+        buildConfigField("String", "APK_DOWNLOAD", "\"https://pub-7cad9af12a364d3f928f96a083db320f.r2.dev/previews/0.1.7/meloqis-music-0.1.7-release-preview.apk\"")
 
         // LastFM API keys from GitHub Secrets
         val lastFmKey = localProperties.getProperty("LASTFM_API_KEY") ?: System.getenv("LASTFM_API_KEY") ?: ""
