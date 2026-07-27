@@ -1,5 +1,5 @@
 import { DASHBOARD_HTML } from "./dashboard.js";
-import { clampDays, ratio, validateEvent, verifyTotp } from "./logic.js";
+import { clampDays, ratio, validateEvent } from "./logic.js";
 
 const encoder = new TextEncoder();
 const UUID_PATTERN =
@@ -184,16 +184,12 @@ async function login(request, env) {
   }
 
   const body = await request.json().catch(() => null);
-  const usernameMatches =
-    typeof body?.username === "string" &&
-    body.username.trim().toLowerCase() === env.ADMIN_USERNAME.trim().toLowerCase();
   const passwordMatches =
     typeof body?.password === "string" &&
     body.password.length <= 256 &&
     (await verifyPassword(body.password, env.ADMIN_PASSWORD_HASH));
-  const otpMatches = await verifyTotp(env.ADMIN_TOTP_SECRET, body?.otp);
 
-  if (!usernameMatches || !passwordMatches || !otpMatches) {
+  if (!passwordMatches) {
     await recordFailedLogin(env, fingerprint, attempt);
     return unauthorized();
   }
@@ -478,9 +474,8 @@ async function sign(value, secret) {
 
 async function verifyPassword(password, encodedHash) {
   if (typeof encodedHash !== "string" || !/^[0-9a-f]{64}$/.test(encodedHash)) return false;
-  // The generated administrator password has 144 bits of entropy and MFA is
-  // mandatory, so a fast digest avoids Worker CPU-limit failures without
-  // making an offline guessing attack practical.
+  // The digest is stored as an encrypted Worker secret and is never shipped
+  // in the dashboard, Android artifact, or repository.
   return constantTimeEqual(await sha256Hex(password), encodedHash);
 }
 

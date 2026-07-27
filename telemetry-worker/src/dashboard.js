@@ -14,7 +14,7 @@ export const DASHBOARD_HTML = String.raw`<!doctype html>
     .login-panel{width:min(420px,100%);animation:rise .5s cubic-bezier(.2,.8,.2,1)}
     .mark{width:42px;height:42px;margin-bottom:36px;border:1px solid #6f52a6;border-radius:14px;display:grid;place-items:center;color:var(--accent);font-size:20px}
     .login h1{font-size:38px;letter-spacing:-.055em;margin:0 0 8px}.login p{color:var(--muted);margin:0 0 34px}
-    label{display:block;color:#d7d1df;font-size:12px;margin:18px 0 7px}.field{width:100%;border:1px solid var(--line);border-radius:12px;background:#0d0c12;color:var(--ink);padding:14px 15px;outline:none}.field:focus{border-color:var(--accent);box-shadow:0 0 0 3px #a67cff1c}
+    label{display:block;color:#d7d1df;font-size:12px;margin:18px 0 7px}.field{width:100%;border:1px solid var(--line);border-radius:12px;background:#0d0c12;color:var(--ink);padding:14px 15px;outline:none}.field:focus{border-color:var(--accent);box-shadow:0 0 0 3px #a67cff1c}.owner{display:flex;align-items:center;justify-content:space-between;border-block:1px solid var(--line);padding:14px 0;margin:26px 0 4px}.owner span{color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.12em}.owner strong{font-size:14px}
     .primary{width:100%;margin-top:24px;border:0;border-radius:12px;padding:14px;background:var(--accent);color:#120d1d;font-weight:800;cursor:pointer}.primary:hover{filter:brightness(1.08)}
     .error{min-height:20px;color:var(--bad);margin-top:12px}
     .app{min-height:100svh}.topbar{height:70px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;padding:0 clamp(20px,4vw,56px);position:sticky;top:0;background:#09080de8;backdrop-filter:blur(18px);z-index:5}
@@ -45,12 +45,9 @@ export const DASHBOARD_HTML = String.raw`<!doctype html>
       <div class="mark">M</div>
       <h1>Meloqis Insights</h1>
       <p>Private installation and reliability telemetry.</p>
-      <label for="username">Administrator ID</label>
-      <input id="username" class="field" type="text" autocomplete="username" required>
+      <div class="owner"><span>Administrator</span><strong>Kaarthik Dass Arora</strong></div>
       <label for="password">Password</label>
       <input id="password" class="field" type="password" autocomplete="current-password" required>
-      <label for="otp">Authenticator code</label>
-      <input id="otp" class="field" type="text" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{6}" maxlength="6" required>
       <button class="primary" type="submit">Open dashboard</button>
       <div id="login-error" class="error" role="alert"></div>
     </form>
@@ -120,7 +117,7 @@ export const DASHBOARD_HTML = String.raw`<!doctype html>
     }
     function escapeHtml(value){const div=document.createElement("div");div.textContent=value;return div.innerHTML}
     async function load(){try{render(await api("/api/dashboard?days="+document.querySelector("#range").value))}catch(error){if(error.message==="UNAUTHORIZED")showLogin();else alert("Dashboard could not load.")}}
-    document.querySelector("#login-form").addEventListener("submit",async event=>{event.preventDefault();text("#login-error","");try{await api("/api/login",{method:"POST",body:JSON.stringify({username:document.querySelector("#username").value,password:document.querySelector("#password").value,otp:document.querySelector("#otp").value})});document.querySelector("#password").value="";document.querySelector("#otp").value="";await load()}catch(error){text("#login-error",error.message==="UNAUTHORIZED"?"Administrator ID, password or authenticator code is incorrect.":"Login is temporarily unavailable.")}});
+    document.querySelector("#login-form").addEventListener("submit",async event=>{event.preventDefault();text("#login-error","");try{await api("/api/login",{method:"POST",body:JSON.stringify({password:document.querySelector("#password").value})});document.querySelector("#password").value="";await load()}catch(error){text("#login-error",error.message==="UNAUTHORIZED"?"Password is incorrect.":"Login is temporarily unavailable.")}});
     document.querySelector("#range").addEventListener("change",load);
     document.querySelector("#logout").addEventListener("click",async()=>{await api("/api/logout",{method:"POST"});showLogin()});
     load();

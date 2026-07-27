@@ -1,15 +1,11 @@
 import { readFile } from "node:fs/promises";
-import { generateTotp } from "../src/logic.js";
-
 const baseUrl =
   process.env.MELOQIS_INSIGHTS_BASE_URL ||
   "https://meloqis-insights.axenora-meloqis.workers.dev";
 const credentialsPath = new URL("../../.artifacts/meloqis-insights-admin.txt", import.meta.url);
 const credentials = await readFile(credentialsPath, "utf8");
-const username = credentials.match(/^Administrator ID:\s*(.+)$/m)?.[1]?.trim();
 const password = credentials.match(/^Password:\s*(.+)$/m)?.[1]?.trim();
-const totpSecret = credentials.match(/^Authenticator secret:\s*(.+)$/m)?.[1]?.trim();
-if (!username || !password || !totpSecret) throw new Error("Local admin credentials are incomplete");
+if (!password) throw new Error("Local admin credentials are incomplete");
 
 const health = await fetch(`${baseUrl}/health`);
 if (!health.ok) throw new Error(`Health failed: ${health.status}`);
@@ -55,11 +51,7 @@ if (eventResponse.status !== 202) throw new Error(`Event ingest failed: ${eventR
 const loginResponse = await fetch(`${baseUrl}/api/login`, {
   method: "POST",
   headers: { "content-type": "application/json" },
-  body: JSON.stringify({
-    username,
-    password,
-    otp: await generateTotp(totpSecret),
-  }),
+  body: JSON.stringify({ password }),
 });
 if (loginResponse.status !== 204) {
   throw new Error(`Login failed: ${loginResponse.status} ${await loginResponse.text()}`);
@@ -91,7 +83,7 @@ console.log(
     anonymousDashboard: "blocked",
     installationRegistration: "ok",
     eventIngest: "accepted",
-    mfaLogin: "ok",
+    ownerPasswordLogin: "ok",
     dashboard: "ok",
     privateArtifact: "ok",
   }),

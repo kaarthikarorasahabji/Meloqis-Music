@@ -5,7 +5,7 @@ workers_dev = true
 preview_urls = false
 
 [vars]
-ADMIN_USERNAME = "kaarthik"
+ADMIN_USERNAME = "Kaarthik Dass Arora"
 APK_MANIFEST_URL = "https://meloqis.axenoraai.in/releases/latest.json"
 
 [triggers]
