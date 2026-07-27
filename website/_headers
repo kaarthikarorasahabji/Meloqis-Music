@@ -1,0 +1,8 @@
+/*
+  Cache-Control: public, max-age=0, must-revalidate
+
+/releases/latest.json
+  Cache-Control: no-store
+
+/download/*
+  Cache-Control: public, max-age=0, must-revalidate
