@@ -388,7 +388,7 @@ class LosslessContributeViewModel @Inject constructor(
 
     private suspend fun createPullRequest(forkOwner: String, forkName: String, branchName: String, songTitle: String, artistName: String, targetPath: String): String {
         val prTitle = "feat: add lossless track for $songTitle — $artistName"
-        val prBody = "This Pull Request was submitted automatically via the Echo Music native app.\n\n### \uD83C\uDFB5 Submission Metadata\n* **Category:** Music\n* **Track URL / Path:** `$targetPath`\n\n### \uD83C\uDFB6 Song Entries\n| Song Title | Artist |\n|---|---|\n| $songTitle | $artistName |"
+        val prBody = "This Pull Request was submitted automatically via the Meloqis Music native app.\n\n### \uD83C\uDFB5 Submission Metadata\n* **Category:** Music\n* **Track URL / Path:** `$targetPath`\n\n### \uD83C\uDFB6 Song Entries\n| Song Title | Artist |\n|---|---|\n| $songTitle | $artistName |"
         
         val prJson = buildJsonObject {
             put("title", prTitle)

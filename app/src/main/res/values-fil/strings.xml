@@ -329,7 +329,7 @@
     <string name="backup_create_failed">Hindi magawa ang backup</string>
     <string name="restore_failed">Nabigo ang pag-restore ng backup</string>
     <string name="discord_integration">Pagsasama sa Discord</string>
-    <string name="discord_information">Gumagamit ang echomusic ng KizzyRPC library upang itakda ang katayuan ng iyong Discord account. Kabilang dito ang paggamit ng Discord Gateway connection, na maaaring ituring na paglabag sa TOS ng Discord. Gayunpaman, walang kilalang mga kaso ng mga user account na sinuspinde dahil sa kadahilanang ito. Gamitin sa iyong sariling peligro.\n\nechomusic ay kukuha lamang ng iyong token, at lahat ng iba ay naka-imbak nang lokal.</string>
+    <string name="discord_information">Meloqis connects to Discord using OAuth with PKCE. Sign-in happens in your browser; your password is never collected. Access credentials are stored on this device and can be revoked by signing out.</string>
     <string name="dismiss">I-dismiss</string>
     <string name="options">Mga Opsyon</string>
     <string name="preview">Silipin</string>
@@ -355,7 +355,7 @@
     <string name="listen_together_smart_resync">Smart Network Resync</string>
     <string name="listen_together_smart_resync_desc">Awtomatikong humabol sa host pagkatapos ng pagkawala ng koneksyon</string>
     <string name="spotify_import_title">Mag-import Mula sa Spotify</string>
-    <string name="spotify_import_desc">Ikonekta ang Spotify, pumili ng mga playlist, at i-mirror ang mga ito sa mga lokal na Echo Music playlist.</string>
+    <string name="spotify_import_desc">Ikonekta ang Spotify, pumili ng mga playlist, at i-mirror ang mga ito sa mga lokal na Meloqis Music playlist.</string>
     <string name="spotify_connect">Ikonekta ang Spotify</string>
     <string name="spotify_refresh">I-refresh ang Spotify library</string>
     <string name="spotify_select_sources">Pumili ng mga Spotify playlist</string>
@@ -415,10 +415,10 @@
     <string name="recognition_notification_processing">Kinikilala…</string>
     <string name="recognition_notification_no_match">Walang nakitang katugma</string>
     <string name="recognition_notification_failed">Nabigo ang pagkilala</string>
-    <string name="listen_on_echo_music">Pakinggan sa Echo Music</string>
+    <string name="listen_on_echo_music">Pakinggan sa Meloqis Music</string>
     <string name="qs_tile_music_recognizer">Kilalanin ang musika</string>
-    <string name="echo_brain_beta">Echo Brain (Beta)</string>
-    <string name="echo_brain_enable">Paganahin ang Echo Brain</string>
+    <string name="echo_brain_beta">Meloqis Brain (Beta)</string>
+    <string name="echo_brain_enable">Paganahin ang Meloqis Brain</string>
     <string name="echo_brain_enable_desc">Awtomatikong magdagdag ng mga rekomendasyon ng AI batay sa iyong mga nakagawian sa pakikinig</string>
     <string name="echo_brain_profile_statistics">Mga Estadistika ng Profile</string>
     <string name="echo_brain_learning_level">Antas ng Pagkatuto</string>

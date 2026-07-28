@@ -7,6 +7,7 @@
 <!-- Translators: Do not modify this file for translations, use InnerTune's Weblate instead. -->
 
 <resources>
+    <string name="continue_with_google">Continue with Google</string>
     <!-- Bottom navigation -->
     <string name="home">Home</string>
     <string name="music">Music</string>
@@ -389,7 +390,7 @@
     <string name="restore_failed">Failed to restore backup</string>
 
     <string name="discord_integration">Discord Integration</string>
-    <string name="discord_information">echomusic uses the KizzyRPC library to set your Discord account\'s status. This involves using the Discord Gateway connection, which may be considered a violation of Discord\'s TOS. However, there are no known cases of user accounts being suspended for this reason. Use at your own risk.\n\echomusic will only extract your token, and everything else is stored locally.</string>
+    <string name="discord_information">Meloqis connects to Discord using OAuth with PKCE. Sign-in happens in your browser; your password is never collected. Access credentials are stored on this device and can be revoked by signing out.</string>
     <string name="dismiss">Dismiss</string>
     <string name="options">Options</string>
     <string name="preview">Preview</string>

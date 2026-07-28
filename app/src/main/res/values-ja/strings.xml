@@ -255,7 +255,7 @@
     <string name="backup_create_failed">バックアップを作成できませんでした</string>
     <string name="restore_failed">バックアップの復元に失敗しました</string>
     <string name="discord_integration">Discord 統合</string>
-    <string name="discord_information">echomusic は KizzyRPC ライブラリを使い、Discord アカウントのステータスを設定します。これは Discord ゲートウェイ接続を使うので、Discord の利用規約に違反する可能性があります。しかし、この理由でユーザーのアカウントが停止された例は確認されていません。自己責任でご利用ください。\n\nechomusic はトークンを抽出するだけです。それ以外はすべて端末内に保存されます。</string>
+    <string name="discord_information">Meloqis connects to Discord using OAuth with PKCE. Sign-in happens in your browser; your password is never collected. Access credentials are stored on this device and can be revoked by signing out.</string>
     <string name="dismiss">非表示</string>
     <string name="options">オプション</string>
     <string name="preview">プレビュー</string>
@@ -334,7 +334,7 @@
     <string name="listen_together_smart_resync">スマートネットワーク再同期</string>
     <string name="listen_together_smart_resync_desc">接続が切れた後にホストに自動的に追いつく</string>
     <string name="spotify_import_title">Spotifyからインポート</string>
-    <string name="spotify_import_desc">Spotifyに接続し、プレイリストを選択して、ローカルのEcho Musicプレイリストにミラーリングします。</string>
+    <string name="spotify_import_desc">Spotifyに接続し、プレイリストを選択して、ローカルのMeloqis Musicプレイリストにミラーリングします。</string>
     <string name="spotify_connect">Spotifyに接続</string>
     <string name="spotify_refresh">Spotifyライブラリを更新</string>
     <string name="spotify_select_sources">Spotifyプレイリストを選択</string>
@@ -394,10 +394,10 @@
     <string name="recognition_notification_processing">識別中…</string>
     <string name="recognition_notification_no_match">一致する曲が見つかりませんでした</string>
     <string name="recognition_notification_failed">認識に失敗しました</string>
-    <string name="listen_on_echo_music">Echo Musicで聴く</string>
+    <string name="listen_on_echo_music">Meloqis Musicで聴く</string>
     <string name="qs_tile_music_recognizer">音楽を認識</string>
-    <string name="echo_brain_beta">Echo Brain（ベータ版）</string>
-    <string name="echo_brain_enable">Echo Brainを有効にする</string>
+    <string name="echo_brain_beta">Meloqis Brain（ベータ版）</string>
+    <string name="echo_brain_enable">Meloqis Brainを有効にする</string>
     <string name="echo_brain_enable_desc">再生傾向に基づくAIのおすすめを自動的に追加します</string>
     <string name="echo_brain_profile_statistics">プロフィール統計</string>
     <string name="echo_brain_learning_level">学習レベル</string>

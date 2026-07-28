@@ -54,12 +54,7 @@ fun AccountSettingsScreen(
     val context = LocalContext.current
     val uriHandler = LocalUriHandler.current
 
-    val (accountNamePref, _) = rememberPreference(AccountNameKey, "")
-    val (accountEmail, _) = rememberPreference(AccountEmailKey, "")
-    val (accountChannelHandle, _) = rememberPreference(AccountChannelHandleKey, "")
     val (innerTubeCookie, onInnerTubeCookieChange) = rememberPreference(InnerTubeCookieKey, "")
-    val (visitorData, _) = rememberPreference(VisitorDataKey, "")
-    val (dataSyncId, _) = rememberPreference(DataSyncIdKey, "")
 
     val (listenBrainzEnabled, onListenBrainzEnabledChange) = rememberPreference(ListenBrainzEnabledKey, false)
     val (listenBrainzToken, onListenBrainzTokenChange) = rememberPreference(ListenBrainzTokenKey, "")
@@ -75,8 +70,6 @@ fun AccountSettingsScreen(
     val accountName by homeViewModel.accountName.collectAsState()
     val accountImageUrl by homeViewModel.accountImageUrl.collectAsState()
 
-    var showToken by remember { mutableStateOf(false) }
-    var showTokenEditor by remember { mutableStateOf(false) }
     var showLogoutDialog by remember { mutableStateOf(false) }
     var showListenBrainzTokenEditor by remember { mutableStateOf(false) }
 
@@ -128,7 +121,7 @@ fun AccountSettingsScreen(
                                     Spacer(modifier = Modifier.width(12.dp))
                                 }
                                 Text(
-                                    text = if (isLoggedIn) accountName else stringResource(R.string.login),
+                                    text = if (isLoggedIn) accountName else stringResource(R.string.continue_with_google),
                                     color = MaterialTheme.colorScheme.primary,
                                     style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold)
                                 )
@@ -154,33 +147,6 @@ fun AccountSettingsScreen(
                         onClick = {
                             if (isLoggedIn) navController.navigate("account")
                             else navController.navigate("login")
-                        }
-                    )
-                )
-            )
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            
-            Material3SettingsGroup(scrollState = scrollState, 
-                title = stringResource(R.string.advanced_login),
-                items = listOf(
-                    Material3SettingsItem(
-    isHighlighted = (highlightKey == stringResource(R.string.advanced_login) || highlightKey == stringResource(R.string.token_shown) || highlightKey == stringResource(R.string.token_hidden)),
-                        icon = painterResource(R.drawable.token),
-                        title = {
-                            Text(
-                                when {
-                                    !isLoggedIn -> stringResource(R.string.advanced_login)
-                                    showToken -> stringResource(R.string.token_shown)
-                                    else -> stringResource(R.string.token_hidden)
-                                }
-                            )
-                        },
-                        onClick = {
-                            if (!isLoggedIn) showTokenEditor = true
-                            else if (!showToken) showToken = true
-                            else showTokenEditor = true
                         }
                     )
                 )
@@ -305,60 +271,6 @@ fun AccountSettingsScreen(
             Spacer(modifier = Modifier.height(16.dp))
         }
 
-        if (showTokenEditor) {
-            val text = """
-                ***INNERTUBE COOKIE*** =$innerTubeCookie
-                ***VISITOR DATA*** =$visitorData
-                ***DATASYNC ID*** =$dataSyncId
-                ***ACCOUNT NAME*** =$accountNamePref
-                ***ACCOUNT EMAIL*** =$accountEmail
-                ***ACCOUNT CHANNEL HANDLE*** =$accountChannelHandle
-            """.trimIndent()
-
-            TextFieldDialog(
-                initialTextFieldValue = TextFieldValue(text),
-                onDone = { data ->
-                    var cookie = ""
-                    var visitorDataValue = ""
-                    var dataSyncIdValue = ""
-                    var accountNameValue = ""
-                    var accountEmailValue = ""
-                    var accountChannelHandleValue = ""
-
-                    data.split("\n").forEach {
-                        when {
-                            it.startsWith("***INNERTUBE COOKIE*** =") -> cookie = it.substringAfter("=")
-                            it.startsWith("***VISITOR DATA*** =") -> visitorDataValue = it.substringAfter("=")
-                            it.startsWith("***DATASYNC ID*** =") -> dataSyncIdValue = it.substringAfter("=")
-                            it.startsWith("***ACCOUNT NAME*** =") -> accountNameValue = it.substringAfter("=")
-                            it.startsWith("***ACCOUNT EMAIL*** =") -> accountEmailValue = it.substringAfter("=")
-                            it.startsWith("***ACCOUNT CHANNEL HANDLE*** =") -> accountChannelHandleValue = it.substringAfter("=")
-                        }
-                    }
-                    accountSettingsViewModel.saveTokenAndRestart(
-                        context = context,
-                        cookie = cookie,
-                        visitorData = visitorDataValue,
-                        dataSyncId = dataSyncIdValue,
-                        accountName = accountNameValue,
-                        accountEmail = accountEmailValue,
-                        accountChannelHandle = accountChannelHandleValue,
-                    )
-                },
-                onDismiss = { showTokenEditor = false },
-                singleLine = false,
-                maxLines = 20,
-                isInputValid = { fullText ->
-                    val cookieLine = fullText.lines()
-                        .find { it.startsWith("***INNERTUBE COOKIE*** =") }
-                    val cookieValue = cookieLine?.substringAfter("***INNERTUBE COOKIE*** =")?.trim() ?: ""
-                    cookieValue.isNotEmpty() && "SAPISID" in parseCookieString(cookieValue)
-                },
-                extraContent = {
-                    InfoLabel(text = stringResource(R.string.token_adv_login_description))
-                }
-            )
-        }
         if (showLogoutDialog) {
             DefaultDialog(
                 onDismiss = { showLogoutDialog = false },

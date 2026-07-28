@@ -273,7 +273,7 @@
     <string name="action_restore">Gjenopprett</string>
     <string name="imported_playlist">Spilleliste importert</string>
     <string name="action_logout">Logg ut</string>
-    <string name="discord_information">echomusic bruker KizzyRPC for å stille inn statusen på Discord-kontoen din. Dette innebærer bruk ave Discord Gateway-portneren, som kan anses som et brudd på Discords tjenestevilkår. Det finnes dog ingen kjente tilfelle av suspenderte brukerkonter på denne grunnen. Bruk på egen risiko. \n \nechomusic henter bare inn symbolet ditt, og alt annet blir lagret lokalt.</string>
+    <string name="discord_information">Meloqis connects to Discord using OAuth with PKCE. Sign-in happens in your browser; your password is never collected. Access credentials are stored on this device and can be revoked by signing out.</string>
     <string name="preview">Forhåndsvisning</string>
     <string name="about">Om</string>
     <!-- Bottom navigation -->
@@ -339,7 +339,7 @@
     <string name="listen_together_smart_resync">Smart nettverkssynkronisering</string>
     <string name="listen_together_smart_resync_desc">Ta automatisk igjen verten etter et tilkoblingsbrudd</string>
     <string name="spotify_import_title">Importer fra Spotify</string>
-    <string name="spotify_import_desc">Koble til Spotify, velg spillelister, og speil dem til lokale Echo Music-spillelister.</string>
+    <string name="spotify_import_desc">Koble til Spotify, velg spillelister, og speil dem til lokale Meloqis Music-spillelister.</string>
     <string name="spotify_connect">Koble til Spotify</string>
     <string name="spotify_refresh">Oppdater Spotify-biblioteket</string>
     <string name="spotify_select_sources">Velg Spotify-spillelister</string>
@@ -402,10 +402,10 @@
     <string name="recognition_notification_processing">Identifiserer…</string>
     <string name="recognition_notification_no_match">Fant ingen treff</string>
     <string name="recognition_notification_failed">Gjenkjenningen mislyktes</string>
-    <string name="listen_on_echo_music">Lytt på Echo Music</string>
+    <string name="listen_on_echo_music">Lytt på Meloqis Music</string>
     <string name="qs_tile_music_recognizer">Gjenkjenn musikk</string>
-    <string name="echo_brain_beta">Echo Brain (beta)</string>
-    <string name="echo_brain_enable">Aktiver Echo Brain</string>
+    <string name="echo_brain_beta">Meloqis Brain (beta)</string>
+    <string name="echo_brain_enable">Aktiver Meloqis Brain</string>
     <string name="echo_brain_enable_desc">Legg automatisk til KI-anbefalinger basert på lyttevanene dine</string>
     <string name="echo_brain_profile_statistics">Profilstatistikk</string>
     <string name="echo_brain_learning_level">Læringsnivå</string>

@@ -282,7 +282,7 @@
     <string name="backup_create_failed">Не вдалося створити резервну копію</string>
     <string name="restore_failed">Не вдалося відновити з резервної копії</string>
     <string name="discord_integration">Інтеграція з Discord</string>
-    <string name="discord_information">echomusic використовує бібліотеку KizzyRPC для встановлення статусу вашого облікового запису Discord. Це передбачає підключення через Discord Gateway, що може вважатися порушенням Умов використання Discord. Проте немає відомих випадків блокування акаунтів через це. Використовуйте на свій страх і ризик.\nechomusic лише витягує ваш токен, а всі інші дані зберігаються локально.</string>
+    <string name="discord_information">Meloqis connects to Discord using OAuth with PKCE. Sign-in happens in your browser; your password is never collected. Access credentials are stored on this device and can be revoked by signing out.</string>
     <string name="dismiss">Закрити</string>
     <string name="options">Налаштування</string>
     <string name="preview">Попередній перегляд</string>
@@ -362,7 +362,7 @@
     <string name="listen_together_smart_resync">Розумна ресинхронізація мережі</string>
     <string name="listen_together_smart_resync_desc">Автоматично наздоганяти хоста після розриву з\'єднання</string>
     <string name="spotify_import_title">Імпортувати із Spotify</string>
-    <string name="spotify_import_desc">Підключіть Spotify, виберіть плейлісти та скопіюйте їх у локальні плейлісти Echo Music.</string>
+    <string name="spotify_import_desc">Підключіть Spotify, виберіть плейлісти та скопіюйте їх у локальні плейлісти Meloqis Music.</string>
     <string name="spotify_connect">Підключити Spotify</string>
     <string name="spotify_refresh">Оновити бібліотеку Spotify</string>
     <string name="spotify_select_sources">Виберіть плейлисти Spotify</string>
@@ -388,10 +388,10 @@
     <string name="spotify_waiting_for_login">Очікування входу в Spotify</string>
     <string name="export_directory_unavailable">Не вдалося отримати доступ до папки експорту на цьому пристрої. Будь ласка, вкажіть її вручну.</string>
     <string name="loading">Завантаження</string>
-    <string name="listen_on_echo_music">Слухати на Echo Music</string>
+    <string name="listen_on_echo_music">Слухати на Meloqis Music</string>
     <string name="qs_tile_music_recognizer">Розпізнати музику</string>
-    <string name="echo_brain_beta">Echo Brain (Бета)</string>
-    <string name="echo_brain_enable">Увімкнути Echo Brain</string>
+    <string name="echo_brain_beta">Meloqis Brain (Бета)</string>
+    <string name="echo_brain_enable">Увімкнути Meloqis Brain</string>
     <string name="echo_brain_enable_desc">Автоматично додавати пропозиції на основі ШІ, враховуючи ваші музичні вподобання</string>
     <string name="echo_brain_profile_statistics">Статистика профілю</string>
     <string name="echo_brain_learning_level">Рівень навчання</string>

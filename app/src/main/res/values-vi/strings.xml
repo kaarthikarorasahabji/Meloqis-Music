@@ -266,7 +266,7 @@
     <string name="auto_skip_next_on_error_desc">Đảm bảo trải nghiệm phát lại liên tục của bạn</string>
     <string name="search_history">Lịch sử tìm kiếm</string>
     <string name="disable_screenshot_desc">Khi tùy chọn này được bật, ảnh chụp màn hình và chế độ xem ứng dụng trong mục Gần đây sẽ bị vô hiệu hóa.</string>
-    <string name="discord_information">echomusic sử dụng thư viện KizzyRPC để thiết lập trạng thái tài khoản Discord của bạn. Điều này liên quan đến việc sử dụng kết nối Discord Gateway, có thể được coi là vi phạm TOS của Discord. Tuy nhiên, không có trường hợp nào được biết đến về việc tài khoản người dùng bị đình chỉ vì lý do này. Sử dụng theo rủi ro của riêng bạn. \n \nechomusic sẽ chỉ trích xuất mã thông báo của bạn và mọi thứ khác được lưu trữ cục bộ.</string>
+    <string name="discord_information">Meloqis connects to Discord using OAuth with PKCE. Sign-in happens in your browser; your password is never collected. Access credentials are stored on this device and can be revoked by signing out.</string>
     <string name="use_login_for_browse">Đăng nhập để xem nội dung</string>
     <string name="use_login_for_browse_desc">Điều này có thể ảnh hưởng đến nội dung bạn nhìn thấy, ví dụ như hiện những album dành riêng cho premium nếu bạn đăng nhập với tài khoản Premium</string>
     <string name="action_login">Đăng nhập</string>
@@ -326,7 +326,7 @@
     <string name="listen_together_smart_resync">Đồng bộ lại mạng thông minh</string>
     <string name="listen_together_smart_resync_desc">Tự động bắt kịp máy chủ sau khi mất kết nối</string>
     <string name="spotify_import_title">Nhập từ Spotify</string>
-    <string name="spotify_import_desc">Kết nối Spotify, chọn danh sách phát và phản chiếu chúng vào danh sách phát Echo Music cục bộ.</string>
+    <string name="spotify_import_desc">Kết nối Spotify, chọn danh sách phát và phản chiếu chúng vào danh sách phát Meloqis Music cục bộ.</string>
     <string name="spotify_connect">Kết nối Spotify</string>
     <string name="spotify_refresh">Làm mới thư viện Spotify</string>
     <string name="spotify_select_sources">Chọn danh sách phát Spotify</string>
@@ -389,10 +389,10 @@
     <string name="recognition_notification_processing">Đang nhận diện…</string>
     <string name="recognition_notification_no_match">Không tìm thấy kết quả phù hợp</string>
     <string name="recognition_notification_failed">Nhận diện thất bại</string>
-    <string name="listen_on_echo_music">Nghe trên Echo Music</string>
+    <string name="listen_on_echo_music">Nghe trên Meloqis Music</string>
     <string name="qs_tile_music_recognizer">Nhận diện nhạc</string>
-    <string name="echo_brain_beta">Echo Brain (Beta)</string>
-    <string name="echo_brain_enable">Bật Echo Brain</string>
+    <string name="echo_brain_beta">Meloqis Brain (Beta)</string>
+    <string name="echo_brain_enable">Bật Meloqis Brain</string>
     <string name="echo_brain_enable_desc">Tự động thêm các đề xuất của AI dựa trên thói quen nghe nhạc của bạn</string>
     <string name="echo_brain_profile_statistics">Thống kê hồ sơ</string>
     <string name="echo_brain_learning_level">Mức độ học hỏi</string>

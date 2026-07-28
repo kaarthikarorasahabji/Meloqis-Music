@@ -838,7 +838,7 @@
     <string name="button_text">Button text</string>
     <string name="button_visible">Visible</string>
     <string name="login_successful">Login successful!</string>
-    <string name="discord_information_warning">This feature uses the KizzyRPC library to connect to Discord\'s Gateway and set your Rich Presence status. While no known account suspensions have occurred from similar usage, this method is not officially supported by Discord and may be considered a Terms of Service violation. Your token is extracted locally and never sent to third-party servers. Proceed at your own discretion.</string>
+    <string name="discord_information_warning">Meloqis connects to Discord using OAuth with PKCE. Sign-in happens in your browser; your password is never collected. Access credentials are stored on this device and can be revoked by signing out.</string>
     <string name="discord_activity_type">Activity type</string>
     <string name="discord_activity_playing">Playing</string>
     <string name="discord_activity_listening">Listening</string>

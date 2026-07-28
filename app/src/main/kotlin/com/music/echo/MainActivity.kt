@@ -265,6 +265,7 @@ class MainActivity : ComponentActivity() {
                 try {
                     playerConnection = PlayerConnection(this@MainActivity, service, database, lifecycleScope)
                     Timber.tag("MainActivity").d("PlayerConnection created successfully")
+                    service.service.markAppTaskPresent()
                     
                     listenTogetherManager.setPlayerConnection(playerConnection)
                 } catch (e: Exception) {
@@ -293,6 +294,12 @@ class MainActivity : ComponentActivity() {
 
     override fun onStart() {
         super.onStart()
+
+        // A playing service can outlive the app task. Tell it that the Meloqis UI is visible
+        // again so an enabled capsule can be recreated after task dismissal.
+        if (MusicService.isRunning) {
+            notifyPlaybackServiceThatTaskIsPresent()
+        }
         
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
@@ -308,6 +315,13 @@ class MainActivity : ComponentActivity() {
             Intent(this, MusicService::class.java),
             serviceConnection,
             BIND_AUTO_CREATE
+        )
+    }
+
+    private fun notifyPlaybackServiceThatTaskIsPresent() {
+        startService(
+            Intent(this, MusicService::class.java)
+                .setAction(MusicService.ACTION_APP_TASK_PRESENT)
         )
     }
 

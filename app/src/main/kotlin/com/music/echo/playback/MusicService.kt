@@ -461,6 +461,7 @@ class MusicService :
 
     private var scrobbleManager: ScrobbleManager? = null
     private var nowCapsuleOverlayController: NowCapsuleOverlayController? = null
+    private var appTaskPresent = false
 
     private var listenBrainzEnabled = false
     private var listenBrainzToken = ""
@@ -654,26 +655,8 @@ class MusicService :
                 .map { it[NowCapsuleEnabledKey] ?: false }
                 .distinctUntilChanged()
                 .collect { enabled ->
-                    if (enabled && Settings.canDrawOverlays(this@MusicService)) {
-                        val controller = nowCapsuleOverlayController
-                            ?: NowCapsuleOverlayController(
-                                context = this@MusicService,
-                                onTogglePlayback = {
-                                    if (player.isPlaying) player.pause() else player.play()
-                                },
-                                onPrevious = { player.seekToPreviousMediaItem() },
-                                onNext = { player.seekToNextMediaItem() },
-                                onSeekTo = { positionMs -> player.seekTo(positionMs) },
-                                positionProvider = { player.currentPosition },
-                                durationProvider = { player.duration },
-                                onOpenApp = {
-                                    startActivity(
-                                        Intent(this@MusicService, MainActivity::class.java)
-                                            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP)
-                                    )
-                                },
-                            ).also { nowCapsuleOverlayController = it }
-                        controller.showOrUpdate(player.currentMetadata, player.isPlaying)
+                    if (enabled && appTaskPresent) {
+                        showNowCapsuleIfAllowed()
                     } else {
                         nowCapsuleOverlayController?.dispose()
                         nowCapsuleOverlayController = null
@@ -3424,6 +3407,12 @@ class MusicService :
     override fun onTaskRemoved(rootIntent: Intent?) {
         super.onTaskRemoved(rootIntent)
 
+        // The playback service may intentionally survive task dismissal, but the capsule is
+        // an app UI surface and must not remain floating after Meloqis has been closed.
+        appTaskPresent = false
+        nowCapsuleOverlayController?.dispose()
+        nowCapsuleOverlayController = null
+
         // Keep background playback alive when the user dismisses the UI while a song is
         // actually playing. If playback is paused/stopped, however, there is no reason to
         // retain the foreground service or its MediaSession notification.
@@ -3449,6 +3438,9 @@ class MusicService :
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         when (intent?.action) {
+            ACTION_APP_TASK_PRESENT -> {
+                markAppTaskPresent()
+            }
             MusicWidgetReceiver.ACTION_PLAY_PAUSE -> {
                 if (player.isPlaying) player.pause() else player.play()
                 updateWidgetUI(player.isPlaying)
@@ -3478,6 +3470,40 @@ class MusicService :
         }
 
         return super.onStartCommand(intent, flags, startId)
+    }
+
+    fun markAppTaskPresent() {
+        appTaskPresent = true
+        showNowCapsuleIfAllowed()
+    }
+
+    private fun showNowCapsuleIfAllowed() {
+        if (!appTaskPresent || !::player.isInitialized || !Settings.canDrawOverlays(this)) return
+
+        scope.launch {
+            val enabled = dataStore.data.first()[NowCapsuleEnabledKey] ?: false
+            if (!enabled || !appTaskPresent) return@launch
+
+            val controller = nowCapsuleOverlayController
+                ?: NowCapsuleOverlayController(
+                    context = this@MusicService,
+                    onTogglePlayback = {
+                        if (player.isPlaying) player.pause() else player.play()
+                    },
+                    onPrevious = { player.seekToPreviousMediaItem() },
+                    onNext = { player.seekToNextMediaItem() },
+                    onSeekTo = { positionMs -> player.seekTo(positionMs) },
+                    positionProvider = { player.currentPosition },
+                    durationProvider = { player.duration },
+                    onOpenApp = {
+                        startActivity(
+                            Intent(this@MusicService, MainActivity::class.java)
+                                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP)
+                        )
+                    },
+                ).also { nowCapsuleOverlayController = it }
+            controller.showOrUpdate(player.currentMetadata, player.isPlaying)
+        }
     }
 
     
@@ -4240,6 +4266,7 @@ class MusicService :
         const val YOUTUBE_PLAYLIST = "youtube_playlist"
         const val SEARCH = "search"
         const val SHUFFLE_ACTION = "__shuffle__"
+        const val ACTION_APP_TASK_PRESENT = "in.axenoraai.meloqis.action.APP_TASK_PRESENT"
 
         const val CHANNEL_ID = "music_channel_01"
         const val NOTIFICATION_ID = 888

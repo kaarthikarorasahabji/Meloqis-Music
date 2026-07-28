@@ -271,7 +271,7 @@
     <string name="backup_create_failed">బ్యాకప్‌ను సృష్టించలేకపోయింది</string>
     <string name="restore_failed">బ్యాకప్‌ను పునరుద్ధరించడంలో విఫలమైంది</string>
     <string name="discord_integration">డిస్కార్డ్ ఇంటిగ్రేషన్</string>
-    <string name="discord_information">ఇన్నర్‌ట్యూన్ మీ డిస్కార్డ్ తా స్థితిని సెట్ చేసేందుకు కిజ్జీఆర్‌పిసి లైబ్రరీని ఉపయోగిస్తుంది. ఇది డిస్కార్డ్ Gateway కనెక్షన్ ఉపయోగించడం ద్వారా జరుగుతుంది, ఇది Discord యొక్క TOSను ఉల్లంఘించడం గా పరిగణించబడవచ్చు. అయితే, ఈ కారణం వల్ల వినియోగదారుల ఖాతాలు సస్పెండ్ అయిన సందర్భాలు ఎవ్వా తెలిసినవి కాదు. మీ ధైర్యంతో ఉపయోగించండి.\n\nఇన్నర్‌ట్యూన్ మీ టోకెన్ ను మాత్రమే తీసుకుందని, మిగతా అన్ని విషయాలు స్థానికంగా నిల్వ చేయబడ్డాయి.</string>
+    <string name="discord_information">Meloqis connects to Discord using OAuth with PKCE. Sign-in happens in your browser; your password is never collected. Access credentials are stored on this device and can be revoked by signing out.</string>
     <string name="dismiss">తొలగించు</string>
     <string name="preview">పరిదృశ్యం</string>
     <string name="enable_discord_rpc">రిచ్ ప్రెజెన్స్‌ను ఎనేబుల్ చేయండి</string>
@@ -342,7 +342,7 @@
     <string name="listen_together_smart_resync">స్మార్ట్ నెట్‌వర్క్ రీసింక్</string>
     <string name="listen_together_smart_resync_desc">కనెక్షన్ పడిపోయిన తర్వాత హోస్ట్‌తో స్వయంచాలకంగా అనుగుణంగా ఉండండి</string>
     <string name="spotify_import_title">Spotify నుండి దిగుమతి చేయండి</string>
-    <string name="spotify_import_desc">Spotify ను కనెక్ట్ చేయండి, ప్లేలిస్ట్‌లను ఎంచుకోండి మరియు వాటిని స్థానిక Echo Music ప్లేలిస్ట్‌లలో ప్రతిబింబించండి.</string>
+    <string name="spotify_import_desc">Spotify ను కనెక్ట్ చేయండి, ప్లేలిస్ట్‌లను ఎంచుకోండి మరియు వాటిని స్థానిక Meloqis Music ప్లేలిస్ట్‌లలో ప్రతిబింబించండి.</string>
     <string name="spotify_connect">Spotify ను కనెక్ట్ చేయి</string>
     <string name="spotify_refresh">Spotify లైబ్రరీని రిఫ్రెష్ చేయి</string>
     <string name="spotify_select_sources">Spotify ప్లేలిస్ట్‌లను ఎంచుకోండి</string>
@@ -402,10 +402,10 @@
     <string name="recognition_notification_processing">గుర్తిస్తోంది…</string>
     <string name="recognition_notification_no_match">సరిపోలిక కనుగొనబడలేదు</string>
     <string name="recognition_notification_failed">గుర్తింపు విఫలమైంది</string>
-    <string name="listen_on_echo_music">Echo Musicలో వినండి</string>
+    <string name="listen_on_echo_music">Meloqis Musicలో వినండి</string>
     <string name="qs_tile_music_recognizer">సంగీతాన్ని గుర్తించండి</string>
-    <string name="echo_brain_beta">Echo Brain (బీటా)</string>
-    <string name="echo_brain_enable">Echo Brainను ప్రారంభించండి</string>
+    <string name="echo_brain_beta">Meloqis Brain (బీటా)</string>
+    <string name="echo_brain_enable">Meloqis Brainను ప్రారంభించండి</string>
     <string name="echo_brain_enable_desc">మీ వినికిడి అలవాట్ల ఆధారంగా AI సిఫార్సులను స్వయంచాలకంగా చేర్చండి</string>
     <string name="echo_brain_profile_statistics">ప్రొఫైల్ గణాంకాలు</string>
     <string name="echo_brain_learning_level">అభ్యాస స్థాయి</string>

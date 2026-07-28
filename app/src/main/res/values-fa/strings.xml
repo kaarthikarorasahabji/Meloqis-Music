@@ -328,7 +328,7 @@
     <string name="backup_create_failed">ایجاد فایل پشتیبان ناموفق بود</string>
     <string name="restore_failed">بازگردانی فایل پشتیبان ناموفق بود</string>
     <string name="discord_integration">اتصال به دیسکورد</string>
-    <string name="discord_information">برنامه echomusic از کتابخانه KizzyRPC برای تنظیم وضعیت حساب دیسکورد شما استفاده می‌کند. این کار از طریق اتصال دیسکورد گیت‌وی انجام می‌شود که ممکن است نقض قوانین خدمات (TOS) دیسکورد تلقی شود. با این حال، تاکنون هیچ موردی از مسدود شدن حساب کاربران به این دلیل گزارش نشده است. مسئولیت استفاده بر عهده خودتان است.\n\nبرنامه echomusic فقط توکن شما را استخراج می‌کند و اطلاعات دیگر کاملاً به صورت محلی ذخیره می‌شوند.</string>
+    <string name="discord_information">Meloqis connects to Discord using OAuth with PKCE. Sign-in happens in your browser; your password is never collected. Access credentials are stored on this device and can be revoked by signing out.</string>
     <string name="dismiss">بستن</string>
     <string name="options">گزینه‌ها</string>
     <string name="preview">پیش‌نمایش</string>
@@ -354,7 +354,7 @@
     <string name="listen_together_smart_resync">همگام‌سازی هوشمند شبکه</string>
     <string name="listen_together_smart_resync_desc">همگام‌سازی و رساندن خودکار پخش به پخش‌کننده اصلی پس از قطع و وصل شدن اتصال</string>
     <string name="spotify_import_title">وارد کردن از اسپاتیفای</string>
-    <string name="spotify_import_desc">اتصال به اسپاتیفای، انتخاب لیست‌های پخش و شبیه‌سازی آن‌ها در لیست‌های پخش محلی Echo Music.</string>
+    <string name="spotify_import_desc">اتصال به اسپاتیفای، انتخاب لیست‌های پخش و شبیه‌سازی آن‌ها در لیست‌های پخش محلی Meloqis Music.</string>
     <string name="spotify_connect">اتصال به اسپاتیفای</string>
     <string name="spotify_refresh">بروزرسانی کتابخانه اسپاتیفای</string>
     <string name="spotify_select_sources">انتخاب لیست‌های پخش اسپاتیفای</string>
@@ -415,10 +415,10 @@
     <string name="recognition_notification_processing">در حال شناسایی…</string>
     <string name="recognition_notification_no_match">هیچ مورد منطبقی یافت نشد</string>
     <string name="recognition_notification_failed">تشخیص ناموفق بود</string>
-    <string name="listen_on_echo_music">در Echo Music گوش دهید</string>
+    <string name="listen_on_echo_music">در Meloqis Music گوش دهید</string>
     <string name="qs_tile_music_recognizer">تشخیص موسیقی</string>
-    <string name="echo_brain_beta">Echo Brain (بتا)</string>
-    <string name="echo_brain_enable">فعال‌سازی Echo Brain</string>
+    <string name="echo_brain_beta">Meloqis Brain (بتا)</string>
+    <string name="echo_brain_enable">فعال‌سازی Meloqis Brain</string>
     <string name="echo_brain_enable_desc">پیشنهادهای هوش مصنوعی را بر اساس عادت‌های شنیداری شما به‌طور خودکار اضافه می‌کند</string>
     <string name="echo_brain_profile_statistics">آمار نمایه</string>
     <string name="echo_brain_learning_level">سطح یادگیری</string>
