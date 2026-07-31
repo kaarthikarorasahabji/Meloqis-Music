@@ -5,11 +5,21 @@ import androidx.compose.foundation.horizontalScroll
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.focusGroup
 import androidx.compose.foundation.focusable
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.gestures.snapping.rememberSnapFlingBehavior
@@ -76,6 +86,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
@@ -111,6 +122,7 @@ import com.music.innertube.YouTube
 import iad1tya.echo.music.constants.GridItemSize
 import iad1tya.echo.music.constants.GridItemsSizeKey
 import iad1tya.echo.music.constants.GridThumbnailHeight
+import iad1tya.echo.music.constants.AnonymousDisplayNameKey
 import iad1tya.echo.music.constants.InnerTubeCookieKey
 import iad1tya.echo.music.constants.ListItemHeight
 import iad1tya.echo.music.constants.ListThumbnailSize
@@ -130,6 +142,7 @@ import iad1tya.echo.music.LocalDatabase
 import iad1tya.echo.music.LocalPlayerAwareWindowInsets
 import iad1tya.echo.music.LocalPlayerConnection
 import iad1tya.echo.music.models.toMediaMetadata
+import iad1tya.echo.music.models.MediaMetadata
 import iad1tya.echo.music.playback.queues.ListQueue
 import iad1tya.echo.music.playback.queues.LocalAlbumRadio
 import iad1tya.echo.music.playback.queues.YouTubeAlbumRadio
@@ -560,6 +573,399 @@ fun DailyDiscoverCard(
 }
 
 
+@Composable
+private fun MeloqisHomeHeader(
+    accountName: String,
+    accountImageUrl: String?,
+    mediaMetadata: MediaMetadata?,
+    isPlaying: Boolean,
+    onSearchClick: () -> Unit,
+    onProfileClick: () -> Unit,
+    onNowPlayingClick: () -> Unit,
+    onHistoryClick: () -> Unit,
+    onStatsClick: () -> Unit,
+    onTogetherClick: () -> Unit,
+) {
+    var visible by remember { mutableStateOf(false) }
+    LaunchedEffect(Unit) {
+        visible = true
+    }
+
+    val greeting = stringResource(
+        when (java.time.LocalTime.now().hour) {
+            in 5..11 -> R.string.good_morning
+            in 12..16 -> R.string.good_afternoon
+            else -> R.string.good_evening
+        }
+    )
+    val firstName = accountName
+        .trim()
+        .substringBefore(" ")
+        .takeIf { it.isNotBlank() && !it.equals("You", ignoreCase = true) }
+    // Keep the cinematic hand-off when playback changes without continuously
+    // redrawing the full-width artwork layer while the user scrolls.
+    val artworkPulse by animateFloatAsState(
+        targetValue = if (isPlaying) 1.018f else 1f,
+        animationSpec = tween(durationMillis = 700),
+        label = "artwork_pulse",
+    )
+    val ambientDrift by animateFloatAsState(
+        targetValue = if (isPlaying) 24f else -24f,
+        animationSpec = tween(durationMillis = 900),
+        label = "home_ambient_drift",
+    )
+    val logoMotion = if (isPlaying) {
+        val transition = rememberInfiniteTransition(label = "meloqis_logo_playing")
+        transition.animateFloat(
+            initialValue = 0f,
+            targetValue = 1f,
+            animationSpec = infiniteRepeatable(
+                animation = tween(durationMillis = 900),
+                repeatMode = RepeatMode.Reverse,
+            ),
+            label = "meloqis_logo_pulse",
+        ).value
+    } else {
+        0f
+    }
+
+    AnimatedVisibility(
+        visible = visible,
+        enter = fadeIn(tween(450)) + slideInVertically(
+            animationSpec = tween(520),
+            initialOffsetY = { -it / 5 },
+        ),
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(if (mediaMetadata == null) 310.dp else 370.dp),
+        ) {
+            if (mediaMetadata != null) {
+                AsyncImage(
+                    model = ImageRequest.Builder(LocalContext.current)
+                        .data(mediaMetadata.thumbnailUrl)
+                        .size(720, 720)
+                        .crossfade(true)
+                        .build(),
+                    contentDescription = null,
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .graphicsLayer {
+                            scaleX = artworkPulse
+                            scaleY = artworkPulse
+                            alpha = 0.34f
+                        },
+                )
+            }
+
+            Box(
+                modifier = Modifier
+                    .size(210.dp)
+                    .graphicsLayer {
+                        translationX = ambientDrift
+                        translationY = -52f
+                        alpha = if (mediaMetadata == null) 0.13f else 0.08f
+                    }
+                    .clip(CircleShape)
+                    .background(MaterialTheme.colorScheme.primary),
+            )
+
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(
+                        Brush.verticalGradient(
+                            listOf(
+                                MaterialTheme.colorScheme.background.copy(alpha = 0.16f),
+                                MaterialTheme.colorScheme.background.copy(alpha = 0.60f),
+                                MaterialTheme.colorScheme.background,
+                            )
+                        )
+                    ),
+            )
+
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(start = 20.dp, top = 18.dp, end = 20.dp, bottom = 14.dp),
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.weight(1f),
+                    ) {
+                        Box(
+                            contentAlignment = Alignment.Center,
+                            modifier = Modifier
+                                .size(38.dp)
+                                .graphicsLayer {
+                                    scaleX = 1f + logoMotion * 0.07f
+                                    scaleY = 1f + logoMotion * 0.07f
+                                    rotationZ = -2f + logoMotion * 4f
+                                }
+                                .clip(RoundedCornerShape(12.dp))
+                                .border(
+                                    1.dp,
+                                    MaterialTheme.colorScheme.primary.copy(
+                                        alpha = 0.35f + logoMotion * 0.45f,
+                                    ),
+                                    RoundedCornerShape(12.dp),
+                                ),
+                        ) {
+                            AsyncImage(
+                                model = R.mipmap.ic_launcher,
+                                contentDescription = "Meloqis",
+                                contentScale = ContentScale.Crop,
+                                modifier = Modifier.fillMaxSize(),
+                            )
+                        }
+                        Column(modifier = Modifier.padding(start = 10.dp)) {
+                            Text(
+                                text = stringResource(R.string.meloqis_wordmark),
+                                style = MaterialTheme.typography.labelLarge,
+                                fontWeight = FontWeight.Black,
+                                color = MaterialTheme.colorScheme.onBackground,
+                            )
+                            Text(
+                                text = "YOUR SOUNDSPACE",
+                                style = MaterialTheme.typography.labelSmall,
+                                fontWeight = FontWeight.SemiBold,
+                                color = MaterialTheme.colorScheme.primary,
+                            )
+                        }
+                        if (isPlaying) {
+                            MeloqisEqualizer(
+                                active = true,
+                                modifier = Modifier
+                                    .padding(start = 10.dp)
+                                    .width(28.dp),
+                            )
+                        }
+                    }
+
+                    Box(
+                        contentAlignment = Alignment.Center,
+                        modifier = Modifier
+                            .size(48.dp)
+                            .clip(CircleShape)
+                            .border(
+                                1.dp,
+                                MaterialTheme.colorScheme.primary.copy(alpha = 0.45f),
+                                CircleShape,
+                            )
+                            .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.70f))
+                            .combinedClickable(
+                                onClick = onProfileClick,
+                                onLongClick = onProfileClick,
+                            ),
+                    ) {
+                        if (accountImageUrl != null) {
+                            AsyncImage(
+                                model = ImageRequest.Builder(LocalContext.current)
+                                    .data(accountImageUrl)
+                                    .diskCachePolicy(CachePolicy.ENABLED)
+                                    .diskCacheKey(accountImageUrl)
+                                    .crossfade(true)
+                                    .build(),
+                                contentDescription = null,
+                                contentScale = ContentScale.Crop,
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .padding(3.dp)
+                                    .clip(CircleShape),
+                            )
+                        } else {
+                            Icon(
+                                painter = painterResource(R.drawable.person),
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.primary,
+                            )
+                        }
+                    }
+                }
+
+                Spacer(Modifier.weight(1f))
+
+                Text(
+                    text = if (firstName == null) greeting else "$greeting, $firstName",
+                    style = MaterialTheme.typography.displaySmall,
+                    fontWeight = FontWeight.Black,
+                    color = MaterialTheme.colorScheme.onBackground,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                Text(
+                    text = "Music that moves with your moment.",
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.70f),
+                    modifier = Modifier.padding(top = 4.dp),
+                )
+
+                if (mediaMetadata != null) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier
+                            .padding(top = 16.dp)
+                            .combinedClickable(
+                                onClick = onNowPlayingClick,
+                                onLongClick = onNowPlayingClick,
+                            ),
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(8.dp)
+                                .graphicsLayer {
+                                    scaleX = if (isPlaying) artworkPulse else 1f
+                                    scaleY = if (isPlaying) artworkPulse else 1f
+                                }
+                                .clip(CircleShape)
+                                .background(MaterialTheme.colorScheme.primary),
+                        )
+                        Text(
+                            text = if (isPlaying) "PLAYING NOW" else "READY TO RESUME",
+                            style = MaterialTheme.typography.labelSmall,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.padding(start = 8.dp),
+                        )
+                        Text(
+                            text = "  ${mediaMetadata.title}",
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.onBackground,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.weight(1f),
+                        )
+                    }
+                }
+
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(9.dp),
+                    modifier = Modifier.padding(top = 18.dp),
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(50.dp)
+                            .clip(RoundedCornerShape(18.dp))
+                            .background(MaterialTheme.colorScheme.onBackground)
+                            .combinedClickable(
+                                onClick = onSearchClick,
+                                onLongClick = onSearchClick,
+                            )
+                            .padding(horizontal = 16.dp),
+                    ) {
+                        Icon(
+                            painter = painterResource(R.drawable.search),
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.background,
+                            modifier = Modifier.size(21.dp),
+                        )
+                        Text(
+                            text = "Search Meloqis",
+                            style = MaterialTheme.typography.bodyMedium,
+                            fontWeight = FontWeight.SemiBold,
+                            color = MaterialTheme.colorScheme.background,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.padding(start = 10.dp),
+                        )
+                    }
+
+                    MeloqisHeaderAction(R.drawable.music_history, onHistoryClick)
+                    MeloqisHeaderAction(R.drawable.stats, onStatsClick)
+                    MeloqisHeaderAction(R.drawable.group_outlined, onTogetherClick)
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun MeloqisHeaderAction(
+    icon: Int,
+    onClick: () -> Unit,
+) {
+    Box(
+        contentAlignment = Alignment.Center,
+        modifier = Modifier
+            .size(50.dp)
+            .clip(RoundedCornerShape(18.dp))
+            .border(
+                1.dp,
+                MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.55f),
+                RoundedCornerShape(18.dp),
+            )
+            .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.72f))
+            .combinedClickable(
+                onClick = onClick,
+                onLongClick = onClick,
+            ),
+    ) {
+        Icon(
+            painter = painterResource(icon),
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.onBackground,
+            modifier = Modifier.size(21.dp),
+        )
+    }
+}
+
+@Composable
+private fun MeloqisEqualizer(
+    active: Boolean,
+    modifier: Modifier = Modifier,
+) {
+    Row(
+        horizontalArrangement = Arrangement.spacedBy(4.dp),
+        verticalAlignment = Alignment.Bottom,
+        modifier = modifier.height(24.dp),
+    ) {
+        repeat(5) { index ->
+            val level = if (active) {
+                val transition = rememberInfiniteTransition(
+                    label = "meloqis_flow_equalizer_$index",
+                )
+                transition.animateFloat(
+                    initialValue = 0.22f + (index * 0.08f),
+                    targetValue = 0.92f - (index * 0.06f),
+                    animationSpec = infiniteRepeatable(
+                        animation = tween(durationMillis = 520 + (index * 120)),
+                        repeatMode = RepeatMode.Reverse,
+                    ),
+                    label = "flow_equalizer_level_$index",
+                ).value
+            } else {
+                0.32f + (index % 3) * 0.12f
+            }
+            Box(
+                modifier = Modifier
+                    .width(4.dp)
+                    .height(24.dp)
+                    .graphicsLayer {
+                        scaleY = level
+                    }
+                    .clip(CircleShape)
+                    .background(
+                        if (active) {
+                            MaterialTheme.colorScheme.primary
+                        } else {
+                            Color.White.copy(alpha = 0.62f)
+                        }
+                    ),
+            )
+        }
+    }
+}
+
+
 @OptIn(ExperimentalFoundationApi::class, ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun HomeScreen(
@@ -591,6 +997,7 @@ fun HomeScreen(
     val allYtItems by viewModel.allYtItems.collectAsState()
     val speedDialItems by viewModel.speedDialItems.collectAsState()
     val selectedChip by viewModel.selectedChip.collectAsState()
+    val isMoodLoading by viewModel.isMoodLoading.collectAsState()
 
     val isLoading: Boolean by viewModel.isLoading.collectAsState()
     val isMoodAndGenresLoading = isLoading && explorePage?.moodAndGenres == null
@@ -604,13 +1011,15 @@ fun HomeScreen(
     val accountName by viewModel.accountName.collectAsState()
     val accountImageUrl by viewModel.accountImageUrl.collectAsState()
     val innerTubeCookie by rememberPreference(InnerTubeCookieKey, "")
-    val (randomizeHomeOrder) = rememberPreference(RandomizeHomeOrderKey, true)
+    val anonymousDisplayName by rememberPreference(AnonymousDisplayNameKey, "")
+    val (randomizeHomeOrder) = rememberPreference(RandomizeHomeOrderKey, false)
     val (showSpeedDial) = rememberPreference(ShowSpeedDialKey, true)
 
 
     val isLoggedIn = remember(innerTubeCookie) {
         "SAPISID" in parseCookieString(innerTubeCookie)
     }
+    val greetingName = if (isLoggedIn) accountName else anonymousDisplayName
     val url = if (isLoggedIn) accountImageUrl else null
 
     val scope = rememberCoroutineScope()
@@ -805,8 +1214,7 @@ fun HomeScreen(
     }
 
     val homeSections = remember(
-        randomizeHomeOrder,
-        randomSeed,
+        selectedChip,
         speedDialItems,
         quickPicks,
         dailyDiscover,
@@ -820,6 +1228,16 @@ fun HomeScreen(
         aiRecommendedPlaylist
     ) {
         val list = mutableListOf<HomeSection>()
+
+        // A selected mood is its own focused feed. Mixing the normal home
+        // modules into it made the pill appear selected while the screen still
+        // looked unchanged.
+        if (selectedChip != null) {
+            homePage?.sections?.indices?.forEach { index ->
+                list.add(HomeSection.HomePageSection(index))
+            }
+            return@remember list
+        }
 
         if (showSpeedDial && speedDialItems.isNotEmpty()) list.add(HomeSection.SpeedDial)
         if (aiRecommendedPlaylist != null && aiRecommendedPlaylist!!.second.isNotEmpty()) list.add(HomeSection.AiRecommendations)
@@ -840,66 +1258,23 @@ fun HomeScreen(
 
         if (explorePage?.moodAndGenres != null) list.add(HomeSection.MoodAndGenres)
 
-        if (randomizeHomeOrder) {
-            list.sortedByDescending { section ->
-                
-                
-                
-                val sectionRandom = Random(randomSeed + section.id.hashCode())
+        val defaultOrder = mapOf(
+            HomeSection.QuickPicks to 1000,
+            HomeSection.SpeedDial to 900,
+            HomeSection.DailyDiscover to 800,
+            HomeSection.KeepListening to 700,
+            HomeSection.AccountPlaylists to 600,
+            HomeSection.ForgottenFavorites to 500,
+            HomeSection.FromTheCommunity to 400,
+            HomeSection.AiRecommendations to 300,
+            HomeSection.MoodAndGenres to 10,
+        )
 
-                
-                
-                val base = when (section) {
-                    HomeSection.QuickPicks -> 10000
-                    HomeSection.SpeedDial,
-                    HomeSection.DailyDiscover -> 500 
-
-                    HomeSection.KeepListening,
-                    HomeSection.AccountPlaylists,
-                    HomeSection.ForgottenFavorites,
-                    HomeSection.FromTheCommunity -> 300 
-
-                    else -> 100 
-                }
-
-                val modifier = when (section) {
-                    
-                    
-                    HomeSection.QuickPicks -> 0
-                    HomeSection.SpeedDial,
-                    HomeSection.DailyDiscover -> sectionRandom.nextInt(-200, 400)
-
-                    
-                    
-                    
-                    HomeSection.KeepListening,
-                    HomeSection.AccountPlaylists,
-                    HomeSection.ForgottenFavorites,
-                    HomeSection.FromTheCommunity -> sectionRandom.nextInt(-100, 400)
-
-                    
-                    else -> sectionRandom.nextInt(-50, 50)
-                }
-                base + modifier
-            }
-        } else {
-            val defaultOrder = mapOf(
-                HomeSection.QuickPicks to 1000,
-                HomeSection.SpeedDial to 100,
-                HomeSection.FromTheCommunity to 80,
-                HomeSection.DailyDiscover to 70,
-                HomeSection.KeepListening to 60,
-                HomeSection.AccountPlaylists to 50,
-                HomeSection.ForgottenFavorites to 40,
-                HomeSection.MoodAndGenres to 10
-            )
-
-            list.sortedByDescending { section ->
-                when(section) {
-                    is HomeSection.SimilarRecommendation -> 30 - section.index
-                    is HomeSection.HomePageSection -> 20 - section.index
-                    else -> defaultOrder[section] ?: 0
-                }
+        list.sortedByDescending { section ->
+            when(section) {
+                is HomeSection.SimilarRecommendation -> 200 - section.index
+                is HomeSection.HomePageSection -> 100 - section.index
+                else -> defaultOrder[section] ?: 0
             }
         }
     }
@@ -953,17 +1328,123 @@ fun HomeScreen(
                 state = lazylistState,
                 contentPadding = LocalPlayerAwareWindowInsets.current.asPaddingValues()
             ) {
-                item {
-                    ChipsRow(
-                        chips = homePage?.chips?.filter { 
-                            !it.title.equals("Podcasts", ignoreCase = true) && 
-                            !it.title.equals("Uploaded", ignoreCase = true)
-                        }?.map { it to it.title } ?: emptyList(),
-                        currentValue = selectedChip,
-                        onValueUpdate = {
-                            viewModel.toggleChip(it)
-                        }
+                item(key = "meloqis_home_header") {
+                    MeloqisHomeHeader(
+                        accountName = greetingName,
+                        accountImageUrl = url,
+                        mediaMetadata = mediaMetadata,
+                        isPlaying = isPlaying,
+                        onSearchClick = { navController.navigate(Screens.Search.route) },
+                        onProfileClick = { navController.navigate("settings/account") },
+                        onNowPlayingClick = { playerConnection.togglePlayPause() },
+                        onHistoryClick = { navController.navigate("history") },
+                        onStatsClick = { navController.navigate("stats") },
+                        onTogetherClick = {
+                            navController.navigate("listen_together_from_topbar")
+                        },
                     )
+                }
+
+                item(key = "meloqis_mood_rail") {
+                    val moodChips = homePage?.chips?.filter {
+                        !it.title.equals("Podcasts", ignoreCase = true) &&
+                            !it.title.equals("Uploaded", ignoreCase = true)
+                    }.orEmpty()
+
+                    if (moodChips.isNotEmpty()) {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(top = 6.dp, bottom = 14.dp),
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.Bottom,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 20.dp),
+                            ) {
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(
+                                        text = "TUNE THE MOMENT",
+                                        style = MaterialTheme.typography.labelSmall,
+                                        fontWeight = FontWeight.Bold,
+                                        color = MaterialTheme.colorScheme.primary,
+                                    )
+                                    Text(
+                                        text = "Pick a frequency",
+                                        style = MaterialTheme.typography.titleLarge,
+                                        fontWeight = FontWeight.Black,
+                                    )
+                                }
+                                Text(
+                                    text = "${moodChips.size} moods",
+                                    style = MaterialTheme.typography.labelMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            }
+
+                            LazyRow(
+                                contentPadding = PaddingValues(horizontal = 20.dp),
+                                horizontalArrangement = Arrangement.spacedBy(10.dp),
+                                modifier = Modifier.padding(top = 14.dp),
+                            ) {
+                                items(moodChips, key = { it.title }) { chip ->
+                                    val isSelected = selectedChip == chip
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        modifier = Modifier
+                                            .height(42.dp)
+                                            .clip(RoundedCornerShape(15.dp))
+                                            .background(
+                                                if (isSelected) {
+                                                    MaterialTheme.colorScheme.primary
+                                                } else {
+                                                    MaterialTheme.colorScheme.surfaceContainerHigh
+                                                }
+                                            )
+                                            .border(
+                                                1.dp,
+                                                if (isSelected) {
+                                                    Color.Transparent
+                                                } else {
+                                                    MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.50f)
+                                                },
+                                                RoundedCornerShape(15.dp),
+                                            )
+                                            .combinedClickable(
+                                                onClick = { viewModel.toggleChip(chip) },
+                                                onLongClick = { viewModel.toggleChip(chip) },
+                                            )
+                                            .padding(horizontal = 14.dp),
+                                    ) {
+                                        Box(
+                                            modifier = Modifier
+                                                .size(if (isSelected) 9.dp else 7.dp)
+                                                .clip(CircleShape)
+                                                .background(
+                                                    if (isSelected) {
+                                                        MaterialTheme.colorScheme.onPrimary
+                                                    } else {
+                                                        MaterialTheme.colorScheme.primary
+                                                    }
+                                                ),
+                                        )
+                                        Text(
+                                            text = chip.title,
+                                            style = MaterialTheme.typography.labelLarge,
+                                            fontWeight = FontWeight.SemiBold,
+                                            color = if (isSelected) {
+                                                MaterialTheme.colorScheme.onPrimary
+                                            } else {
+                                                MaterialTheme.colorScheme.onSurface
+                                            },
+                                            modifier = Modifier.padding(start = 9.dp),
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
                 }
 
                 if (isLoading && homePage?.chips.isNullOrEmpty()) {
@@ -987,6 +1468,34 @@ fun HomeScreen(
                     }
                 }
 
+                if (selectedChip != null && isMoodLoading) {
+                    item(key = "mood_loading_feed") {
+                        ShimmerHost(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 20.dp, vertical = 18.dp),
+                        ) {
+                            Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
+                                TextPlaceholder(
+                                    height = 34.dp,
+                                    modifier = Modifier.width(210.dp),
+                                )
+                                Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                                    repeat(3) {
+                                        Spacer(
+                                            modifier = Modifier
+                                                .width(150.dp)
+                                                .height(185.dp)
+                                                .clip(RoundedCornerShape(22.dp))
+                                                .background(MaterialTheme.colorScheme.onSurface),
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
 
                 homeSections.forEach { section ->
                     when (section) {
@@ -994,7 +1503,8 @@ fun HomeScreen(
                             speedDialItems.takeIf { it.isNotEmpty() }?.let { items ->
                                 item(key = "speed_dial_title") {
                                     NavigationTitle(
-                                        title = stringResource(R.string.speed_dial),
+                                        title = "Your rotation",
+                                        label = "Fast access to the music you return to",
                                         modifier = Modifier.animateItem()
                                     )
                                 }
@@ -1200,113 +1710,263 @@ fun HomeScreen(
 
                                 item(key = "quick_picks_list") {
                                     val distinctQuickPicks = quickPicks.distinctBy { it.id }
-                                    HorizontalCenteredHeroCarousel(
-                                        state = rememberCarouselState { distinctQuickPicks.size },
-                                        maxItemWidth = 250.dp,
-                                        itemSpacing = 8.dp,
-                                        contentPadding = PaddingValues(horizontal = 16.dp),
+                                    val flowState = rememberPagerState {
+                                        distinctQuickPicks.size
+                                    }
+
+                                    LaunchedEffect(flowState, distinctQuickPicks.size) {
+                                        if (distinctQuickPicks.size > 1) {
+                                            while (true) {
+                                                kotlinx.coroutines.delay(5_400L)
+                                                if (!flowState.isScrollInProgress) {
+                                                    flowState.animateScrollToPage(
+                                                        page = (flowState.currentPage + 1) %
+                                                            distinctQuickPicks.size,
+                                                        animationSpec = tween(durationMillis = 820),
+                                                    )
+                                                }
+                                            }
+                                        }
+                                    }
+
+                                    Column(
                                         modifier = Modifier
                                             .fillMaxWidth()
-                                            .height(290.dp)
-                                            .animateItem()
-                                    ) { index ->
-                                        val originalSong = distinctQuickPicks[index]
-                                        val song by database.song(originalSong.id)
-                                            .collectAsState(initial = originalSong)
-                                        val isActive = song!!.id == mediaMetadata?.id
-
-                                        Box(
+                                            .animateItem(),
+                                    ) {
+                                        Row(
+                                            verticalAlignment = Alignment.Bottom,
                                             modifier = Modifier
-                                                .fillMaxSize()
-                                                .maskClip(MaterialTheme.shapes.extraLarge)
-                                                .maskBorder(
-                                                    BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
-                                                    MaterialTheme.shapes.extraLarge
-                                                )
-                                                .focusable()
-                                                .combinedClickable(
-                                                    onClick = {
-                                                        if (isActive) {
-                                                            playerConnection.togglePlayPause()
-                                                        } else {
-                                                            playerConnection.playQueue(YouTubeQueue.radio(song!!.toMediaMetadata()))
-                                                        }
-                                                    },
-                                                    onLongClick = {
-                                                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                                                        menuState.show {
-                                                            SongMenu(
-                                                                originalSong = song!!,
-                                                                navController = navController,
-                                                                onDismiss = menuState::dismiss
-                                                            )
-                                                        }
-                                                    }
-                                                )
+                                                .fillMaxWidth()
+                                                .padding(start = 20.dp, end = 20.dp, bottom = 16.dp),
                                         ) {
-                                            AsyncImage(
-                                                model = coil3.request.ImageRequest.Builder(LocalContext.current)
-                                                    .data(song!!.thumbnailUrl)
-                                                    .crossfade(true)
-                                                    .build(),
-                                                contentDescription = null,
-                                                contentScale = ContentScale.Crop,
-                                                modifier = Modifier.fillMaxSize()
+                                            Column(modifier = Modifier.weight(1f)) {
+                                                Text(
+                                                    text = "MELOQIS FLOW",
+                                                    style = MaterialTheme.typography.labelSmall,
+                                                    fontWeight = FontWeight.Bold,
+                                                    color = MaterialTheme.colorScheme.primary,
+                                                )
+                                                Text(
+                                                    text = "Made for right now",
+                                                    style = MaterialTheme.typography.headlineSmall,
+                                                    fontWeight = FontWeight.Black,
+                                                )
+                                            }
+                                            Text(
+                                                text = "Swipe the mix",
+                                                style = MaterialTheme.typography.labelMedium,
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant,
                                             )
+                                        }
+
+                                        HorizontalPager(
+                                            state = flowState,
+                                            contentPadding = PaddingValues(start = 20.dp, end = 46.dp),
+                                            pageSpacing = 12.dp,
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .height(372.dp),
+                                        ) { index ->
+                                            val originalSong = distinctQuickPicks[index]
+                                            val song by database.song(originalSong.id)
+                                                .collectAsState(initial = originalSong)
+                                            val isActive = song!!.id == mediaMetadata?.id
+                                            val pageDistance = kotlin.math.abs(
+                                                (flowState.currentPage - index) +
+                                                    flowState.currentPageOffsetFraction
+                                            ).coerceIn(0f, 1f)
 
                                             Box(
                                                 modifier = Modifier
                                                     .fillMaxSize()
-                                                    .background(
-                                                        Brush.verticalGradient(
-                                                            colors = listOf(
-                                                                Color.Transparent,
-                                                                Color.Transparent,
-                                                                Color.Black.copy(alpha = 0.7f)
-                                                            )
-                                                        )
+                                                    .graphicsLayer {
+                                                        scaleX = 1f - (pageDistance * 0.055f)
+                                                        scaleY = 1f - (pageDistance * 0.055f)
+                                                        alpha = 1f - (pageDistance * 0.22f)
+                                                    }
+                                                    .clip(RoundedCornerShape(34.dp))
+                                                    .border(
+                                                        1.dp,
+                                                        if (flowState.currentPage == index) {
+                                                            MaterialTheme.colorScheme.primary.copy(alpha = 0.62f)
+                                                        } else {
+                                                            MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.36f)
+                                                        },
+                                                        RoundedCornerShape(34.dp),
                                                     )
-                                            )
+                                                    .focusable()
+                                                    .combinedClickable(
+                                                        onClick = {
+                                                            if (isActive) {
+                                                                playerConnection.togglePlayPause()
+                                                            } else {
+                                                                playerConnection.playQueue(
+                                                                    YouTubeQueue.radio(song!!.toMediaMetadata())
+                                                                )
+                                                            }
+                                                        },
+                                                        onLongClick = {
+                                                            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                                            menuState.show {
+                                                                SongMenu(
+                                                                    originalSong = song!!,
+                                                                    navController = navController,
+                                                                    onDismiss = menuState::dismiss,
+                                                                )
+                                                            }
+                                                        },
+                                                    )
+                                            ) {
+                                                AsyncImage(
+                                                    model = coil3.request.ImageRequest.Builder(LocalContext.current)
+                                                        .data(song!!.thumbnailUrl)
+                                                        .crossfade(true)
+                                                        .build(),
+                                                    contentDescription = null,
+                                                    contentScale = ContentScale.Crop,
+                                                    modifier = Modifier
+                                                        .fillMaxSize()
+                                                        .graphicsLayer {
+                                                            scaleX = 1.06f - (pageDistance * 0.035f)
+                                                            scaleY = 1.06f - (pageDistance * 0.035f)
+                                                        },
+                                                )
 
-                                            if (isActive && isPlaying) {
                                                 Box(
                                                     modifier = Modifier
-                                                        .align(Alignment.TopEnd)
-                                                        .padding(12.dp)
-                                                        .size(32.dp)
+                                                        .fillMaxSize()
                                                         .background(
-                                                            MaterialTheme.colorScheme.primary,
-                                                            CircleShape
-                                                        ),
-                                                    contentAlignment = Alignment.Center
+                                                            Brush.verticalGradient(
+                                                                colors = listOf(
+                                                                    Color.Black.copy(alpha = 0.18f),
+                                                                    Color.Transparent,
+                                                                    Color.Black.copy(alpha = 0.92f),
+                                                                )
+                                                            )
+                                                        )
+                                                )
+
+                                                Row(
+                                                    verticalAlignment = Alignment.CenterVertically,
+                                                    modifier = Modifier
+                                                        .align(Alignment.TopStart)
+                                                        .padding(18.dp),
                                                 ) {
-                                                    Icon(
-                                                        painter = painterResource(R.drawable.volume_up),
-                                                        contentDescription = null,
-                                                        tint = MaterialTheme.colorScheme.onPrimary,
-                                                        modifier = Modifier.size(18.dp)
+                                                    Box(
+                                                        modifier = Modifier
+                                                            .size(8.dp)
+                                                            .clip(CircleShape)
+                                                            .background(MaterialTheme.colorScheme.primary),
+                                                    )
+                                                    Text(
+                                                        text = "FLOW ${String.format("%02d", index + 1)}",
+                                                        style = MaterialTheme.typography.labelMedium,
+                                                        fontWeight = FontWeight.Bold,
+                                                        color = Color.White,
+                                                        modifier = Modifier.padding(start = 8.dp),
+                                                    )
+                                                    Text(
+                                                        text = " / ${String.format("%02d", distinctQuickPicks.size)}",
+                                                        style = MaterialTheme.typography.labelMedium,
+                                                        color = Color.White.copy(alpha = 0.56f),
                                                     )
                                                 }
-                                            }
 
-                                            Column(
-                                                modifier = Modifier
-                                                    .align(Alignment.BottomStart)
-                                                    .padding(16.dp)
-                                            ) {
-                                                Text(
-                                                    text = song!!.title,
-                                                    style = MaterialTheme.typography.titleMedium,
-                                                    color = Color.White,
-                                                    maxLines = 1,
-                                                    overflow = TextOverflow.Ellipsis
+                                                Row(
+                                                    verticalAlignment = Alignment.Bottom,
+                                                    modifier = Modifier
+                                                        .align(Alignment.BottomStart)
+                                                        .fillMaxWidth()
+                                                        .padding(20.dp),
+                                                ) {
+                                                    Column(modifier = Modifier.weight(1f)) {
+                                                        MeloqisEqualizer(
+                                                            active = isActive && isPlaying,
+                                                            modifier = Modifier.padding(bottom = 12.dp),
+                                                        )
+                                                        Text(
+                                                            text = song!!.title,
+                                                            style = MaterialTheme.typography.headlineMedium,
+                                                            fontWeight = FontWeight.Black,
+                                                            color = Color.White,
+                                                            maxLines = 2,
+                                                            overflow = TextOverflow.Ellipsis,
+                                                        )
+                                                        Text(
+                                                            text = song!!.artists.joinToString { it.name },
+                                                            style = MaterialTheme.typography.bodyLarge,
+                                                            color = Color.White.copy(alpha = 0.72f),
+                                                            maxLines = 1,
+                                                            overflow = TextOverflow.Ellipsis,
+                                                            modifier = Modifier.padding(top = 4.dp),
+                                                        )
+                                                    }
+
+                                                    Box(
+                                                        contentAlignment = Alignment.Center,
+                                                        modifier = Modifier
+                                                            .padding(start = 14.dp)
+                                                            .size(58.dp)
+                                                            .clip(CircleShape)
+                                                            .background(
+                                                                if (isActive) {
+                                                                    MaterialTheme.colorScheme.primary
+                                                                } else {
+                                                                    Color.White
+                                                                }
+                                                            ),
+                                                    ) {
+                                                        Icon(
+                                                            painter = painterResource(
+                                                                if (isActive && isPlaying) {
+                                                                    R.drawable.pause
+                                                                } else {
+                                                                    R.drawable.play
+                                                                }
+                                                            ),
+                                                            contentDescription = null,
+                                                            tint = if (isActive) {
+                                                                MaterialTheme.colorScheme.onPrimary
+                                                            } else {
+                                                                Color.Black
+                                                            },
+                                                            modifier = Modifier.size(23.dp),
+                                                        )
+                                                    }
+                                                }
+                                            }
+                                        }
+
+                                        Row(
+                                            horizontalArrangement = Arrangement.Center,
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .height(34.dp),
+                                        ) {
+                                            repeat(min(distinctQuickPicks.size, 8)) { index ->
+                                                val dotWidth by animateDpAsState(
+                                                    targetValue =
+                                                        if (flowState.currentPage == index) 24.dp else 6.dp,
+                                                    animationSpec = tween(durationMillis = 260),
+                                                    label = "hero_page_dot",
                                                 )
-                                                Text(
-                                                    text = song!!.artists.joinToString { it.name },
-                                                    style = MaterialTheme.typography.bodyMedium,
-                                                    color = Color.White.copy(alpha = 0.7f),
-                                                    maxLines = 1,
-                                                    overflow = TextOverflow.Ellipsis
+                                                Box(
+                                                    modifier = Modifier
+                                                        .padding(horizontal = 3.dp)
+                                                        .width(dotWidth)
+                                                        .height(6.dp)
+                                                        .clip(CircleShape)
+                                                        .background(
+                                                            if (flowState.currentPage == index) {
+                                                                MaterialTheme.colorScheme.primary
+                                                            } else {
+                                                                MaterialTheme.colorScheme.onSurfaceVariant.copy(
+                                                                    alpha = 0.28f
+                                                                )
+                                                            }
+                                                        ),
                                                 )
                                             }
                                         }

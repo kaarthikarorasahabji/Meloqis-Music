@@ -14,6 +14,8 @@ import java.time.ZoneOffset
 import com.music.innertube.models.IpVersion
 
 val IsFirstRunKey = booleanPreferencesKey("isFirstRun")
+val MeloqisOnboardingCompletedKey = booleanPreferencesKey("meloqisOnboardingCompletedV3")
+val AnonymousDisplayNameKey = stringPreferencesKey("meloqisAnonymousDisplayName")
 val DataSaverEnabledKey = booleanPreferencesKey("dataSaverEnabled")
 val SpotifySpDcKey = stringPreferencesKey("spotify_sp_dc")
 val SpotifySpKeyKey = stringPreferencesKey("spotify_sp_key")

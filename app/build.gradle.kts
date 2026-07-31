@@ -35,8 +35,8 @@ android {
         applicationId = "in.axenoraai.meloqis"
         minSdk = 26
         targetSdk = 36
-        versionCode = 11
-        versionName = "0.1.10"
+        versionCode = 13
+        versionName = "0.1.12"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables.useSupportLibrary = true
@@ -49,7 +49,7 @@ android {
         buildConfigField("String", "DEVELOPER_NAME", "\"Kaarthik Dass Arora\"")
         buildConfigField("String", "SOURCE_REPOSITORY", "\"https://github.com/kaarthikarorasahabji/Meloqis-Music\"")
         buildConfigField("String", "SUPPORT_PAGE", "\"https://meloqis.axenoraai.in/download/#support\"")
-        buildConfigField("String", "APK_DOWNLOAD", "\"https://pub-7cad9af12a364d3f928f96a083db320f.r2.dev/previews/0.1.10/meloqis-music-0.1.10-release-preview.apk\"")
+        buildConfigField("String", "APK_DOWNLOAD", "\"https://pub-7cad9af12a364d3f928f96a083db320f.r2.dev/previews/0.1.12/meloqis-music-0.1.12-release-preview.apk\"")
         buildConfigField("String", "TELEMETRY_ENDPOINT", "\"https://meloqis-insights.axenora-meloqis.workers.dev/api/events\"")
         buildConfigField("String", "TELEMETRY_REGISTER_ENDPOINT", "\"https://meloqis-insights.axenora-meloqis.workers.dev/api/register\"")
 

@@ -727,6 +727,7 @@ class MainActivity : ComponentActivity() {
                     shouldShowNavigationBar,
                     playerBottomSheetState.isDismissed,
                     showRail,
+                    currentRoute,
                 ) {
                     var bottom = bottomInset
                     if (shouldShowNavigationBar && !showRail) {
@@ -735,7 +736,12 @@ class MainActivity : ComponentActivity() {
                     if (!playerBottomSheetState.isDismissed) bottom += MiniPlayerHeight
                     windowsInsets
                         .only(WindowInsetsSides.Horizontal + WindowInsetsSides.Top)
-                        .add(WindowInsets(top = AppBarHeight, bottom = bottom))
+                        .add(
+                            WindowInsets(
+                                top = if (currentRoute == Screens.Home.route) 0.dp else AppBarHeight,
+                                bottom = bottom,
+                            )
+                        )
                 }
                 appBarScrollBehavior(
                     canScroll = {
@@ -828,6 +834,7 @@ class MainActivity : ComponentActivity() {
                     val isListenTogetherScreen = currentRoute == Screens.ListenTogether.route || 
                         currentRoute == "listen_together_from_topbar"
                     shouldShowTopBar = currentRoute in topLevelScreens &&
+                        currentRoute != Screens.Home.route &&
                         currentRoute != "settings" &&
                         !(isListenTogetherScreen && listenTogetherInTopBar)
                 }
@@ -839,13 +846,24 @@ class MainActivity : ComponentActivity() {
                 val snackbarHostState = remember { SnackbarHostState() }
                 var showSettingDialoge by remember { mutableStateOf(false) }
 
-                val (lastOpenedVersionCode, setLastOpenedVersionCode) = rememberPreference(iad1tya.echo.music.constants.LastOpenedVersionCodeKey, -1)
-                var showWelcomeDialog by remember { mutableStateOf(false) }
-
-                LaunchedEffect(lastOpenedVersionCode) {
-                    if (lastOpenedVersionCode < BuildConfig.VERSION_CODE) {
-                        showWelcomeDialog = true
-                    }
+                val (onboardingCompleted, setOnboardingCompleted) = rememberPreference(
+                    iad1tya.echo.music.constants.MeloqisOnboardingCompletedKey,
+                    false,
+                )
+                val (anonymousDisplayName, setAnonymousDisplayName) = rememberPreference(
+                    iad1tya.echo.music.constants.AnonymousDisplayNameKey,
+                    "",
+                )
+                val (onboardingCookie) = rememberPreference(
+                    iad1tya.echo.music.constants.InnerTubeCookieKey,
+                    "",
+                )
+                val anonymousNameRequired = onboardingCookie
+                    .split(';')
+                    .none { it.trim().startsWith("SAPISID=") } &&
+                    anonymousDisplayName.isBlank()
+                var showWelcomeDialog by remember {
+                    mutableStateOf(!onboardingCompleted || anonymousNameRequired)
                 }
 
                 LaunchedEffect(Unit) {
@@ -914,14 +932,20 @@ class MainActivity : ComponentActivity() {
                     liquidGlassSurfaceOpacity, liquidGlassTextColorInt, liquidGlassPlayerEnabled,
                     liquidGlassMiniPlayerEnabled, liquidGlassNavBarEnabled,
                 ) {
+                    // Android 13's RenderEffect path struggles with the animated
+                    // lens runtime shader on high-density Samsung displays. Keep
+                    // blur, vibrancy and tint there, and reserve refraction for
+                    // Android 14+ where the pipeline is substantially smoother.
+                    val supportsEfficientGlassLens =
+                        Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE
                     GlassEffectConfig(
                         globalEnabled = liquidGlassGlobalEnabled && useFloatingNavBar,
                         vibrancy = liquidGlassVibrancy,
                         blurRadius = liquidGlassBlurRadius,
-                        lensHeight = liquidGlassLensHeight,
-                        lensAmount = liquidGlassLensAmount,
-                        chromaticAberration = liquidGlassChromaticAberration,
-                        depthEffect = liquidGlassDepthEffect,
+                        lensHeight = if (supportsEfficientGlassLens) liquidGlassLensHeight else 0f,
+                        lensAmount = if (supportsEfficientGlassLens) liquidGlassLensAmount else 0f,
+                        chromaticAberration = supportsEfficientGlassLens && liquidGlassChromaticAberration,
+                        depthEffect = supportsEfficientGlassLens && liquidGlassDepthEffect,
                         surfaceTintColor = if (liquidGlassSurfaceTintColorInt == 0) Color.Unspecified else Color(liquidGlassSurfaceTintColorInt),
                         surfaceOpacity = liquidGlassSurfaceOpacity,
                         textColor = Color(liquidGlassTextColorInt),
@@ -1418,10 +1442,19 @@ class MainActivity : ComponentActivity() {
 
                     if (showWelcomeDialog) {
                         WelcomeDialog(
-                            onDismissRequest = {
+                            startAtName = onboardingCompleted && anonymousNameRequired,
+                            onContinueAnonymous = { name ->
+                                setAnonymousDisplayName(name)
+                                setOnboardingCompleted(true)
                                 showWelcomeDialog = false
-                                setLastOpenedVersionCode(BuildConfig.VERSION_CODE)
-                            }
+                            },
+                            onSignIn = {
+                                setOnboardingCompleted(true)
+                                showWelcomeDialog = false
+                                navController.navigate("login") {
+                                    launchSingleTop = true
+                                }
+                            },
                         )
                     }
 

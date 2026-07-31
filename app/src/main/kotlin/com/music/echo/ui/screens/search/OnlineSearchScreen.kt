@@ -7,6 +7,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
@@ -65,22 +66,16 @@ import iad1tya.echo.music.playback.queues.YouTubeQueue
 import iad1tya.echo.music.ui.component.LocalMenuState
 import iad1tya.echo.music.ui.component.YouTubeListItem
 import iad1tya.echo.music.utils.listItemShape
-import iad1tya.echo.music.utils.getGroupedShape
-import androidx.compose.material3.Surface
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Shape
-import com.music.innertube.utils.YouTubeUrlParser
 import iad1tya.echo.music.ui.menu.YouTubeAlbumMenu
 import iad1tya.echo.music.ui.menu.YouTubeArtistMenu
 import iad1tya.echo.music.ui.menu.YouTubePlaylistMenu
 import iad1tya.echo.music.ui.menu.YouTubeSongMenu
 import iad1tya.echo.music.viewmodels.OnlineSearchSuggestionViewModel
-import kotlinx.coroutines.FlowPreview
-import kotlinx.coroutines.flow.collectLatest
-import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.drop
 
-@OptIn(ExperimentalFoundationApi::class, ExperimentalComposeUiApi::class, ExperimentalMaterial3Api::class, FlowPreview::class)
+@OptIn(ExperimentalFoundationApi::class, ExperimentalComposeUiApi::class, ExperimentalMaterial3Api::class)
 @Composable
 fun OnlineSearchScreen(
     query: String,
@@ -116,14 +111,7 @@ fun OnlineSearchScreen(
     }
 
     LaunchedEffect(query) {
-        snapshotFlow { query }.collectLatest {
-            if (YouTubeUrlParser.isYouTubeUrl(it)) {
-                viewModel.query.value = it
-            } else {
-                kotlinx.coroutines.delay(300L)
-                viewModel.query.value = it
-            }
-        }
+        viewModel.updateQuery(query)
     }
 
     LazyColumn(
@@ -133,23 +121,55 @@ fun OnlineSearchScreen(
             .fillMaxSize()
             .background(if (pureBlack) Color.Black else MaterialTheme.colorScheme.background)
     ) {
+        if (query.isBlank()) {
+            item(key = "search_landing") {
+                SearchLanding(
+                    modifier = Modifier.animateItem(),
+                    pureBlack = pureBlack,
+                )
+            }
+        } else {
+            item(key = "direct_search_$query") {
+                DirectSearchItem(
+                    query = query,
+                    onClick = {
+                        onSearch(query)
+                        onDismiss()
+                    },
+                    modifier = Modifier.animateItem(),
+                )
+            }
+
+            if (viewState.isLoading) {
+                item(key = "suggestions_loading") {
+                    LinearProgressIndicator(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 24.dp)
+                            .height(2.dp)
+                            .animateItem(),
+                        color = MaterialTheme.colorScheme.primary,
+                        trackColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.12f),
+                    )
+                }
+            }
+        }
+
         if (viewState.history.isNotEmpty()) {
             item(key = "history_header") {
-                Text(
-                    text = stringResource(R.string.search_history),
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.padding(start = 16.dp, top = 16.dp, bottom = 8.dp).animateItem()
+                SearchSectionLabel(
+                    text = stringResource(
+                        if (query.isBlank()) R.string.recent_searches else R.string.searches_from_history
+                    ),
+                    modifier = Modifier.animateItem(),
                 )
             }
         }
 
-        itemsIndexed(viewState.history, key = { _, it -> "history_${it.query}" }) { index, history ->
+        items(viewState.history, key = { "history_${it.query}" }) { history ->
             SuggestionItem(
                 query = history.query,
                 online = false,
-                shape = getGroupedShape(index, viewState.history.size),
                 onClick = {
                     onSearch(history.query)
                     onDismiss()
@@ -163,63 +183,56 @@ fun OnlineSearchScreen(
                     onQueryChange(TextFieldValue(history.query, TextRange(history.query.length)))
                 },
                 modifier = Modifier.animateItem(),
-                pureBlack = pureBlack
             )
-        }
-
-        if (viewState.history.isNotEmpty() && viewState.suggestions.isNotEmpty()) {
-            item(key = "history_suggestion_spacer") {
-                Spacer(modifier = Modifier.height(16.dp).animateItem())
-            }
         }
 
         if (viewState.suggestions.isNotEmpty()) {
             item(key = "suggestions_header") {
-                Text(
-                    text = stringResource(R.string.suggestions),
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.padding(start = 16.dp, top = 8.dp, bottom = 8.dp).animateItem()
+                SearchSectionLabel(
+                    text = stringResource(R.string.suggested_searches),
+                    modifier = Modifier.animateItem(),
                 )
             }
         }
 
-        itemsIndexed(viewState.suggestions, key = { _, it -> "suggestion_$it" }) { index, query ->
+        items(viewState.suggestions, key = { "suggestion_$it" }) { suggestion ->
             SuggestionItem(
-                query = query,
+                query = suggestion,
                 online = true,
-                shape = getGroupedShape(index, viewState.suggestions.size),
                 onClick = {
-                    onSearch(query)
+                    onSearch(suggestion)
                     onDismiss()
                 },
                 onFillTextField = {
-                    onQueryChange(TextFieldValue(query, TextRange(query.length)))
+                    onQueryChange(TextFieldValue(suggestion, TextRange(suggestion.length)))
                 },
                 modifier = Modifier.animateItem(),
-                pureBlack = pureBlack
             )
         }
 
-        if (viewState.suggestions.isNotEmpty()) {
-            item(key = "suggestions_bottom_spacer") {
-                Spacer(modifier = Modifier.height(16.dp).animateItem())
+        if (query.isNotBlank() &&
+            !viewState.isLoading &&
+            viewState.suggestionsUnavailable &&
+            viewState.suggestions.isEmpty()
+        ) {
+            item(key = "suggestions_unavailable") {
+                Text(
+                    text = stringResource(R.string.live_suggestions_unavailable, query),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier
+                        .padding(horizontal = 24.dp, vertical = 12.dp)
+                        .animateItem(),
+                )
             }
         }
 
         if (viewState.items.isNotEmpty()) {
             item(key = "search_divider") {
-                Text(
+                SearchSectionLabel(
                     text = stringResource(if (viewState.isFromLink) R.string.parsed_from_link else R.string.top_result),
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.padding(start = 16.dp, top = 8.dp).animateItem()
+                    modifier = Modifier.animateItem(),
                 )
-            }
-            item(key = "search_divider_spacer") {
-                Spacer(modifier = Modifier.height(8.dp))
             }
         }
 
@@ -354,35 +367,152 @@ fun OnlineSearchScreen(
 }
 
 @Composable
-fun SuggestionItem(
+private fun SearchLanding(
     modifier: Modifier = Modifier,
+    pureBlack: Boolean,
+) {
+    Column(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(horizontal = 20.dp, vertical = 22.dp),
+    ) {
+        Box(
+            contentAlignment = Alignment.Center,
+            modifier = Modifier
+                .clip(androidx.compose.foundation.shape.RoundedCornerShape(24.dp))
+                .background(
+                    if (pureBlack) {
+                        MaterialTheme.colorScheme.primary.copy(alpha = 0.13f)
+                    } else {
+                        MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.55f)
+                    }
+                )
+                .padding(14.dp),
+        ) {
+            Icon(
+                painter = painterResource(R.drawable.sparks),
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.primary,
+            )
+        }
+        Spacer(modifier = Modifier.height(18.dp))
+        Text(
+            text = stringResource(R.string.find_your_sound),
+            style = MaterialTheme.typography.headlineMedium,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.onBackground,
+        )
+        Text(
+            text = stringResource(R.string.find_your_sound_description),
+            style = MaterialTheme.typography.bodyLarge,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(top = 6.dp),
+        )
+    }
+}
+
+@Composable
+private fun SearchSectionLabel(
+    text: String,
+    modifier: Modifier = Modifier,
+) {
+    Text(
+        text = text,
+        style = MaterialTheme.typography.labelLarge,
+        fontWeight = FontWeight.SemiBold,
+        color = MaterialTheme.colorScheme.primary,
+        modifier = modifier.padding(start = 24.dp, top = 18.dp, end = 24.dp, bottom = 8.dp),
+    )
+}
+
+@Composable
+private fun DirectSearchItem(
     query: String,
-    online: Boolean,
-    shape: Shape,
     onClick: () -> Unit,
-    onDelete: () -> Unit = {},
-    onFillTextField: () -> Unit,
-    pureBlack: Boolean
+    modifier: Modifier = Modifier,
 ) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
         modifier = modifier
-            .padding(horizontal = 16.dp, vertical = 1.dp)
+            .padding(horizontal = 16.dp, vertical = 12.dp)
+            .fillMaxWidth()
+            .clip(androidx.compose.foundation.shape.RoundedCornerShape(18.dp))
+            .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.12f))
+            .clickable(onClick = onClick)
+            .padding(horizontal = 16.dp, vertical = 14.dp),
+    ) {
+        Box(
+            contentAlignment = Alignment.Center,
+            modifier = Modifier
+                .clip(androidx.compose.foundation.shape.CircleShape)
+                .background(MaterialTheme.colorScheme.primary)
+                .padding(9.dp),
+        ) {
+            Icon(
+                painter = painterResource(R.drawable.search),
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onPrimary,
+            )
+        }
+        Column(
+            modifier = Modifier
+                .weight(1f)
+                .padding(horizontal = 14.dp),
+        ) {
+            Text(
+                text = stringResource(R.string.search_meloqis_for),
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Text(
+                text = query,
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.SemiBold,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+        }
+        Icon(
+            painter = painterResource(R.drawable.arrow_forward),
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.primary,
+        )
+    }
+}
+
+@Composable
+fun SuggestionItem(
+    modifier: Modifier = Modifier,
+    query: String,
+    online: Boolean,
+    onClick: () -> Unit,
+    onDelete: () -> Unit = {},
+    onFillTextField: () -> Unit,
+) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = modifier
+            .padding(horizontal = 12.dp)
             .fillMaxWidth()
             .height(SuggestionItemHeight)
-            .clip(shape)
-            .background(MaterialTheme.colorScheme.surfaceContainerHigh)
+            .clip(androidx.compose.foundation.shape.RoundedCornerShape(14.dp))
             .clickable(onClick = onClick)
             .windowInsetsPadding(WindowInsets.systemBars.only(WindowInsetsSides.Horizontal)),
     ) {
         Icon(
             painterResource(if (online) R.drawable.search else R.drawable.history),
             contentDescription = null,
-            modifier = Modifier.padding(horizontal = 16.dp).alpha(0.5f)
+            tint = if (online) {
+                MaterialTheme.colorScheme.primary
+            } else {
+                MaterialTheme.colorScheme.onSurfaceVariant
+            },
+            modifier = Modifier.padding(horizontal = 12.dp).alpha(if (online) 0.9f else 0.65f)
         )
 
         Text(
             text = query,
+            style = MaterialTheme.typography.bodyLarge,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
             modifier = Modifier.weight(1f),
@@ -391,7 +521,7 @@ fun SuggestionItem(
         if (!online) {
             IconButton(
                 onClick = onDelete,
-                modifier = Modifier.alpha(0.5f),
+                modifier = Modifier.alpha(0.55f),
             ) {
                 Icon(
                     painter = painterResource(R.drawable.close),
@@ -402,7 +532,7 @@ fun SuggestionItem(
 
         IconButton(
             onClick = onFillTextField,
-            modifier = Modifier.alpha(0.5f),
+            modifier = Modifier.alpha(0.65f),
         ) {
             Icon(
                 painter = painterResource(R.drawable.arrow_top_left),

@@ -44,6 +44,7 @@ import iad1tya.echo.music.utils.reportException
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -78,6 +79,7 @@ class HomeViewModel @Inject constructor(
 ) : ViewModel() {
     val isRefreshing = MutableStateFlow(false)
     val isLoading = MutableStateFlow(false)
+    val isMoodLoading = MutableStateFlow(false)
     val isRandomizing = MutableStateFlow(false)
 
     private val quickPicksEnum = context.dataStore.data.map {
@@ -95,6 +97,8 @@ class HomeViewModel @Inject constructor(
     val communityPlaylists = MutableStateFlow<List<CommunityPlaylistItem>?>(null)
     val selectedChip = MutableStateFlow<HomePage.Chip?>(null)
     private val previousHomePage = MutableStateFlow<HomePage?>(null)
+    private val moodPageCache = mutableMapOf<String, HomePage>()
+    private var moodLoadJob: Job? = null
 
     val aiRecommendedPlaylist = database.playlistsByNameAsc()
         .map { playlists -> playlists.find { it.playlist.name == "Recommended by AI" } }
@@ -302,6 +306,24 @@ class HomeViewModel @Inject constructor(
 
     private suspend fun getQuickPicks() {
         val hideVideoSongs = context.dataStore.get(HideVideoSongsKey, false)
+        val localFallback = suspend {
+            val related = database.quickPicks().first()
+            val recent = database.events().first()
+                .map { it.song }
+                .distinctBy { it.id }
+            val mostPlayed = database.mostPlayedSongs(
+                fromTimeStamp = 0L,
+                limit = 30,
+            ).first()
+            val liked = database.likedSongsByCreateDateAsc().first().reversed()
+
+            (related + recent + mostPlayed + liked)
+                .distinctBy { it.id }
+                .filterVideoSongs(hideVideoSongs)
+                .filter { it.thumbnailUrl != null }
+                .take(24)
+        }
+
         when (quickPicksEnum.first()) {
             QuickPicks.QUICK_PICKS -> {
                 val relatedSongs = database.quickPicks().first().filterVideoSongs(hideVideoSongs)
@@ -333,13 +355,21 @@ class HomeViewModel @Inject constructor(
                     .shuffled()
                     .take(20)
 
-                quickPicks.value = combined.ifEmpty { relatedSongs.shuffled().take(20) }
+                quickPicks.value = combined.ifEmpty { localFallback() }
             }
             QuickPicks.LAST_LISTEN -> {
                 val song = database.events().first().firstOrNull()?.song
-                if (song != null && database.hasRelatedSongs(song.id)) {
-                    quickPicks.value = database.getRelatedSongs(song.id).first().filterVideoSongs(hideVideoSongs).shuffled().take(20)
-                }
+                val lastListenPicks =
+                    if (song != null && database.hasRelatedSongs(song.id)) {
+                        database.getRelatedSongs(song.id)
+                            .first()
+                            .filterVideoSongs(hideVideoSongs)
+                            .shuffled()
+                            .take(20)
+                    } else {
+                        emptyList()
+                    }
+                quickPicks.value = lastListenPicks.ifEmpty { localFallback() }
             }
         }
     }
@@ -613,6 +643,9 @@ class HomeViewModel @Inject constructor(
 
     fun toggleChip(chip: HomePage.Chip?) {
         if (chip == null || chip == selectedChip.value && previousHomePage.value != null) {
+            moodLoadJob?.cancel()
+            moodLoadJob = null
+            isMoodLoading.value = false
             homePage.value = previousHomePage.value
             previousHomePage.value = null
             selectedChip.value = null
@@ -623,19 +656,57 @@ class HomeViewModel @Inject constructor(
             previousHomePage.value = homePage.value
         }
 
-        viewModelScope.launch(Dispatchers.IO) {
+        val originalPage = previousHomePage.value ?: homePage.value
+        val preservedChips = originalPage?.chips ?: homePage.value?.chips
+        val cacheKey = chip.endpoint?.params?.takeIf { it.isNotBlank() } ?: chip.title
+
+        selectedChip.value = chip
+        moodPageCache[cacheKey]?.let { cached ->
+            isMoodLoading.value = false
+            homePage.value = cached.copy(chips = preservedChips)
+            return
+        }
+
+        // Switch the UI immediately instead of leaving the ordinary home feed
+        // visible while the network request is in flight.
+        homePage.value = homePage.value?.copy(
+            chips = preservedChips,
+            sections = emptyList(),
+            continuation = null,
+        )
+        isMoodLoading.value = true
+        moodLoadJob?.cancel()
+        moodLoadJob = viewModelScope.launch(Dispatchers.IO) {
             val hideExplicit = context.dataStore.get(HideExplicitKey, false)
             val hideVideoSongs = context.dataStore.get(HideVideoSongsKey, false)
             val hideYoutubeShorts = context.dataStore.get(HideYoutubeShortsKey, false)
-            val nextSections = YouTube.home(params = chip.endpoint?.params).getOrNull() ?: return@launch
-
-            homePage.value = nextSections.copy(
-                chips = homePage.value?.chips,
-                sections = nextSections.sections.map { section ->
-                    section.copy(items = section.items.filterExplicit(hideExplicit).filterVideoSongs(hideVideoSongs).filterYoutubeShorts(hideYoutubeShorts))
+            val result = YouTube.home(params = chip.endpoint?.params)
+            result.onSuccess { nextSections ->
+                val filteredPage = nextSections.copy(
+                    chips = preservedChips,
+                    sections = nextSections.sections.mapNotNull { section ->
+                        val items = section.items
+                            .filterExplicit(hideExplicit)
+                            .filterVideoSongs(hideVideoSongs)
+                            .filterYoutubeShorts(hideYoutubeShorts)
+                        if (items.isEmpty()) null else section.copy(items = items)
+                    },
+                )
+                moodPageCache[cacheKey] = filteredPage
+                if (selectedChip.value == chip) {
+                    homePage.value = filteredPage
                 }
-            )
-            selectedChip.value = chip
+            }.onFailure { error ->
+                reportException(error)
+                if (selectedChip.value == chip) {
+                    homePage.value = originalPage
+                    previousHomePage.value = null
+                    selectedChip.value = null
+                }
+            }
+            if (selectedChip.value == chip) {
+                isMoodLoading.value = false
+            }
         }
     }
 

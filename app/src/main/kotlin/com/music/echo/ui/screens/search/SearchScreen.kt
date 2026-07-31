@@ -58,6 +58,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.platform.LocalFocusManager
@@ -242,7 +243,12 @@ fun SearchScreen(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .height(56.dp)
-                                .focusRequester(focusRequester),
+                                .focusRequester(focusRequester)
+                                .onFocusChanged { focusState ->
+                                    if (focusState.isFocused) {
+                                        searchActive = true
+                                    }
+                                },
                             singleLine = true,
                             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
                             keyboardActions = KeyboardActions(onSearch = { 
@@ -285,7 +291,7 @@ fun SearchScreen(
                                                 text = stringResource(
                                                     when (searchSource) {
                                                         SearchSource.LOCAL -> R.string.search_library
-                                                        SearchSource.ONLINE -> R.string.search_yt_music
+                                                        SearchSource.ONLINE -> R.string.search_meloqis
                                                     }
                                                 ),
                                                 style = TextStyle(
@@ -306,11 +312,17 @@ fun SearchScreen(
                                                 )
                                             }
                                         }
-                                        IconButton(
-                                            onClick = {
+                                        Row(
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            modifier = Modifier
+                                                .padding(end = 8.dp)
+                                                .clip(RoundedCornerShape(999.dp))
+                                                .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.12f))
+                                                .clickable {
                                                 searchSource = if (searchSource == SearchSource.ONLINE) 
                                                     SearchSource.LOCAL else SearchSource.ONLINE
                                             }
+                                                .padding(horizontal = 10.dp, vertical = 7.dp),
                                         ) {
                                             Icon(
                                                 painter = painterResource(
@@ -320,7 +332,21 @@ fun SearchScreen(
                                                     }
                                                 ),
                                                 contentDescription = null,
-                                                tint = MaterialTheme.colorScheme.onSurface
+                                                tint = MaterialTheme.colorScheme.primary,
+                                                modifier = Modifier
+                                                    .width(18.dp)
+                                                    .height(18.dp),
+                                            )
+                                            Text(
+                                                text = stringResource(
+                                                    when (searchSource) {
+                                                        SearchSource.LOCAL -> R.string.search_source_library
+                                                        SearchSource.ONLINE -> R.string.search_source_online
+                                                    }
+                                                ),
+                                                style = MaterialTheme.typography.labelMedium,
+                                                color = MaterialTheme.colorScheme.primary,
+                                                modifier = Modifier.padding(start = 6.dp),
                                             )
                                         }
                                     }
@@ -331,8 +357,14 @@ fun SearchScreen(
                     expanded = searchActive,
                     onExpandedChange = { searchActive = it },
                     colors = SearchBarDefaults.colors(
-                        containerColor = if (pureBlack) MaterialTheme.colorScheme.primary.copy(alpha = 0.15f) else MaterialTheme.colorScheme.surfaceVariant
+                        containerColor = when {
+                            searchActive && pureBlack -> Color.Black
+                            searchActive -> MaterialTheme.colorScheme.background
+                            pureBlack -> Color(0xFF15151A)
+                            else -> MaterialTheme.colorScheme.surfaceContainerHigh
+                        }
                     ),
+                    shape = if (searchActive) RoundedCornerShape(0.dp) else RoundedCornerShape(24.dp),
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(horizontal = searchBarHorizontalPadding)
@@ -400,7 +432,7 @@ fun SearchScreen(
                                 onClick = { selectedTabIndex = 1 },
                                 selectedContentColor = MaterialTheme.colorScheme.primary,
                                 unselectedContentColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                                text = { Text("Echo Chart") }
+                                text = { Text(stringResource(R.string.meloqis_charts)) }
                             )
                             Tab(
                                 selected = selectedTabIndex == 2,
