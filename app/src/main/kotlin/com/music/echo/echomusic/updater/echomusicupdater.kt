@@ -221,7 +221,7 @@ fun UpdateScreen(navController: NavHostController) {
                                     "Verified Meloqis update",
                                     listOf(
                                         "Downloads directly inside Meloqis",
-                                        "SHA-256 integrity checked before installation",
+                                        "SHA-256 and Meloqis publisher signature verified before installation",
                                         "Android shows the final secure install confirmation",
                                     ),
                                 ),

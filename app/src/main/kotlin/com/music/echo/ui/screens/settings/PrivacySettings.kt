@@ -70,7 +70,7 @@ highlightKey: String? = null) {
     )
     val (anonymousTelemetry, onAnonymousTelemetryChange) = rememberPreference(
         key = AnonymousTelemetryEnabledKey,
-        defaultValue = true
+        defaultValue = false
     )
 
     var showClearListenHistoryDialog by remember {

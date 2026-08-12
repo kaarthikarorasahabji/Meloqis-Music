@@ -96,12 +96,13 @@ class App : Application(), SingletonImageLoader.Factory {
 
         applicationScope.launch(Dispatchers.IO) {
             val telemetryEnabled = dataStore.data
-                .map { it[AnonymousTelemetryEnabledKey] ?: true }
+                .map { it[AnonymousTelemetryEnabledKey] ?: false }
                 .first()
             MeloqisTelemetry.initialize(this@App, telemetryEnabled)
         }
 
         applicationScope.launch {
+            applyMeloqisExperienceDefaults()
             initializeSettings()
             
             // Warm the cipher WebView off the first-play critical path
@@ -111,6 +112,39 @@ class App : Application(), SingletonImageLoader.Factory {
             }
             
             observeSettingsChanges()
+        }
+    }
+
+    /**
+     * Applies the Meloqis visual/interaction profile once without overwriting
+     * choices made by existing listeners on later launches.
+     *
+     * Liquid glass is enabled by default, while MainActivity still selects a
+     * lighter Android 12/13 path that keeps blur, tint and vibrancy but avoids
+     * the more expensive animated refraction shader on those devices.
+     */
+    private suspend fun applyMeloqisExperienceDefaults() {
+        dataStore.edit { settings ->
+            if (settings[MeloqisExperienceDefaultsVersionKey] == null) {
+                settings[UseFloatingNavBarKey] = true
+                settings[LiquidGlassGlobalEnabledKey] = true
+                settings[LiquidGlassPlayerEnabledKey] = true
+                settings[LiquidGlassMiniPlayerEnabledKey] = true
+                settings[LiquidGlassNavBarEnabledKey] = true
+                settings[LiquidGlassVibrancyKey] = 1.08f
+                settings[LiquidGlassBlurRadiusKey] = 10f
+                settings[LiquidGlassLensHeightKey] = 0.42f
+                settings[LiquidGlassLensAmountKey] = 0.38f
+                settings[LiquidGlassChromaticAberrationKey] = true
+                settings[LiquidGlassDepthEffectKey] = true
+                settings[LiquidGlassSurfaceOpacityKey] = 0.34f
+                settings[EnableHapticsKey] = true
+                settings[AutoLoadMoreKey] = true
+                settings[SimilarContent] = true
+                settings[PreventDuplicateTracksInQueueKey] = true
+                settings[RememberShuffleAndRepeatKey] = true
+                settings[MeloqisExperienceDefaultsVersionKey] = 1
+            }
         }
     }
 

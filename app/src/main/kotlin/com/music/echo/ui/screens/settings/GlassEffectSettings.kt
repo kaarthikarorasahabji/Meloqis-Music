@@ -70,19 +70,19 @@ fun GlassEffectSettings(
     scrollBehavior: TopAppBarScrollBehavior,
 ) {
     val (globalEnabled, onGlobalEnabledChange) = rememberPreference(
-        LiquidGlassGlobalEnabledKey, defaultValue = false
+        LiquidGlassGlobalEnabledKey, defaultValue = true
     )
     val (vibrancy, onVibrancyChange) = rememberPreference(
-        LiquidGlassVibrancyKey, defaultValue = 1f
+        LiquidGlassVibrancyKey, defaultValue = 1.08f
     )
     val (blurRadius, onBlurRadiusChange) = rememberPreference(
-        LiquidGlassBlurRadiusKey, defaultValue = 8f
+        LiquidGlassBlurRadiusKey, defaultValue = 10f
     )
     val (lensHeight, onLensHeightChange) = rememberPreference(
-        LiquidGlassLensHeightKey, defaultValue = 0.5f
+        LiquidGlassLensHeightKey, defaultValue = 0.42f
     )
     val (lensAmount, onLensAmountChange) = rememberPreference(
-        LiquidGlassLensAmountKey, defaultValue = 0.5f
+        LiquidGlassLensAmountKey, defaultValue = 0.38f
     )
     val (chromaticAberration, onChromaticAberrationChange) = rememberPreference(
         LiquidGlassChromaticAberrationKey, defaultValue = true
@@ -106,7 +106,7 @@ fun GlassEffectSettings(
         Color(surfaceTintColorInt)
     }
     val (surfaceOpacity, onSurfaceOpacityChange) = rememberPreference(
-        LiquidGlassSurfaceOpacityKey, defaultValue = 0.4f
+        LiquidGlassSurfaceOpacityKey, defaultValue = 0.34f
     )
     val (textColorInt, onTextColorChange) = rememberPreference(
         LiquidGlassTextColorKey, defaultValue = Color.White.toArgb()
@@ -122,7 +122,7 @@ fun GlassEffectSettings(
         LiquidGlassNavBarEnabledKey, defaultValue = true
     )
     val (useFloatingNavBar, onUseFloatingNavBarChange) = rememberPreference(
-        UseFloatingNavBarKey, defaultValue = false
+        UseFloatingNavBarKey, defaultValue = true
     )
 
     var showVibrancyDialog by rememberSaveable { mutableStateOf(false) }
@@ -392,7 +392,7 @@ fun GlassEffectSettings(
         DefaultDialog(
             onDismiss = { tempValue = vibrancy; showVibrancyDialog = false },
             buttons = {
-                TextButton(onClick = { tempValue = 1f }) { Text(stringResource(R.string.reset)) }
+                TextButton(onClick = { tempValue = 1.08f }) { Text(stringResource(R.string.reset)) }
                 Spacer(modifier = Modifier.weight(1f))
                 TextButton(onClick = { tempValue = vibrancy; showVibrancyDialog = false }) { Text(stringResource(android.R.string.cancel)) }
                 TextButton(onClick = { onVibrancyChange(tempValue); showVibrancyDialog = false }) { Text(stringResource(android.R.string.ok)) }
@@ -411,7 +411,7 @@ fun GlassEffectSettings(
         DefaultDialog(
             onDismiss = { tempValue = blurRadius; showBlurRadiusDialog = false },
             buttons = {
-                TextButton(onClick = { tempValue = 8f }) { Text(stringResource(R.string.reset)) }
+                TextButton(onClick = { tempValue = 10f }) { Text(stringResource(R.string.reset)) }
                 Spacer(modifier = Modifier.weight(1f))
                 TextButton(onClick = { tempValue = blurRadius; showBlurRadiusDialog = false }) { Text(stringResource(android.R.string.cancel)) }
                 TextButton(onClick = { onBlurRadiusChange(tempValue); showBlurRadiusDialog = false }) { Text(stringResource(android.R.string.ok)) }
@@ -430,7 +430,7 @@ fun GlassEffectSettings(
         DefaultDialog(
             onDismiss = { tempValue = lensHeight; showLensHeightDialog = false },
             buttons = {
-                TextButton(onClick = { tempValue = 0.5f }) { Text(stringResource(R.string.reset)) }
+                TextButton(onClick = { tempValue = 0.42f }) { Text(stringResource(R.string.reset)) }
                 Spacer(modifier = Modifier.weight(1f))
                 TextButton(onClick = { tempValue = lensHeight; showLensHeightDialog = false }) { Text(stringResource(android.R.string.cancel)) }
                 TextButton(onClick = { onLensHeightChange(tempValue); showLensHeightDialog = false }) { Text(stringResource(android.R.string.ok)) }
@@ -449,7 +449,7 @@ fun GlassEffectSettings(
         DefaultDialog(
             onDismiss = { tempValue = lensAmount; showLensAmountDialog = false },
             buttons = {
-                TextButton(onClick = { tempValue = 0.5f }) { Text(stringResource(R.string.reset)) }
+                TextButton(onClick = { tempValue = 0.38f }) { Text(stringResource(R.string.reset)) }
                 Spacer(modifier = Modifier.weight(1f))
                 TextButton(onClick = { tempValue = lensAmount; showLensAmountDialog = false }) { Text(stringResource(android.R.string.cancel)) }
                 TextButton(onClick = { onLensAmountChange(tempValue); showLensAmountDialog = false }) { Text(stringResource(android.R.string.ok)) }
@@ -468,7 +468,7 @@ fun GlassEffectSettings(
         DefaultDialog(
             onDismiss = { tempValue = surfaceOpacity; showSurfaceOpacityDialog = false },
             buttons = {
-                TextButton(onClick = { tempValue = 0.4f }) { Text(stringResource(R.string.reset)) }
+                TextButton(onClick = { tempValue = 0.34f }) { Text(stringResource(R.string.reset)) }
                 Spacer(modifier = Modifier.weight(1f))
                 TextButton(onClick = { tempValue = surfaceOpacity; showSurfaceOpacityDialog = false }) { Text(stringResource(android.R.string.cancel)) }
                 TextButton(onClick = { onSurfaceOpacityChange(tempValue); showSurfaceOpacityDialog = false }) { Text(stringResource(android.R.string.ok)) }

@@ -1,6 +1,6 @@
 # Meloqis Music Privacy Policy
 
-Last updated: 2026-07-27
+Last updated: 2026-08-12
 
 This draft applies to Meloqis Music, operated by Kaarthik Dass Arora through
 Axenora AI. It must be reviewed and completed with the operator's legal address,
@@ -50,7 +50,7 @@ client is required.
 
 Meloqis 0.1.8 and later can send limited operational events to an
 Axenora-controlled Cloudflare Worker and D1 database. Anonymous insights are
-enabled by default and can be disabled at any time in **Settings > Privacy >
+disabled by default and can be enabled or disabled at any time in **Settings > Privacy >
 Share anonymous app insights**.
 
 The app generates a random installation UUID. It does not use an IMEI, phone
@@ -80,6 +80,25 @@ Disabling anonymous insights stops future uploads and removes queued,
 not-yet-uploaded events from the device. Previously aggregated counts cannot be
 linked back to a person. Clearing Meloqis app data creates a new random
 installation UUID if insights are later enabled.
+
+## Feedback and reports
+
+After 48 hours from first use, Meloqis may show a one-time feedback prompt. If
+the user successfully submits feedback, that automatic prompt is not shown
+again. The manual **Settings > Feedback & reports** form remains available for
+crashes, bugs, playback failures, update problems, and feature suggestions.
+
+Submitting feedback sends the selected rating, category, written message,
+Meloqis version, Android version, and SDK level to an Axenora-controlled
+Cloudflare Worker. The Worker forwards the report by email to the Meloqis
+operator using Resend. The app does not attach an account identity, advertising
+ID, phone number, media title, playlist, or listening history. Users should not
+include passwords or other sensitive information in the written message.
+
+Cloudflare and Resend necessarily process normal connection and delivery data
+under their respective privacy terms. Feedback requests are rate limited. The
+Resend API key is stored as an encrypted Cloudflare Worker secret and is never
+included in the Android app.
 
 ## Children, deletion, and contact
 

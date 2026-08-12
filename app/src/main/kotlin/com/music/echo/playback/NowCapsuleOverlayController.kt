@@ -25,6 +25,7 @@ import android.view.MotionEvent
 import android.view.View
 import android.view.ViewConfiguration
 import android.view.WindowManager
+import android.view.accessibility.AccessibilityNodeInfo
 import android.view.animation.PathInterpolator
 import android.view.animation.OvershootInterpolator
 import iad1tya.echo.music.models.MediaMetadata
@@ -119,6 +120,12 @@ class NowCapsuleOverlayController(
             runCatching { windowManager.removeViewImmediate(view) }
             attached = false
         }
+    }
+
+    /** Permanently tears down this controller when the service discards it. */
+    fun release() {
+        dispose()
+        view.release()
     }
 
     private fun animateSize(expanded: Boolean) {
@@ -264,6 +271,7 @@ private class NowCapsuleView(
     private var scrubPosition = 0L
     private var lastTapAt = 0L
     private var songMotionSeed = 0
+    private var released = false
 
     init {
         isClickable = true
@@ -272,6 +280,7 @@ private class NowCapsuleView(
     }
 
     fun update(metadata: MediaMetadata, playing: Boolean) {
+        if (released) return
         title = metadata.title
         artists = metadata.artists.joinToString(", ") { it.name }
         val songIdentity = "${metadata.id}|${metadata.thumbnailUrl}|$title|$artists"
@@ -838,6 +847,50 @@ private class NowCapsuleView(
         return super.onTouchEvent(event)
     }
 
+    override fun onInitializeAccessibilityNodeInfo(info: AccessibilityNodeInfo) {
+        super.onInitializeAccessibilityNodeInfo(info)
+        info.className = android.widget.Button::class.java.name
+        info.isClickable = true
+        info.isLongClickable = true
+        info.addAction(AccessibilityNodeInfo.AccessibilityAction.ACTION_CLICK)
+        info.addAction(AccessibilityNodeInfo.AccessibilityAction.ACTION_LONG_CLICK)
+        info.addAction(AccessibilityNodeInfo.AccessibilityAction.ACTION_SCROLL_FORWARD)
+        info.addAction(AccessibilityNodeInfo.AccessibilityAction.ACTION_SCROLL_BACKWARD)
+        info.addAction(
+            AccessibilityNodeInfo.AccessibilityAction(
+                AccessibilityNodeInfo.ACTION_SCROLL_FORWARD,
+                "Next track",
+            ),
+        )
+        info.addAction(
+            AccessibilityNodeInfo.AccessibilityAction(
+                AccessibilityNodeInfo.ACTION_SCROLL_BACKWARD,
+                "Previous track",
+            ),
+        )
+    }
+
+    override fun performAccessibilityAction(action: Int, arguments: android.os.Bundle?): Boolean =
+        when (action) {
+            AccessibilityNodeInfo.ACTION_CLICK -> {
+                onTogglePlayback()
+                true
+            }
+            AccessibilityNodeInfo.ACTION_LONG_CLICK -> {
+                onOpenApp()
+                true
+            }
+            AccessibilityNodeInfo.ACTION_SCROLL_FORWARD -> {
+                onNext()
+                true
+            }
+            AccessibilityNodeInfo.ACTION_SCROLL_BACKWARD -> {
+                onPrevious()
+                true
+            }
+            else -> super.performAccessibilityAction(action, arguments)
+        }
+
     override fun performClick(): Boolean {
         super.performClick()
         return true
@@ -903,6 +956,8 @@ private class NowCapsuleView(
     }
 
     fun release() {
+        if (released) return
+        released = true
         accentAnimator?.cancel()
         pressAnimator?.cancel()
         swipeAnimator?.cancel()

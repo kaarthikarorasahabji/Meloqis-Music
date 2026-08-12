@@ -658,7 +658,7 @@ class MusicService :
                     if (enabled && appTaskPresent) {
                         showNowCapsuleIfAllowed()
                     } else {
-                        nowCapsuleOverlayController?.dispose()
+                        nowCapsuleOverlayController?.release()
                         nowCapsuleOverlayController = null
                     }
                 }
@@ -1755,7 +1755,7 @@ class MusicService :
         }
 
         
-        if (dataStore.get(PreventDuplicateTracksInQueueKey, false)) {
+        if (dataStore.get(PreventDuplicateTracksInQueueKey, true)) {
             val itemIds = items.map { it.mediaId }.toSet()
             val indicesToRemove = mutableListOf<Int>()
             val currentIndex = player.currentMediaItemIndex
@@ -1834,7 +1834,7 @@ class MusicService :
 
     fun addToQueue(items: List<MediaItem>) {
         
-        if (dataStore.get(PreventDuplicateTracksInQueueKey, false)) {
+        if (dataStore.get(PreventDuplicateTracksInQueueKey, true)) {
             val itemIds = items.map { it.mediaId }.toSet()
             val indicesToRemove = mutableListOf<Int>()
             val currentIndex = player.currentMediaItemIndex
@@ -3364,7 +3364,7 @@ class MusicService :
 
     override fun onDestroy() {
         isRunning = false
-        nowCapsuleOverlayController?.dispose()
+        nowCapsuleOverlayController?.release()
         nowCapsuleOverlayController = null
         releasePrebuffered()
 
@@ -3410,7 +3410,7 @@ class MusicService :
         // The playback service may intentionally survive task dismissal, but the capsule is
         // an app UI surface and must not remain floating after Meloqis has been closed.
         appTaskPresent = false
-        nowCapsuleOverlayController?.dispose()
+        nowCapsuleOverlayController?.release()
         nowCapsuleOverlayController = null
 
         // Keep background playback alive when the user dismisses the UI while a song is

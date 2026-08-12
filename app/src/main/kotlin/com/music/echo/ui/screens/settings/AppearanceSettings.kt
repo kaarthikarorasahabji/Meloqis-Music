@@ -153,7 +153,7 @@ highlightKey: String? = null) {
     )
     val (enableHaptics, onEnableHapticsChange) = rememberPreference(
         iad1tya.echo.music.constants.EnableHapticsKey,
-        defaultValue = false
+        defaultValue = true
     )
     val (selectedThemeColorInt) = rememberPreference(
         SelectedThemeColorKey,

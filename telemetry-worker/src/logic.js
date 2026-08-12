@@ -62,6 +62,55 @@ export function ratio(numerator, denominator) {
   return Math.round((Number(numerator) / Number(denominator)) * 1000) / 10;
 }
 
+export const FEEDBACK_CATEGORIES = new Set([
+  "Crash or bug",
+  "Playback",
+  "Update",
+  "Design",
+  "Discovery",
+  "Capsule",
+  "Other",
+]);
+
+export function validateFeedback(raw) {
+  if (!raw || typeof raw !== "object") return null;
+  if (!UUID_PATTERN.test(String(raw.submissionId ?? ""))) return null;
+  const rating = Number.parseInt(raw.rating, 10);
+  if (!Number.isInteger(rating) || rating < 1 || rating > 5) return null;
+  const category = String(raw.category ?? "");
+  if (!FEEDBACK_CATEGORIES.has(category)) return null;
+
+  const message = cleanMultilineText(raw.message, 800);
+  if (!message || message.length < 3) return null;
+  const appVersion = String(raw.appVersion ?? "");
+  if (!VERSION_PATTERN.test(appVersion)) return null;
+  const sdkInt = Number.parseInt(raw.sdkInt, 10);
+  if (!Number.isInteger(sdkInt) || sdkInt < 26 || sdkInt > 100) return null;
+
+  return {
+    submissionId: String(raw.submissionId).toLowerCase(),
+    rating,
+    category,
+    message,
+    appVersion,
+    androidVersion: cleanText(raw.androidVersion, 24) ?? "unknown",
+    sdkInt,
+  };
+}
+
+function cleanMultilineText(value, maxLength) {
+  if (typeof value !== "string") return null;
+  const cleaned = value
+    .replace(/\r\n?/g, "\n")
+    .replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/g, "")
+    .split("\n")
+    .map((line) => line.replace(/[ \t]+/g, " ").trim())
+    .join("\n")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+  return cleaned ? cleaned.slice(0, maxLength) : null;
+}
+
 export function decodeBase32(value) {
   const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
   const cleaned = String(value).toUpperCase().replace(/=+$/, "").replace(/\s+/g, "");

@@ -1,8 +1,9 @@
-# Meloqis Music 0.1.12
+# Meloqis Music 0.1.13
 
-- Rebuilt Home as an animated, artwork-led Meloqis soundspace with a live app-logo treatment, personalised greeting, mood rail, and swipeable Meloqis Flow.
-- Fixed the “Search Meloqis” crash and added responsive song, artist, album, playlist, mood, and lyric suggestions.
-- Made mood selection immediate with a dedicated loading state, in-memory result cache, clean feed replacement, and failure recovery.
-- Added a one-time optional sign-in guide and an anonymous path that asks for an on-device display name and remembers the personalised greeting.
-- Reduced Android 13 UI jank by removing full-screen continuous redraws, constraining hero artwork decoding, and using a lighter glass pipeline.
-- Preserved the redesigned Meloqis Now Capsule, direct in-app updates, playback recovery, and Android lock-screen controls.
+- Enables the calibrated Meloqis Liquid Glass experience, floating navigation, haptics, and smarter queue defaults for existing and new listeners.
+- Adds a one-time feedback prompt after 48 hours, plus a permanent Settings → Feedback & reports path for crashes, playback failures, update issues, and suggestions.
+- Sends feedback privately through an Axenora-controlled Cloudflare Worker and Resend without embedding the email API key in the APK.
+- Adds direct crash-screen reporting while keeping anonymous operational insights opt-in.
+- Verifies downloaded updates with both SHA-256 and the installed Meloqis publisher certificate before installation.
+- Fixes Now Capsule resource cleanup when playback or the app task closes, and improves accessibility actions for assistive technology.
+- Removes duplicate widget receiver declarations and hardens transactional database reads.

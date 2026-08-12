@@ -201,6 +201,7 @@ import iad1tya.echo.music.ui.player.BottomSheetPlayer
 import iad1tya.echo.music.ui.screens.Screens
 import iad1tya.echo.music.ui.screens.SettingDialoge
 import iad1tya.echo.music.ui.screens.WelcomeDialog
+import iad1tya.echo.music.ui.screens.MeloqisFeedbackDialog
 import iad1tya.echo.music.ui.screens.navigationBuilder
 import iad1tya.echo.music.ui.screens.settings.DarkMode
 import iad1tya.echo.music.ui.screens.settings.NavigationTab
@@ -218,6 +219,7 @@ import iad1tya.echo.music.utils.rememberPreference
 import iad1tya.echo.music.utils.reportException
 import iad1tya.echo.music.utils.setAppLocale
 import iad1tya.echo.music.viewmodels.HomeViewModel
+import iad1tya.echo.music.feedback.MeloqisFeedback
 import com.valentinilk.shimmer.LocalShimmerTheme
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.Dispatchers
@@ -549,7 +551,7 @@ class MainActivity : ComponentActivity() {
             }
         }
 
-        val (enableHaptics) = rememberPreference(iad1tya.echo.music.constants.EnableHapticsKey, defaultValue = false)
+        val (enableHaptics) = rememberPreference(iad1tya.echo.music.constants.EnableHapticsKey, defaultValue = true)
         val view = LocalView.current
         var lastScrollHapticTime by remember { mutableStateOf(0L) }
 
@@ -680,7 +682,7 @@ class MainActivity : ComponentActivity() {
                     label = "navBarHeight",
                 )
 
-                val (useFloatingNavBar) = rememberPreference(UseFloatingNavBarKey, defaultValue = false)
+                val (useFloatingNavBar) = rememberPreference(UseFloatingNavBarKey, defaultValue = true)
                 val floatingNavBarScrollConnection = rememberFloatingTabBarScrollConnection()
 
                 val playerBottomSheetState = rememberBottomSheetState(
@@ -865,6 +867,14 @@ class MainActivity : ComponentActivity() {
                 var showWelcomeDialog by remember {
                     mutableStateOf(!onboardingCompleted || anonymousNameRequired)
                 }
+                var showFeedbackDialog by remember { mutableStateOf(false) }
+
+                LaunchedEffect(onboardingCompleted, showWelcomeDialog) {
+                    MeloqisFeedback.initialize(context)
+                    if (onboardingCompleted && !showWelcomeDialog) {
+                        showFeedbackDialog = MeloqisFeedback.shouldPrompt(context)
+                    }
+                }
 
                 LaunchedEffect(Unit) {
                     if (pendingIntent != null) {
@@ -912,15 +922,15 @@ class MainActivity : ComponentActivity() {
                     !(pauseListenHistory && eventCount == 0)
                 }
 
-                val (liquidGlassGlobalEnabled) = rememberPreference(LiquidGlassGlobalEnabledKey, defaultValue = false)
-                val (liquidGlassVibrancy) = rememberPreference(LiquidGlassVibrancyKey, defaultValue = 1f)
-                val (liquidGlassBlurRadius) = rememberPreference(LiquidGlassBlurRadiusKey, defaultValue = 8f)
-                val (liquidGlassLensHeight) = rememberPreference(LiquidGlassLensHeightKey, defaultValue = 0.5f)
-                val (liquidGlassLensAmount) = rememberPreference(LiquidGlassLensAmountKey, defaultValue = 0.5f)
+                val (liquidGlassGlobalEnabled) = rememberPreference(LiquidGlassGlobalEnabledKey, defaultValue = true)
+                val (liquidGlassVibrancy) = rememberPreference(LiquidGlassVibrancyKey, defaultValue = 1.08f)
+                val (liquidGlassBlurRadius) = rememberPreference(LiquidGlassBlurRadiusKey, defaultValue = 10f)
+                val (liquidGlassLensHeight) = rememberPreference(LiquidGlassLensHeightKey, defaultValue = 0.42f)
+                val (liquidGlassLensAmount) = rememberPreference(LiquidGlassLensAmountKey, defaultValue = 0.38f)
                 val (liquidGlassChromaticAberration) = rememberPreference(LiquidGlassChromaticAberrationKey, defaultValue = true)
                 val (liquidGlassDepthEffect) = rememberPreference(LiquidGlassDepthEffectKey, defaultValue = true)
                 val (liquidGlassSurfaceTintColorInt) = rememberPreference(LiquidGlassSurfaceTintColorKey, defaultValue = 0)
-                val (liquidGlassSurfaceOpacity) = rememberPreference(LiquidGlassSurfaceOpacityKey, defaultValue = 0.4f)
+                val (liquidGlassSurfaceOpacity) = rememberPreference(LiquidGlassSurfaceOpacityKey, defaultValue = 0.34f)
                 val (liquidGlassTextColorInt) = rememberPreference(LiquidGlassTextColorKey, defaultValue = Color.White.toArgb())
                 val (liquidGlassPlayerEnabled) = rememberPreference(LiquidGlassPlayerEnabledKey, defaultValue = true)
                 val (liquidGlassMiniPlayerEnabled) = rememberPreference(LiquidGlassMiniPlayerEnabledKey, defaultValue = true)
@@ -1454,6 +1464,26 @@ class MainActivity : ComponentActivity() {
                                 navController.navigate("login") {
                                     launchSingleTop = true
                                 }
+                            },
+                        )
+                    }
+
+                    if (showFeedbackDialog && !showWelcomeDialog) {
+                        MeloqisFeedbackDialog(
+                            onNotNow = {
+                                showFeedbackDialog = false
+                                coroutineScope.launch { MeloqisFeedback.snooze(context) }
+                            },
+                            onSubmitted = {
+                                showFeedbackDialog = false
+                                coroutineScope.launch {
+                                    snackbarHostState.showSnackbar(
+                                        context.getString(R.string.feedback_thanks),
+                                    )
+                                }
+                            },
+                            submit = { submission ->
+                                MeloqisFeedback.submit(context, submission).isSuccess
                             },
                         )
                     }

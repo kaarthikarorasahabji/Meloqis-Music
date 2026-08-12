@@ -57,6 +57,7 @@ import iad1tya.echo.music.ui.screens.settings.integrations.ListenTogetherSetting
 import iad1tya.echo.music.ui.screens.recognition.RecognitionScreen
 import iad1tya.echo.music.ui.screens.recognition.RecognitionHistoryScreen
 import iad1tya.echo.music.ui.screens.settings.UpdateSettings
+import iad1tya.echo.music.ui.screens.settings.FeedbackScreen
 import iad1tya.echo.music.echomusic.updater.UpdateScreen
 import iad1tya.echo.music.utils.rememberEnumPreference
 import iad1tya.echo.music.utils.rememberPreference
@@ -336,6 +337,22 @@ fun NavGraphBuilder.navigationBuilder(
 
     composable("settings") {
         SettingsScreen(navController, scrollBehavior)
+    }
+
+    composable("settings/feedback") {
+        FeedbackScreen(
+            navController = navController,
+            scrollBehavior = scrollBehavior,
+            onFeedbackSent = {
+                activity.runOnUiThread {
+                    android.widget.Toast.makeText(
+                        activity,
+                        activity.getString(iad1tya.echo.music.R.string.feedback_thanks),
+                        android.widget.Toast.LENGTH_LONG,
+                    ).show()
+                }
+            },
+        )
     }
 
 

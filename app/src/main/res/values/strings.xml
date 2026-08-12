@@ -530,4 +530,25 @@
     <string name="anonymous_insights">Anonymous insights</string>
     <string name="anonymous_insights_title">Share anonymous app insights</string>
     <string name="anonymous_insights_desc">Help improve Meloqis by sharing a random installation ID, app and Android versions, update results, crashes and playback failures. No IMEI, phone number, advertising ID, account data, song titles or listening history is sent.</string>
+    <string name="feedback_title">Help shape Meloqis</string>
+    <string name="feedback_subtitle">A quick note helps us tune the next release.</string>
+    <string name="feedback_rating_label">How has Meloqis felt so far?</string>
+    <string name="feedback_rating_value">%1$d out of 5 stars</string>
+    <string name="feedback_message_label">Your feedback</string>
+    <string name="feedback_message_placeholder">Tell us what delighted you or what needs work…</string>
+    <string name="feedback_not_now">Not now</string>
+    <string name="feedback_send">Send feedback</string>
+    <string name="feedback_error">Couldn’t send right now. Check your connection and try again.</string>
+    <string name="feedback_thanks">Thank you — your feedback reached Meloqis.</string>
+    <string name="feedback_settings_title">Feedback &amp; reports</string>
+    <string name="feedback_settings_item_desc">Report crashes, playback or update problems, and share ideas</string>
+    <string name="feedback_settings_heading">Your direct line to Meloqis</string>
+    <string name="feedback_settings_description">Use this form for every crash, bug, playback failure, update problem, or feature request. You can send another report whenever you need to.</string>
+    <string name="feedback_open_form">Drop feedback</string>
+    <string name="feedback_privacy_note">Reports include only your message, category, rating, app version, and Android version. Don’t include passwords or other sensitive information.</string>
+    <string name="onboarding_feedback_step">Report from Settings</string>
+    <string name="onboarding_feedback_step_desc">For any crash, bug, playback issue, or update problem, open Settings → Feedback &amp; reports.</string>
+    <string name="crash_report_to_meloqis">Report to Meloqis</string>
+    <string name="crash_report_sent">Report sent</string>
+    <string name="crash_feedback_prompt">The app closed unexpectedly. What were you doing just before it happened? </string>
 </resources>

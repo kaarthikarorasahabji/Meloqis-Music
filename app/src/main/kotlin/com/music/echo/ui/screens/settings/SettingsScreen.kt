@@ -80,6 +80,7 @@ highlightKey: String? = null) {
     val storageText = stringResource(R.string.storage)
     val backupText = stringResource(R.string.backup_restore)
     val systemUpdateText = stringResource(R.string.system_update)
+    val feedbackText = stringResource(R.string.feedback_settings_title)
     val aboutText = stringResource(R.string.about)
 
     val scrollState = rememberScrollState()
@@ -272,6 +273,17 @@ highlightKey: String? = null) {
                             }
                         } else null,
                         onClick = { navController.navigate("settings/update") }
+                    )
+                )
+            }
+            if (feedbackText.lowercase().contains(searchLower) || "report crash bug playback update".contains(searchLower)) {
+                add(
+                    Material3SettingsItem(
+                        isHighlighted = (highlightKey == feedbackText),
+                        icon = painterResource(R.drawable.bug_report),
+                        title = { Text(feedbackText) },
+                        description = { Text(stringResource(R.string.feedback_settings_item_desc)) },
+                        onClick = { navController.navigate("settings/feedback") },
                     )
                 )
             }

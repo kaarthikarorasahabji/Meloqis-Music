@@ -7,6 +7,8 @@ preview_urls = false
 [vars]
 ADMIN_USERNAME = "Kaarthik Dass Arora"
 APK_MANIFEST_URL = "https://meloqis.axenoraai.in/releases/latest.json"
+FEEDBACK_FROM = "Meloqis Feedback <feedback@axenoraai.in>"
+FEEDBACK_TO = "kaarthikdassarorasahabji@gmail.com"
 
 [triggers]
 crons = ["17 3 * * *"]

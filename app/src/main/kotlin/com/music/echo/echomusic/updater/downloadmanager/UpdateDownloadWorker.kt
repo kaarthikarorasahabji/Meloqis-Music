@@ -20,6 +20,7 @@ import java.net.SocketTimeoutException
 import java.security.MessageDigest
 import java.util.zip.ZipInputStream
 import iad1tya.echo.music.telemetry.MeloqisTelemetry
+import iad1tya.echo.music.echomusic.updater.ApkSignatureVerifier
 class UpdateDownloadWorker(private val context: Context, workerParams: WorkerParameters) :
     CoroutineWorker(context, workerParams) {
 
@@ -217,6 +218,20 @@ class UpdateDownloadWorker(private val context: Context, workerParams: WorkerPar
                 DownloadNotificationManager.showDownloadFailed(
                     version,
                     "The downloaded APK failed signature-manifest verification",
+                )
+                return@withContext Result.failure()
+            }
+
+            if (!ApkSignatureVerifier.isSignedByCurrentApp(context, finalFile)) {
+                MeloqisTelemetry.recordUpdateEvent(
+                    name = "update_verification_failed",
+                    code = "signer_mismatch",
+                    toVersion = version,
+                )
+                finalFile.delete()
+                DownloadNotificationManager.showDownloadFailed(
+                    version,
+                    "The update is not signed by the trusted Meloqis publisher",
                 )
                 return@withContext Result.failure()
             }

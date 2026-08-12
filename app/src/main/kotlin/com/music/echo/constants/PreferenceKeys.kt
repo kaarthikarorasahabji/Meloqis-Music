@@ -15,6 +15,10 @@ import com.music.innertube.models.IpVersion
 
 val IsFirstRunKey = booleanPreferencesKey("isFirstRun")
 val MeloqisOnboardingCompletedKey = booleanPreferencesKey("meloqisOnboardingCompletedV3")
+val MeloqisExperienceDefaultsVersionKey = intPreferencesKey("meloqisExperienceDefaultsVersion")
+val FeedbackFirstUseAtKey = longPreferencesKey("meloqisFeedbackFirstUseAt")
+val FeedbackCompletedKey = booleanPreferencesKey("meloqisFeedbackCompleted")
+val FeedbackNextPromptAtKey = longPreferencesKey("meloqisFeedbackNextPromptAt")
 val AnonymousDisplayNameKey = stringPreferencesKey("meloqisAnonymousDisplayName")
 val DataSaverEnabledKey = booleanPreferencesKey("dataSaverEnabled")
 val SpotifySpDcKey = stringPreferencesKey("spotify_sp_dc")

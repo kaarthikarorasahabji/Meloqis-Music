@@ -27,9 +27,14 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
@@ -42,6 +47,8 @@ import androidx.core.content.FileProvider
 import iad1tya.echo.music.R
 import iad1tya.echo.music.ui.theme.echomusicTheme
 import iad1tya.echo.music.utils.CrashHandler
+import iad1tya.echo.music.feedback.MeloqisFeedback
+import iad1tya.echo.music.ui.screens.MeloqisFeedbackDialog
 import java.io.File
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -120,6 +127,8 @@ fun CrashScreen(
     onCopy: () -> Unit
 ) {
     val context = LocalContext.current
+    var showFeedback by remember { mutableStateOf(false) }
+    var reportSent by remember { mutableStateOf(false) }
     
     Scaffold(
         topBar = {
@@ -151,14 +160,19 @@ fun CrashScreen(
         },
         floatingActionButton = {
             ExtendedFloatingActionButton(
-                onClick = onShare,
+                onClick = { showFeedback = true },
                 icon = {
                     Icon(
-                        painter = painterResource(R.drawable.share),
+                        painter = painterResource(R.drawable.bug_report),
                         contentDescription = null
                     )
                 },
-                text = { Text(stringResource(R.string.crash_share_logs)) },
+                text = {
+                    Text(
+                        if (reportSent) stringResource(R.string.crash_report_sent)
+                        else stringResource(R.string.crash_report_to_meloqis),
+                    )
+                },
                 containerColor = MaterialTheme.colorScheme.primaryContainer,
                 contentColor = MaterialTheme.colorScheme.onPrimaryContainer
             )
@@ -177,6 +191,9 @@ fun CrashScreen(
                 style = MaterialTheme.typography.bodyLarge,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
+            TextButton(onClick = onShare) {
+                Text(stringResource(R.string.crash_share_logs))
+            }
             
             Spacer(modifier = Modifier.height(16.dp))
             
@@ -203,5 +220,18 @@ fun CrashScreen(
             
             Spacer(modifier = Modifier.height(88.dp))
         }
+    }
+
+    if (showFeedback) {
+        MeloqisFeedbackDialog(
+            onNotNow = { showFeedback = false },
+            onSubmitted = {
+                showFeedback = false
+                reportSent = true
+            },
+            submit = { MeloqisFeedback.submit(context, it).isSuccess },
+            initialCategory = "Crash or bug",
+            initialMessage = context.getString(R.string.crash_feedback_prompt),
+        )
     }
 }

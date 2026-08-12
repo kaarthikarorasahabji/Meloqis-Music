@@ -43,7 +43,7 @@ object MeloqisTelemetry {
 
     fun prepare(context: Context) {
         appContext = context.applicationContext
-        enabled = preferences().getBoolean(KEY_ENABLED_CACHE, true)
+        enabled = preferences().getBoolean(KEY_ENABLED_CACHE, false)
     }
 
     fun initialize(context: Context, telemetryEnabled: Boolean) {

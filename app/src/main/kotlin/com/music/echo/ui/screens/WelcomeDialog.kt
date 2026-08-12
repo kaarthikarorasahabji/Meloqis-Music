@@ -367,6 +367,11 @@ private fun SignInGuideStep() {
             title = stringResource(R.string.onboarding_login_step_three),
             description = stringResource(R.string.onboarding_login_step_three_desc),
         )
+        GuideRow(
+            number = "4",
+            title = stringResource(R.string.onboarding_feedback_step),
+            description = stringResource(R.string.onboarding_feedback_step_desc),
+        )
     }
 }
 

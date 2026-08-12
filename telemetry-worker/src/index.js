@@ -1,5 +1,5 @@
 import { DASHBOARD_HTML } from "./dashboard.js";
-import { clampDays, ratio, validateEvent } from "./logic.js";
+import { clampDays, ratio, validateEvent, validateFeedback } from "./logic.js";
 
 const encoder = new TextEncoder();
 const UUID_PATTERN =
@@ -10,6 +10,7 @@ const MAX_DAILY_EVENTS_PER_INSTALL = 500;
 const REGISTER_LIMIT_PER_DAY = 20;
 const EVENT_LIMIT_PER_HOUR = 240;
 const DOWNLOAD_LIMIT_PER_HOUR = 300;
+const FEEDBACK_LIMIT_PER_DAY = 5;
 
 export default {
   async fetch(request, env) {
@@ -27,6 +28,9 @@ export default {
       }
       if (request.method === "POST" && url.pathname === "/api/register") {
         return registerInstallation(request, env);
+      }
+      if (request.method === "POST" && url.pathname === "/api/feedback") {
+        return submitFeedback(request, env);
       }
       if (request.method === "POST" && url.pathname === "/api/login") {
         return login(request, env);
@@ -166,6 +170,56 @@ async function ingestEvents(request, env) {
 
   await env.DB.batch(statements);
   return json({ accepted: events.length }, 202);
+}
+
+async function submitFeedback(request, env) {
+  const contentLength = Number.parseInt(request.headers.get("content-length") ?? "0", 10);
+  if (contentLength > 12 * 1024) return json({ error: "Payload too large" }, 413);
+  if (!request.headers.get("content-type")?.toLowerCase().includes("application/json")) {
+    return json({ error: "JSON required" }, 415);
+  }
+  if (!(await consumeRateLimit(request, env, "feedback", 86_400_000, FEEDBACK_LIMIT_PER_DAY))) {
+    return json({ error: "Feedback limit reached" }, 429);
+  }
+
+  const feedback = validateFeedback(await request.json().catch(() => null));
+  if (!feedback) return json({ error: "Invalid feedback" }, 400);
+  if (!env.RESEND_API_KEY || !env.FEEDBACK_FROM || !env.FEEDBACK_TO) {
+    console.error("Feedback email configuration is incomplete");
+    return json({ error: "Feedback service unavailable" }, 503);
+  }
+
+  const emailResponse = await fetch("https://api.resend.com/emails", {
+    method: "POST",
+    headers: {
+      authorization: `Bearer ${env.RESEND_API_KEY}`,
+      "content-type": "application/json",
+      "idempotency-key": `meloqis-feedback-${feedback.submissionId}`,
+    },
+    body: JSON.stringify({
+      from: env.FEEDBACK_FROM,
+      to: [env.FEEDBACK_TO],
+      subject: `Meloqis feedback: ${feedback.rating}/5 · ${feedback.category}`,
+      text: [
+        "New feedback from Meloqis Music",
+        "",
+        `Rating: ${feedback.rating}/5`,
+        `Category: ${feedback.category}`,
+        `App version: ${feedback.appVersion}`,
+        `Android: ${feedback.androidVersion} (SDK ${feedback.sdkInt})`,
+        `Submission: ${feedback.submissionId}`,
+        "",
+        feedback.message,
+      ].join("\n"),
+    }),
+  });
+
+  if (!emailResponse.ok) {
+    const errorCode = emailResponse.status;
+    console.error("Resend feedback delivery failed", errorCode);
+    return json({ error: "Feedback delivery failed" }, 502);
+  }
+  return json({ accepted: true }, 202);
 }
 
 async function login(request, env) {
