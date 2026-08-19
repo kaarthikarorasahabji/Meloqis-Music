@@ -1,8 +1,8 @@
 package iad1tya.echo.music.utils.cipher
 
 import android.content.Context
-import android.util.Base64
 import com.music.innertube.YouTube
+import iad1tya.echo.music.BuildConfig
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -14,7 +14,6 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 import timber.log.Timber
 import java.io.File
-import java.nio.charset.StandardCharsets
 
 /**
  * Owns the player-config table at runtime: bundled asset as the offline default, overlaid
@@ -26,10 +25,10 @@ object PlayerConfigStore {
     private const val TAG = "echomusic_CipherConfig"
     private const val ASSET_NAME = "player_configs.json"
 
-    private val REMOTE_URL by lazy {
-        val encoded = "aHR0cHM6Ly9yYXcuZ2l0aHVidXNlcmNvbnRlbnQuY29tL0VjaG9NdXNpY0FwcC9FY2hvLU11c2ljL21haW4vYXBwL3NyYy9tYWluL2Fzc2V0cy9wbGF5ZXJfY29uZmlncy5qc29u"
-        String(Base64.decode(encoded, Base64.DEFAULT), StandardCharsets.UTF_8)
-    }
+    private val REMOTE_URLS = listOf(
+        "https://raw.githubusercontent.com/kaarthikarorasahabji/Meloqis-Music/main/app/src/main/assets/player_configs.json",
+        "https://raw.githubusercontent.com/ZemerTeam/zemer-cipher/master/library/src/main/assets/player_configs.json",
+    )
 
     private const val REFRESH_TTL_MS = 6 * 60 * 60 * 1000L
     private const val FORCE_REFRESH_COOLDOWN_MS = 5 * 60 * 1000L
@@ -191,45 +190,57 @@ object PlayerConfigStore {
         lastAttemptReachedServer = false
         try {
             val etag = readMeta()?.first
-            val request = Request.Builder()
-                .url(REMOTE_URL)
-                .header("User-Agent", "Mozilla/5.0")
-                .apply { if (!etag.isNullOrEmpty()) header("If-None-Match", etag) }
-                .build()
-
-            httpClient.newCall(request).execute().use { response ->
-                lastAttemptReachedServer = true
-                if (response.code == 304) {
-                    Timber.tag(TAG).d("Remote configs unchanged (304)")
-                    writeMeta(etag.orEmpty(), System.currentTimeMillis())
-                    return false
-                }
-                if (!response.isSuccessful) {
-                    Timber.tag(TAG).w("Remote config fetch HTTP ${response.code} — keeping previous configs")
-                    return false
-                }
-
-                val body = response.body?.string()
-                if (body.isNullOrEmpty()) {
-                    Timber.tag(TAG).w("Remote config fetch returned empty body — keeping previous configs")
-                    return false
-                }
-
-                val remote = when (val result = PlayerConfigParser.parse(body)) {
-                    is PlayerConfigParser.ParseResult.Failure -> {
-                        Timber.tag(TAG).w("Remote configs rejected: ${result.reason} — keeping previous configs")
-                        return false
-                    }
-                    is PlayerConfigParser.ParseResult.Success -> {
-                        if (result.skippedEntries.isNotEmpty()) {
-                            Timber.tag(TAG).w("Remote configs: skipped invalid entries ${result.skippedEntries}")
+            REMOTE_URLS.forEachIndexed { index, remoteUrl ->
+                try {
+                    val request = Request.Builder()
+                        .url(remoteUrl)
+                        .header("User-Agent", "Meloqis/${BuildConfig.VERSION_NAME}")
+                        .apply {
+                            if (index == 0 && !etag.isNullOrEmpty()) {
+                                header("If-None-Match", etag)
+                            }
                         }
-                        result.configs
-                    }
-                }
+                        .build()
 
-                return applyRemote(remote, body, response.header("ETag").orEmpty())
+                    httpClient.newCall(request).execute().use { response ->
+                        lastAttemptReachedServer = true
+                        if (response.code == 304) {
+                            Timber.tag(TAG).d("Remote configs unchanged (304)")
+                            writeMeta(etag.orEmpty(), System.currentTimeMillis())
+                            return false
+                        }
+                        if (!response.isSuccessful) {
+                            Timber.tag(TAG).w("Remote config source ${index + 1} returned HTTP ${response.code}")
+                            return@use
+                        }
+
+                        val body = response.body?.string()
+                        if (body.isNullOrEmpty()) {
+                            Timber.tag(TAG).w("Remote config source ${index + 1} returned an empty body")
+                            return@use
+                        }
+
+                        val remote = when (val result = PlayerConfigParser.parse(body)) {
+                            is PlayerConfigParser.ParseResult.Failure -> {
+                                Timber.tag(TAG).w("Remote config source ${index + 1} rejected: ${result.reason}")
+                                return@use
+                            }
+                            is PlayerConfigParser.ParseResult.Success -> {
+                                if (result.skippedEntries.isNotEmpty()) {
+                                    Timber.tag(TAG).w("Remote configs: skipped invalid entries ${result.skippedEntries}")
+                                }
+                                result.configs
+                            }
+                        }
+
+                        return applyRemote(remote, body, response.header("ETag").orEmpty())
+                    }
+                } catch (e: Exception) {
+                    Timber.tag(TAG).w(e, "Remote config source ${index + 1} failed: ${e.message}")
+                }
             }
+            Timber.tag(TAG).w("All remote config sources failed — keeping previous configs")
+            return false
         } catch (e: Exception) {
             Timber.tag(TAG).w(e, "Remote config fetch failed: ${e.message} — keeping previous configs")
             return false

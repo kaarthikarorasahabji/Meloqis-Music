@@ -1,9 +1,7 @@
-# Meloqis Music 0.1.13
+# Meloqis Music 0.1.14
 
-- Enables the calibrated Meloqis Liquid Glass experience, floating navigation, haptics, and smarter queue defaults for existing and new listeners.
-- Adds a one-time feedback prompt after 48 hours, plus a permanent Settings → Feedback & reports path for crashes, playback failures, update issues, and suggestions.
-- Sends feedback privately through an Axenora-controlled Cloudflare Worker and Resend without embedding the email API key in the APK.
-- Adds direct crash-screen reporting while keeping anonymous operational insights opt-in.
-- Verifies downloaded updates with both SHA-256 and the installed Meloqis publisher certificate before installation.
-- Fixes Now Capsule resource cleanup when playback or the app task closes, and improves accessibility actions for assistive technology.
-- Removes duplicate widget receiver declarations and hardens transactional database reads.
+- Repairs the widespread YouTube Music source failures caused by the August player rotation.
+- Bundles 278 current player mappings through STS 20683, including all 39 mappings added after 0.1.13.
+- Moves live playback configuration updates to the Axenora-controlled Meloqis repository.
+- Adds the maintained Zemer configuration feed as an automatic fallback if the primary source is unavailable.
+- Keeps the last verified configuration active when either network source is unavailable or returns invalid data.
