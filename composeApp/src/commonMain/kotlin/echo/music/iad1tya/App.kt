@@ -65,6 +65,7 @@ import echo.music.iad1tya.logger.Logger
 import echo.music.iad1tya.expect.Orientation
 import echo.music.iad1tya.expect.currentOrientation
 import echo.music.iad1tya.expect.openUrl
+import echo.music.iad1tya.expect.downloadAndInstallApk
 import echo.music.iad1tya.expect.ui.layerBackdrop
 import echo.music.iad1tya.expect.ui.rememberBackdrop
 import echo.music.iad1tya.extension.copy
@@ -651,7 +652,12 @@ if (data.scheme == "wordbyword" && data.host == "lastfm-auth") {
                                 onClick = {
                                     shouldShowUpdateDialog = false
                                     viewModel.showedUpdateDialog = false
-                                    openUrl("https://echomusic.fun/")
+                                    val apkUrl = response.downloadUrl
+                                    if (!apkUrl.isNullOrBlank()) {
+                                        downloadAndInstallApk(apkUrl)
+                                    } else {
+                                        openUrl("https://github.com/kaarthikarorasahabji/Meloqis-Music/releases/latest")
+                                    }
                                 },
                             ) {
                                 Text(

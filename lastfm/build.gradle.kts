@@ -27,6 +27,11 @@ kotlin {
         }
     }
 
+    // Consumed by :core:data commonMain, which targets jvm (for :desktopApp resolution).
+    // This module's commonMain deps (common, ktorExt, ktor, okio) all support jvm, so the
+    // jvm variant resolves cleanly. It is never actually compiled during Android builds.
+    jvm()
+
     sourceSets {
         commonMain {
             dependencies {

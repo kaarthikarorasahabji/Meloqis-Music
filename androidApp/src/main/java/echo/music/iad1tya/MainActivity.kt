@@ -22,6 +22,8 @@ import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.core.net.toUri
@@ -238,7 +240,19 @@ class MainActivity : AppCompatActivity() {
 
 
         setContent {
-            App(viewModel)
+            val showSplash = androidx.compose.runtime.remember {
+                androidx.compose.runtime.mutableStateOf(true)
+            }
+            androidx.compose.foundation.layout.Box(
+                modifier = Modifier.fillMaxSize(),
+            ) {
+                App(viewModel)
+                if (showSplash.value) {
+                    echo.music.iad1tya.ui.component.MeloqisSplashOverlay(
+                        onFinished = { showSplash.value = false },
+                    )
+                }
+            }
         }
     }
 

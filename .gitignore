@@ -35,3 +35,6 @@ gradle/wrapper/gradle-wrapper.jar
 
 # Logs
 *.log
+
+# Claude Code session/config
+.claude/

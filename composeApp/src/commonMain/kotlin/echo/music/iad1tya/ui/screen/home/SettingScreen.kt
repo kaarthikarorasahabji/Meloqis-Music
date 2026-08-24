@@ -2209,7 +2209,7 @@ fun SettingScreen(
                     title = stringResource(Res.string.author),
                     subtitle = stringResource(Res.string.iad1tya_dev),
                     onClick = {
-                        uriHandler.openUri("https://iad1tya.cyou")
+                        uriHandler.openUri("https://axenoraai.in")
                     },
                 )
 
@@ -2217,14 +2217,14 @@ fun SettingScreen(
                     title = stringResource(Res.string.buy_me_a_coffee),
                     subtitle = stringResource(Res.string.donation),
                     onClick = {
-                        uriHandler.openUri("https://buymeacoffee.com/iad1tya")
+                        uriHandler.openUri("https://intradeus.github.io/http-protocol-redirector/?r=upi://pay?pa=kaarthikdassarorasahabji@sbi%26pn=Kaarthik%20Dass%20Arora%20Sahab%20Ji%26cu=INR")
                     },
                 )
                 SettingItem(
                     title = stringResource(Res.string.support_upi_crypto),
                     subtitle = stringResource(Res.string.support_url),
                     onClick = {
-                        uriHandler.openUri("https://support.iad1tya.cyou/")
+                        uriHandler.openUri("https://axenoraai.in")
                     },
                 )
 

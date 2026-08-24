@@ -40,7 +40,7 @@ fun ReviewDialog(
         confirmButton = {
             TextButton(onClick = {
                 onDoneReview.invoke()
-                uriHandler.openUri("https://github.com/EchoMusicApp/Echo-Music")
+                uriHandler.openUri("https://github.com/kaarthikarorasahabji/Meloqis-Music")
             }) {
                 Text(
                     stringResource(Res.string.give_a_star),
@@ -73,26 +73,26 @@ fun ReviewDialog(
                     append(stringResource(Res.string.if_you_enjoy_using_echomusic_star_echomusic_on_github_or_leave_a_review_on))
                     withLink(
                         LinkAnnotation.Url(
-                            "https://www.producthunt.com/products/echomusic",
+                            "https://github.com/kaarthikarorasahabji/Meloqis-Music",
                             TextLinkStyles(style = SpanStyle(textDecoration = TextDecoration.Underline, color = seed)),
                         ) {
                             onDoneReview.invoke()
                             onDismissRequest.invoke()
-                            uriHandler.openUri("https://www.producthunt.com/products/echomusic")
+                            uriHandler.openUri("https://github.com/kaarthikarorasahabji/Meloqis-Music")
                         },
                     ) {
-                        append(" ProductHunt")
+                        append(" GitHub")
                     }
                     append("\n")
                     append(stringResource(Res.string.if_you_love_my_work_consider))
                     withLink(
                         LinkAnnotation.Url(
-                            "https://buymeacoffee.com/iad1tya",
+                            "https://intradeus.github.io/http-protocol-redirector/?r=upi://pay?pa=kaarthikdassarorasahabji@sbi%26pn=Kaarthik%20Dass%20Arora%20Sahab%20Ji%26cu=INR",
                             TextLinkStyles(style = SpanStyle(textDecoration = TextDecoration.Underline, color = seed)),
                         ) {
                             onDoneReview.invoke()
                             onDismissRequest.invoke()
-                            uriHandler.openUri("https://buymeacoffee.com/iad1tya")
+                            uriHandler.openUri("https://intradeus.github.io/http-protocol-redirector/?r=upi://pay?pa=kaarthikdassarorasahabji@sbi%26pn=Kaarthik%20Dass%20Arora%20Sahab%20Ji%26cu=INR")
                         },
                     ) {
                         append(stringResource(Res.string.buying_me_a_coffee))

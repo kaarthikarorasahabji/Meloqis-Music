@@ -1,0 +1,18 @@
+package echo.music.iad1tya.domain.data.model.browse.artist
+import echo.music.iad1tya.domain.data.model.searchResult.songs.Album
+import echo.music.iad1tya.domain.data.model.searchResult.songs.Artist
+import echo.music.iad1tya.domain.data.model.searchResult.songs.Thumbnail
+
+data class ResultSong(
+    val videoId: String,
+    val title: String,
+    val artists: List<Artist>?,
+    val durationSeconds: Int = 0,
+    val album: Album,
+    val likeStatus: String,
+    val thumbnails: List<Thumbnail>,
+    val isAvailable: Boolean,
+    val isExplicit: Boolean,
+    /** YouTube's `MUSIC_VIDEO_TYPE_*`, or null when the response carried none — as on [ResultVideo]. */
+    val videoType: String?,
+)
