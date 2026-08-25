@@ -5,7 +5,23 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Meloqis Music — Music that moves you</title>
 <meta name="description" content="Meloqis Music — a beautiful, Apple Music-inspired Android player that paints itself with the colour of every song. No ads. No limits. Synced lyrics, offline playback, and living colour." />
+<meta name="theme-color" content="#fa2d48" />
+<meta name="author" content="Kaarthik Dass Arora Sahab Ji" />
 <link rel="icon" href="assets/icon.svg" type="image/svg+xml" />
+<link rel="apple-touch-icon" href="assets/icon.svg" />
+<link rel="canonical" href="https://meloqis.axenoraai.in/" />
+<!-- Open Graph -->
+<meta property="og:type" content="website" />
+<meta property="og:site_name" content="Meloqis Music" />
+<meta property="og:title" content="Meloqis Music — Music that moves you" />
+<meta property="og:description" content="A beautiful, Apple Music-inspired Android player that paints itself with the colour of every song. No ads. No limits." />
+<meta property="og:image" content="assets/icon.svg" />
+<meta property="og:url" content="https://meloqis.axenoraai.in/" />
+<!-- Twitter -->
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content="Meloqis Music — Music that moves you" />
+<meta name="twitter:description" content="A beautiful, Apple Music-inspired Android player that paints itself with the colour of every song. No ads. No limits." />
+<meta name="twitter:image" content="assets/icon.svg" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
@@ -123,6 +139,11 @@
   .dl-card { text-align:center; background: var(--bg-soft); border:1px solid var(--stroke); border-radius:32px; padding: 62px 30px; }
   .dl-card h2 { margin-bottom:14px; }
   .dl-card p { color:var(--muted); margin-bottom:30px; }
+  .dl-alt { margin-top:22px; font-size:14.5px; color:var(--muted); }
+  .dl-alt a { color:var(--muted); text-decoration:none; }
+  .dl-alt a:hover { color:var(--text); text-decoration:underline; }
+  .dl-alt .sep { opacity:.4; margin:0 10px; }
+  .dl-note { font-size:12.5px; opacity:.65; margin-top:20px; margin-bottom:0; }
 
   footer { border-top:1px solid var(--stroke); padding: 42px 0 62px; text-align:center; color:var(--muted); font-size:14.5px; }
   footer .heart { color: var(--brand); }
@@ -160,7 +181,7 @@
         <a href="#features">Features</a>
         <a href="#color">Living Colour</a>
         <a href="#faq">FAQ</a>
-        <a href="https://github.com/kaarthikarorasahabji/Meloqis-Music" target="_blank" rel="noopener">GitHub</a>
+        <a href="https://github.com/kaarthikarorasahabji/Meloqis-Music-KMP" target="_blank" rel="noopener">GitHub</a>
       </div>
       <a class="btn btn-primary" href="#download">Download</a>
     </div>
@@ -173,7 +194,7 @@
     <p class="sub fade-up d3">Meloqis Music is a free, Apple&nbsp;Music-inspired Android player that paints itself with the colour of every song — with synced lyrics, offline playback and a beautifully fluid experience.</p>
     <div class="cta fade-up d4">
       <a class="btn btn-primary" href="#download">⬇ Download APK</a>
-      <a class="btn btn-ghost" href="https://github.com/kaarthikarorasahabji/Meloqis-Music" target="_blank" rel="noopener">★ Star on GitHub</a>
+      <a class="btn btn-ghost" href="https://github.com/kaarthikarorasahabji/Meloqis-Music-KMP" target="_blank" rel="noopener">★ Star on GitHub</a>
     </div>
     <div class="badges fade-up d5">
       <span>🎨 Living colour</span>
@@ -234,19 +255,27 @@
     <div class="dl-card reveal">
       <div class="eyebrow">Ready to listen</div>
       <h2>Get Meloqis Music</h2>
-      <p>Download the latest Android build and start feeling your music today.</p>
+      <p>Download the latest Android build and start feeling your music today. Version 1.2.0 — free, no ads, no limits.</p>
       <div class="cta">
-        <a class="btn btn-primary" href="https://github.com/kaarthikarorasahabji/Meloqis-Music/releases/latest" target="_blank" rel="noopener">⬇ Download for Android</a>
-        <a class="btn btn-ghost" href="https://github.com/kaarthikarorasahabji/Meloqis-Music" target="_blank" rel="noopener">View source</a>
+        <a class="btn btn-primary" href="https://github.com/kaarthikarorasahabji/Meloqis-Music-KMP/releases/latest/download/Meloqis-Music-1.2.0-universal.apk">⬇ Download APK (universal)</a>
+        <a class="btn btn-ghost" href="https://github.com/kaarthikarorasahabji/Meloqis-Music-KMP/releases/latest" target="_blank" rel="noopener">All downloads</a>
       </div>
+      <div class="dl-alt">
+        <a href="https://github.com/kaarthikarorasahabji/Meloqis-Music-KMP/releases/latest/download/Meloqis-Music-1.2.0-arm64-v8a.apk">arm64-v8a (smaller)</a>
+        <span class="sep">·</span>
+        <a href="https://pub-7cad9af12a364d3f928f96a083db320f.r2.dev/kmp/Meloqis-Music-1.2.0-universal.apk">Cloudflare mirror</a>
+        <span class="sep">·</span>
+        <a href="https://github.com/kaarthikarorasahabji/Meloqis-Music-KMP" target="_blank" rel="noopener">View source</a>
+      </div>
+      <p class="dl-note">Debug-signed build. If an older Meloqis build with a different signature is installed, uninstall it first.</p>
     </div>
   </section>
 
   <footer class="wrap">
     <div class="credit">developed with <span class="heart">❤</span> by Kaarthik Dass Arora Sahab Ji</div>
     <div class="flinks">
-      <a href="https://github.com/kaarthikarorasahabji/Meloqis-Music" target="_blank" rel="noopener">GitHub</a>
-      <a href="https://github.com/kaarthikarorasahabji/Meloqis-Music/releases/latest" target="_blank" rel="noopener">Releases</a>
+      <a href="https://github.com/kaarthikarorasahabji/Meloqis-Music-KMP" target="_blank" rel="noopener">GitHub</a>
+      <a href="https://github.com/kaarthikarorasahabji/Meloqis-Music-KMP/releases/latest" target="_blank" rel="noopener">Releases</a>
       <a href="https://axenoraai.in" target="_blank" rel="noopener">Axenora AI</a>
     </div>
     <div>Meloqis Music — feel every beat.</div>
