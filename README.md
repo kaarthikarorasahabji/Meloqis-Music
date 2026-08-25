@@ -5,9 +5,9 @@
 
   <p><b>A beautiful, Apple Music-inspired Android player that paints itself with the colour of every song — with streaming, synced lyrics, offline playback, and living colour.</b></p>
   <p>
-    <a href="https://github.com/kaarthikarorasahabji/Meloqis-Music/releases/latest">Download</a> •
+    <a href="https://github.com/kaarthikarorasahabji/Meloqis-Music-KMP/releases/latest">Download</a> •
     <a href="https://axenoraai.in">Axenora AI</a> •
-    <a href="https://github.com/kaarthikarorasahabji/Meloqis-Music">GitHub</a>
+    <a href="https://github.com/kaarthikarorasahabji/Meloqis-Music-KMP">GitHub</a>
   </p>
 </div>
 
@@ -52,8 +52,8 @@ Meloqis Music is built utilizing a modern Android and Kotlin Multiplatform (KMP)
 ## Building from source
 
 ```bash
-git clone https://github.com/kaarthikarorasahabji/Meloqis-Music.git
-cd Meloqis-Music
+git clone https://github.com/kaarthikarorasahabji/Meloqis-Music-KMP.git
+cd Meloqis-Music-KMP
 ./gradlew :androidApp:assembleDebug
 ```
 
@@ -61,13 +61,13 @@ The debug APKs are produced in `androidApp/build/outputs/apk/debug/`. Requires J
 
 ## In-app updates
 
-Meloqis Music checks the [Releases](https://github.com/kaarthikarorasahabji/Meloqis-Music/releases/latest) page for new versions. When an update is available, the in-app dialog downloads the release APK and launches the installer automatically — no store required.
+Meloqis Music checks the [Releases](https://github.com/kaarthikarorasahabji/Meloqis-Music-KMP/releases/latest) page for new versions. When an update is available, the in-app dialog downloads the release APK and launches the installer automatically — no store required.
 
 > **Note:** For in-app updates to install successfully, every release APK must be signed with the **same signing key** as the version already installed on the device. Publish releases using a stable release keystore (see `androidApp` signing config), not the machine-local debug key.
 
 ## Installation
 
-Download the latest pre-compiled APK from the [Releases Page](https://github.com/kaarthikarorasahabji/Meloqis-Music/releases/latest).
+Download the latest pre-compiled APK from the [Releases Page](https://github.com/kaarthikarorasahabji/Meloqis-Music-KMP/releases/latest).
 
 ## Support
 

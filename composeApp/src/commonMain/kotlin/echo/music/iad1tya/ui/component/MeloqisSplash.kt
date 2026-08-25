@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.runtime.Composable
@@ -105,6 +106,20 @@ fun MeloqisSplashOverlay(onFinished: () -> Unit) {
                 modifier = Modifier.graphicsLayer { alpha = contentAlpha.value },
             )
         }
+
+        // Developer credit tag, pinned to the bottom during loading.
+        Text(
+            text = "developed by Kaarthik Dass Arora Sahab Ji",
+            color = Color.White.copy(alpha = 0.9f),
+            fontSize = 12.sp,
+            fontWeight = FontWeight.Medium,
+            textAlign = TextAlign.Center,
+            modifier =
+                Modifier
+                    .align(Alignment.BottomCenter)
+                    .padding(bottom = 36.dp)
+                    .graphicsLayer { alpha = contentAlpha.value },
+        )
     }
 }
 

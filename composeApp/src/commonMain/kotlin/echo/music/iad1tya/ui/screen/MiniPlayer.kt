@@ -319,11 +319,17 @@ fun MiniPlayer(
 
     if (getPlatform() == Platform.Android) {
         Card(
-            shape = if (isLiquidGlassEnabled == DataStoreManager.TRUE) CircleShape else RoundedCornerShape(12.dp),
+            shape = if (isLiquidGlassEnabled == DataStoreManager.TRUE) CircleShape else RoundedCornerShape(16.dp),
             colors =
                 CardDefaults.cardColors(
                     containerColor = if (isLiquidGlassEnabled == DataStoreManager.TRUE) Color.Transparent else background.value,
                     disabledContainerColor = if (isLiquidGlassEnabled == DataStoreManager.TRUE) Color.Transparent else background.value,
+                ),
+            // Subtle lift so the capsule reads as a floating card over content, Apple Music-style.
+            // No shadow under liquid glass — the glass surface already provides its own depth.
+            elevation =
+                CardDefaults.cardElevation(
+                    defaultElevation = if (isLiquidGlassEnabled == DataStoreManager.TRUE) 0.dp else 8.dp,
                 ),
             modifier =
                 modifier
@@ -439,10 +445,10 @@ fun MiniPlayer(
                                 },
                                 modifier =
                                     Modifier
-                                        .size(40.dp)
+                                        .size(44.dp)
                                         .align(Alignment.CenterVertically)
                                         .clip(
-                                            if (isLiquidGlassEnabled == DataStoreManager.TRUE) CircleShape else RoundedCornerShape(4.dp),
+                                            if (isLiquidGlassEnabled == DataStoreManager.TRUE) CircleShape else RoundedCornerShape(8.dp),
                                         ),
                             )
                             Spacer(modifier = Modifier.width(10.dp))
@@ -567,13 +573,13 @@ fun MiniPlayer(
                         modifier =
                             Modifier
                                 .fillMaxWidth()
-                                .height(1.dp)
+                                .height(3.dp)
                                 .background(
                                     color = Color.Transparent,
                                     shape = RoundedCornerShape(4.dp),
                                 ),
                         color = textColor,
-                        trackColor = Color.Transparent,
+                        trackColor = textColor.copy(alpha = 0.22f),
                         strokeCap = StrokeCap.Round,
                         drawStopIndicator = {},
                     )

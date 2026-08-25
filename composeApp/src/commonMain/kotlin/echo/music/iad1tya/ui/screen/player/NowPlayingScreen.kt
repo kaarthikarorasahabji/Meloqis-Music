@@ -13,6 +13,8 @@ import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
@@ -102,6 +104,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onGloballyPositioned
@@ -566,6 +569,15 @@ fun NowPlayingScreenContent(
                 easing = LinearEasing,
             ),
         label = "ControlLayoutAlpha",
+    )
+
+    // Apple Music-style artwork: full size while playing, shrinks to ~84% when paused,
+    // with a soft spring so play/pause feels physical. This is draw-only (graphicsLayer
+    // scale), so it never disturbs the delicate middle-layout height measurements below.
+    val artworkScale: Float by animateFloatAsState(
+        targetValue = if (controllerState.isPlaying) 1f else 0.84f,
+        animationSpec = spring(dampingRatio = 0.72f, stiffness = Spring.StiffnessLow),
+        label = "ArtworkPlayPauseScale",
     )
 
     var showHideJob by remember {
@@ -1040,10 +1052,13 @@ fun NowPlayingScreenContent(
                                         modifier =
                                             Modifier
                                                 .align(Alignment.Center)
-                                                .background(Color.Transparent)
+                                                .graphicsLayer {
+                                                    scaleX = artworkScale
+                                                    scaleY = artworkScale
+                                                }.background(Color.Transparent)
                                                 .shadow(
-                                                    elevation = 3.dp,
-                                                    shape = RoundedCornerShape(8.dp),
+                                                    elevation = 14.dp,
+                                                    shape = RoundedCornerShape(14.dp),
                                                     spotColor =
                                                         spotShadowColor.copy(
                                                             alpha = 0.6f,
@@ -1078,7 +1093,7 @@ fun NowPlayingScreenContent(
                                                     .aspectRatio(
                                                         if (!screenDataState.isVideo) 1f else 16f / 9,
                                                     ).clip(
-                                                        RoundedCornerShape(8.dp),
+                                                        RoundedCornerShape(14.dp),
                                                     ).alpha(
                                                         if (!screenDataState.isVideo || !shouldShowVideo) 1f else 0f,
                                                     ),
