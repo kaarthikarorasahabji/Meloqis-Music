@@ -341,6 +341,12 @@ developed with ❤️ by Kaarthik Dass Arora Sahab Ji</string>
     <string name="spotify_lyrícs_info">More lyrics without translation</string>
     <string name="enable_canvas">Enable Canvas</string>
     <string name="canvas_info">Show Spotify Canvas in Meloqis Music</string>
+    <string name="data_battery">Data &amp; Battery</string>
+    <string name="data_saver">Data Saver</string>
+    <string name="data_saver_info">Stop pre-downloading upcoming tracks. Audio quality stays the same.</string>
+    <string name="battery_saver">Battery Saver</string>
+    <string name="battery_saver_info">Freeze animations and effects to save battery.</string>
+    <string name="developed_credit">Developed with ❤️ BY Kaarthik Dass Arora Sahab Ji</string>
     <string name="spotify_lyrics_provider">Lyrics provided by Spotify</string>
     <string name="offline_mode">Offline mode</string>
     <string name="added_to_youtube_liked">Added to YouTube Liked</string>

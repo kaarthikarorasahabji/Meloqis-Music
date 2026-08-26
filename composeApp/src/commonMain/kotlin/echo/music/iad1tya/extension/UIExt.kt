@@ -5,9 +5,13 @@ import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.animateScrollBy
+import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.foundation.gestures.waitForUpOrCancellation
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -50,6 +54,7 @@ import androidx.compose.ui.graphics.Paint
 import androidx.compose.ui.graphics.drawscope.ContentDrawScope
 import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.boundsInWindow
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalLayoutDirection
@@ -61,6 +66,7 @@ import echo.music.iad1tya.domain.data.model.ui.ScreenSizeInfo
 import echo.music.iad1tya.logger.Logger
 import echo.music.iad1tya.getPlatform
 import echo.music.iad1tya.ui.theme.LocalAppColors
+import echo.music.iad1tya.ui.theme.LocalBatterySaver
 import kotlinx.coroutines.runBlocking
 import org.jetbrains.compose.resources.StringResource
 import org.jetbrains.compose.resources.getString
@@ -76,6 +82,11 @@ import kotlin.math.sin
 fun Modifier.shimmer(): Modifier =
     composed {
         val appColors = LocalAppColors.current
+        // Battery Saver: skip the infinite animation clock. A flat placeholder tint reads as a
+        // loading state just as well, without a gradient that invalidates every frame.
+        if (LocalBatterySaver.current) {
+            return@composed background(appColors.shimmerBackground)
+        }
         var size by remember {
             mutableStateOf(IntSize.Zero)
         }
@@ -131,6 +142,40 @@ fun LazyListState.visibilityPercent(info: LazyListItemInfo): Float {
 }
 
 fun Modifier.greyScale() = this.then(GreyScaleModifier())
+
+/**
+ * Tactile press feedback: springs the content down to [pressedScale] while held, then releases with a
+ * gentle bounce. Non-invasive — it never consumes the gesture, so an existing onClick still fires.
+ * Battery Saver disables it entirely (taps still work, they just don't scale).
+ */
+fun Modifier.springPress(pressedScale: Float = 0.9f): Modifier =
+    composed {
+        if (LocalBatterySaver.current) return@composed this
+        var pressed by remember { mutableStateOf(false) }
+        val scale by animateFloatAsState(
+            targetValue = if (pressed) pressedScale else 1f,
+            animationSpec =
+                spring(
+                    dampingRatio = Spring.DampingRatioMediumBouncy,
+                    stiffness = Spring.StiffnessMedium,
+                ),
+            label = "springPress",
+        )
+        this
+            .graphicsLayer {
+                scaleX = scale
+                scaleY = scale
+            }.pointerInput(Unit) {
+                awaitPointerEventScope {
+                    while (true) {
+                        awaitFirstDown(requireUnconsumed = false)
+                        pressed = true
+                        waitForUpOrCancellation()
+                        pressed = false
+                    }
+                }
+            }
+    }
 
 fun Modifier.angledGradientBackground(
     colors: List<Color>,

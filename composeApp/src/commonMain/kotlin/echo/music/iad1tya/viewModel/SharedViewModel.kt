@@ -186,6 +186,14 @@ class SharedViewModel(
     private val _getVideo: MutableStateFlow<Boolean> = MutableStateFlow(false)
     val getVideo: StateFlow<Boolean> = _getVideo
 
+    /** Battery saver — toned-down animations app-wide when true. Read by the theme + UI. */
+    private val _batterySaver: MutableStateFlow<Boolean> = MutableStateFlow(false)
+    val batterySaver: StateFlow<Boolean> = _batterySaver
+
+    /** Data saver — surfaced for UI; the player reads the pref directly via DataStoreManager. */
+    private val _dataSaver: MutableStateFlow<Boolean> = MutableStateFlow(false)
+    val dataSaver: StateFlow<Boolean> = _dataSaver
+
     private var _timeline =
         MutableStateFlow<TimeLine>(
             TimeLine(
@@ -257,6 +265,18 @@ class SharedViewModel(
                         _getVideo.value = it == TRUE
                     }
                 }
+            val batterySaverJob =
+                launch {
+                    dataStoreManager.batterySaver.collectLatest {
+                        _batterySaver.value = it == TRUE
+                    }
+                }
+            val dataSaverJob =
+                launch {
+                    dataStoreManager.dataSaver.collectLatest {
+                        _dataSaver.value = it == TRUE
+                    }
+                }
             val lyricsProviderJob =
                 launch {
                     dataStoreManager.lyricsProvider.distinctUntilChanged().collectLatest {
@@ -281,6 +301,8 @@ class SharedViewModel(
 //                }
             timeLineJob.join()
             checkGetVideoJob.join()
+            batterySaverJob.join()
+            dataSaverJob.join()
             lyricsProviderJob.join()
             shareSavedLyricsJob.join()
 //            controllerStateJob.join()

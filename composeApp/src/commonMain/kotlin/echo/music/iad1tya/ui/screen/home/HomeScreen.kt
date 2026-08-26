@@ -4,6 +4,11 @@ import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.Crossfade
 import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
@@ -132,6 +137,7 @@ import echo.music.iad1tya.ui.navigation.destination.list.ArtistDestination
 import echo.music.iad1tya.ui.screen.library.LibraryDynamicPlaylistType
 import echo.music.iad1tya.ui.navigation.destination.list.PlaylistDestination
 import echo.music.iad1tya.ui.navigation.destination.login.LoginDestination
+import echo.music.iad1tya.ui.theme.LocalBatterySaver
 import echo.music.iad1tya.ui.theme.typo
 import echo.music.iad1tya.viewModel.HomeViewModel
 import echo.music.iad1tya.viewModel.HomeViewModel.Companion.HOME_PARAMS_COMMUTE
@@ -260,6 +266,25 @@ fun HomeScreen(
         mutableStateOf(backgroundColor)
     }
     val animatedColor by animateColorAsState(topHeaderColor, tween(500))
+    // Bold header: the palette gradient's angle drifts slowly for a living feel. Battery Saver pins it
+    // to a fixed 25° (no infinite transition created).
+    val headerAngle: Float =
+        if (LocalBatterySaver.current) {
+            25f
+        } else {
+            val headerTransition = rememberInfiniteTransition(label = "homeHeader")
+            headerTransition
+                .animateFloat(
+                    initialValue = 12f,
+                    targetValue = 38f,
+                    animationSpec =
+                        infiniteRepeatable(
+                            animation = tween(9000, easing = LinearEasing),
+                            repeatMode = RepeatMode.Reverse,
+                        ),
+                    label = "homeHeaderAngle",
+                ).value
+        }
     val mainHomeThumbnail by viewModel.mainHomeThumbnail.collectAsStateWithLifecycle()
     val networkLoader = rememberNetworkLoader(HttpClient(CIO))
     val dominantColorState =
@@ -471,7 +496,7 @@ fun HomeScreen(
                                             Modifier
                                                 .fillMaxWidth()
                                                 .height(300.dp)
-                                                .angledGradientBackground(listOf(animatedColor, backgroundColor), 25f),
+                                                .angledGradientBackground(listOf(animatedColor, backgroundColor), headerAngle),
                                     ) {
                                         Box(
                                             modifier =

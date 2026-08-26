@@ -134,6 +134,24 @@ interface DataStoreManager {
 
     suspend fun setMaxSongCacheSize(size: Int)
 
+    /**
+     * Data saver: when on, the player stops speculatively downloading upcoming tracks and shrinks
+     * its look-ahead buffer. It never lowers audio quality — the same bitrate is fetched, just less
+     * of it ahead of time. Stored as [TRUE]/[FALSE]; off by default.
+     */
+    val dataSaver: Flow<String>
+
+    suspend fun setDataSaver(dataSaver: Boolean)
+
+    /**
+     * Battery saver: when on, the UI freezes its continuous animations (shimmer, moving gradients,
+     * aurora, palette re-tint) and drops blur/heavy shadows, and the player stops precaching. Purely
+     * a longevity vs. flair trade-off. Stored as [TRUE]/[FALSE]; off by default so the animations show.
+     */
+    val batterySaver: Flow<String>
+
+    suspend fun setBatterySaver(batterySaver: Boolean)
+
     val watchVideoInsteadOfPlayingAudio: Flow<String>
 
     suspend fun setWatchVideoInsteadOfPlayingAudio(watch: Boolean)

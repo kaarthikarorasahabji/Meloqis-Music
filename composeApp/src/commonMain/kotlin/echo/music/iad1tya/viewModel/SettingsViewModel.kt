@@ -367,6 +367,8 @@ class SettingsViewModel(
         getSpotifyLyrics()
         getEqualizer()
         getSpotifyCanvas()
+        getDataSaver()
+        getBatterySaver()
         getUsingProxy()
         getCanvasCache()
         getTranslucentBottomBar()
@@ -1793,6 +1795,42 @@ class SettingsViewModel(
         viewModelScope.launch {
             dataStoreManager.setSpotifyCanvas(loggedIn)
             getSpotifyCanvas()
+        }
+    }
+
+    private var _dataSaver: MutableStateFlow<Boolean> = MutableStateFlow(false)
+    val dataSaver: StateFlow<Boolean> = _dataSaver
+
+    fun getDataSaver() {
+        viewModelScope.launch {
+            dataStoreManager.dataSaver.collect {
+                _dataSaver.emit(it == DataStoreManager.TRUE)
+            }
+        }
+    }
+
+    fun setDataSaver(enabled: Boolean) {
+        viewModelScope.launch {
+            dataStoreManager.setDataSaver(enabled)
+            getDataSaver()
+        }
+    }
+
+    private var _batterySaver: MutableStateFlow<Boolean> = MutableStateFlow(false)
+    val batterySaver: StateFlow<Boolean> = _batterySaver
+
+    fun getBatterySaver() {
+        viewModelScope.launch {
+            dataStoreManager.batterySaver.collect {
+                _batterySaver.emit(it == DataStoreManager.TRUE)
+            }
+        }
+    }
+
+    fun setBatterySaver(enabled: Boolean) {
+        viewModelScope.launch {
+            dataStoreManager.setBatterySaver(enabled)
+            getBatterySaver()
         }
     }
 

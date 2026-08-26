@@ -89,6 +89,7 @@ import coil3.request.CachePolicy
 import coil3.request.ImageRequest
 import coil3.request.crossfade
 import echo.music.iad1tya.domain.data.model.streams.TimeLine
+import echo.music.iad1tya.ui.theme.LocalBatterySaver
 import echo.music.iad1tya.extension.KeepScreenOn
 import echo.music.iad1tya.extension.ParsedRichSyncLine
 import echo.music.iad1tya.extension.animateScrollAndCentralizeItem
@@ -604,40 +605,51 @@ fun FullscreenLyricsSheet(
     // Dynamic gradient animation - MULTIPLE DIRECTIONS
     // Replaces the previous `while(true) { delay(16) }` loop with a Compose
     // infinite transition.
-    val gradientTransition = rememberInfiniteTransition(label = "lyricsGradient")
-    val animatedAngle by gradientTransition.animateFloat(
-        initialValue = -45f,
-        targetValue = 45f,
-        animationSpec =
-            infiniteRepeatable(
-                animation = tween(durationMillis = 6000, easing = LinearEasing),
-                repeatMode = RepeatMode.Reverse,
-            ),
-        label = "lyricsGradientAngle",
-    )
-    val animatedOffsetX by gradientTransition.animateFloat(
-        initialValue = -1500f,
-        targetValue = 1500f,
-        animationSpec =
-            infiniteRepeatable(
-                animation = tween(durationMillis = 8000, easing = LinearEasing),
-                repeatMode = RepeatMode.Reverse,
-            ),
-        label = "lyricsGradientOffsetX",
-    )
-    val animatedOffsetY by gradientTransition.animateFloat(
-        initialValue = -1000f,
-        targetValue = 1000f,
-        animationSpec =
-            infiniteRepeatable(
-                animation = tween(durationMillis = 8000, easing = LinearEasing),
-                repeatMode = RepeatMode.Reverse,
-            ),
-        label = "lyricsGradientOffsetY",
-    )
-    val gradientAngle = animatedAngle
-    val gradientOffsetX = animatedOffsetX
-    val gradientOffsetY = animatedOffsetY
+    // Battery Saver freezes the gradient to a static pose — it still renders, it just stops drifting,
+    // so the three infinite clocks that otherwise run continuously behind the lyrics are not created.
+    val gradientAngle: Float
+    val gradientOffsetX: Float
+    val gradientOffsetY: Float
+    if (LocalBatterySaver.current) {
+        gradientAngle = 0f
+        gradientOffsetX = 0f
+        gradientOffsetY = 0f
+    } else {
+        val gradientTransition = rememberInfiniteTransition(label = "lyricsGradient")
+        val animatedAngle by gradientTransition.animateFloat(
+            initialValue = -45f,
+            targetValue = 45f,
+            animationSpec =
+                infiniteRepeatable(
+                    animation = tween(durationMillis = 6000, easing = LinearEasing),
+                    repeatMode = RepeatMode.Reverse,
+                ),
+            label = "lyricsGradientAngle",
+        )
+        val animatedOffsetX by gradientTransition.animateFloat(
+            initialValue = -1500f,
+            targetValue = 1500f,
+            animationSpec =
+                infiniteRepeatable(
+                    animation = tween(durationMillis = 8000, easing = LinearEasing),
+                    repeatMode = RepeatMode.Reverse,
+                ),
+            label = "lyricsGradientOffsetX",
+        )
+        val animatedOffsetY by gradientTransition.animateFloat(
+            initialValue = -1000f,
+            targetValue = 1000f,
+            animationSpec =
+                infiniteRepeatable(
+                    animation = tween(durationMillis = 8000, easing = LinearEasing),
+                    repeatMode = RepeatMode.Reverse,
+                ),
+            label = "lyricsGradientOffsetY",
+        )
+        gradientAngle = animatedAngle
+        gradientOffsetX = animatedOffsetX
+        gradientOffsetY = animatedOffsetY
+    }
 
     // Smooth color animation based on lyrics color
     LaunchedEffect(color) {
@@ -719,18 +731,25 @@ fun FullscreenLyricsSheet(
         shape = RectangleShape,
     ) {
         // Crossfade: RGB rainbow color cycling when transitioning between tracks
-        val infiniteTransition = rememberInfiniteTransition(label = "crossfadeRainbow")
-        val rainbowHue by infiniteTransition.animateFloat(
-            initialValue = 0f,
-            targetValue = 360f,
-            animationSpec =
-                infiniteRepeatable(
-                    animation = tween(1000, easing = LinearEasing),
-                    repeatMode = RepeatMode.Restart,
-                ),
-            label = "rainbowHue",
-        )
-        val rainbowColor = hsvToColor(rainbowHue, 1f, 1f)
+        // Battery Saver: no rainbow clock. rainbowColor pinned to white so the crossfade branch can no
+        // longer cycle; the slider track simply stays white.
+        val rainbowColor =
+            if (LocalBatterySaver.current) {
+                Color.White
+            } else {
+                val infiniteTransition = rememberInfiniteTransition(label = "crossfadeRainbow")
+                val rainbowHue by infiniteTransition.animateFloat(
+                    initialValue = 0f,
+                    targetValue = 360f,
+                    animationSpec =
+                        infiniteRepeatable(
+                            animation = tween(1000, easing = LinearEasing),
+                            repeatMode = RepeatMode.Restart,
+                        ),
+                    label = "rainbowHue",
+                )
+                hsvToColor(rainbowHue, 1f, 1f)
+            }
         val sliderTrackColor by animateColorAsState(
             targetValue = if (timelineState.isCrossfading) rainbowColor else Color.White,
             animationSpec = tween(300),

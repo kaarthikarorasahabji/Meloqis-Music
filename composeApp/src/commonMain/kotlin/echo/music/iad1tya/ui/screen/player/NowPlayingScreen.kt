@@ -98,8 +98,10 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.StrokeCap
@@ -145,6 +147,7 @@ import echo.music.iad1tya.extension.isElementVisible
 import echo.music.iad1tya.extension.parseTimestampToMilliseconds
 import echo.music.iad1tya.extension.rememberIsInPipMode
 import echo.music.iad1tya.extension.smoothScrimBrush
+import echo.music.iad1tya.extension.springPress
 import echo.music.iad1tya.getPlatform
 import echo.music.iad1tya.ui.component.AIBadge
 import echo.music.iad1tya.ui.component.AddToPlaylistModalBottomSheet
@@ -176,6 +179,7 @@ import echo.music.iad1tya.ui.icon.SubtitlesOff
 import echo.music.iad1tya.ui.icon.ThumbsUpDown
 import echo.music.iad1tya.ui.navigation.destination.list.ArtistDestination
 import echo.music.iad1tya.ui.navigation.destination.player.FullscreenDestination
+import echo.music.iad1tya.ui.theme.LocalBatterySaver
 import echo.music.iad1tya.ui.theme.blackMoreOverlay
 import echo.music.iad1tya.ui.theme.overlay
 import echo.music.iad1tya.ui.theme.typo
@@ -457,6 +461,42 @@ fun NowPlayingScreenContent(
         mutableStateOf(GradientOffset(GradientAngle.CW135))
     }
 
+    // Aurora: two slow, out-of-phase drift clocks feed the blob centres drawn in the backdrop below.
+    // Battery Saver freezes both to a static mid-pose, so no infinite transition is created at all.
+    val auroraEnabled = !LocalBatterySaver.current
+    val auroraDriftA: Float
+    val auroraDriftB: Float
+    if (auroraEnabled) {
+        val auroraTransition = rememberInfiniteTransition(label = "aurora")
+        auroraDriftA =
+            auroraTransition
+                .animateFloat(
+                    initialValue = 0f,
+                    targetValue = 1f,
+                    animationSpec =
+                        infiniteRepeatable(
+                            animation = tween(11000, easing = LinearEasing),
+                            repeatMode = RepeatMode.Reverse,
+                        ),
+                    label = "auroraDriftA",
+                ).value
+        auroraDriftB =
+            auroraTransition
+                .animateFloat(
+                    initialValue = 0f,
+                    targetValue = 1f,
+                    animationSpec =
+                        infiniteRepeatable(
+                            animation = tween(9000, easing = LinearEasing),
+                            repeatMode = RepeatMode.Reverse,
+                        ),
+                    label = "auroraDriftB",
+                ).value
+    } else {
+        auroraDriftA = 0.5f
+        auroraDriftB = 0.5f
+    }
+
     var spotShadowColor by remember {
         mutableStateOf(Color.White)
     }
@@ -539,18 +579,25 @@ fun NowPlayingScreenContent(
     }
 
     // Crossfade: RGB rainbow color cycling when transitioning between tracks
-    val infiniteTransition = rememberInfiniteTransition(label = "crossfadeRainbow")
-    val rainbowHue by infiniteTransition.animateFloat(
-        initialValue = 0f,
-        targetValue = 360f,
-        animationSpec =
-            infiniteRepeatable(
-                animation = tween(1000, easing = LinearEasing),
-                repeatMode = RepeatMode.Restart,
-            ),
-        label = "rainbowHue",
-    )
-    val rainbowColor = hsvToColor(rainbowHue, 1f, 1f)
+    // Battery Saver: no rainbow clock. rainbowColor pinned to white so the crossfade branch below
+    // cannot cycle; the slider simply stays white.
+    val rainbowColor =
+        if (LocalBatterySaver.current) {
+            Color.White
+        } else {
+            val infiniteTransition = rememberInfiniteTransition(label = "crossfadeRainbow")
+            val rainbowHue by infiniteTransition.animateFloat(
+                initialValue = 0f,
+                targetValue = 360f,
+                animationSpec =
+                    infiniteRepeatable(
+                        animation = tween(1000, easing = LinearEasing),
+                        repeatMode = RepeatMode.Restart,
+                    ),
+                label = "rainbowHue",
+            )
+            hsvToColor(rainbowHue, 1f, 1f)
+        }
     val sliderTrackColor by animateColorAsState(
         targetValue = if (timelineState.isCrossfading) rainbowColor else Color.White,
         animationSpec = tween(300),
@@ -815,6 +862,62 @@ fun NowPlayingScreenContent(
                                         ),
                                     size = area,
                                 )
+                                // Aurora: soft album-colour blobs drifting over the palette gradient —
+                                // monochromatic, so they read as a lava-lamp of the current artwork. The
+                                // scrim below fades them into the backdrop; Battery Saver freezes them.
+                                val auroraBase = startColor.value
+                                val blobW = area.width
+                                drawRect(
+                                    brush =
+                                        Brush.radialGradient(
+                                            colors =
+                                                listOf(
+                                                    auroraBase.copy(alpha = 0.45f),
+                                                    auroraBase.copy(alpha = 0f),
+                                                ),
+                                            center =
+                                                Offset(
+                                                    blobW * (0.22f + 0.16f * auroraDriftA),
+                                                    gradientHeight * 0.26f,
+                                                ),
+                                            radius = blobW * 0.62f,
+                                        ),
+                                    size = area,
+                                )
+                                drawRect(
+                                    brush =
+                                        Brush.radialGradient(
+                                            colors =
+                                                listOf(
+                                                    lerp(auroraBase, Color.White, 0.35f).copy(alpha = 0.38f),
+                                                    auroraBase.copy(alpha = 0f),
+                                                ),
+                                            center =
+                                                Offset(
+                                                    blobW * (0.82f - 0.20f * auroraDriftB),
+                                                    gradientHeight * 0.15f,
+                                                ),
+                                            radius = blobW * 0.50f,
+                                        ),
+                                    size = area,
+                                )
+                                drawRect(
+                                    brush =
+                                        Brush.radialGradient(
+                                            colors =
+                                                listOf(
+                                                    lerp(auroraBase, Color.Black, 0.30f).copy(alpha = 0.34f),
+                                                    auroraBase.copy(alpha = 0f),
+                                                ),
+                                            center =
+                                                Offset(
+                                                    blobW * (0.50f + 0.12f * auroraDriftA),
+                                                    gradientHeight * 0.46f,
+                                                ),
+                                            radius = blobW * 0.55f,
+                                        ),
+                                    size = area,
+                                )
                                 // Vertical fade to the backdrop colour, fully opaque from 90%
                                 // down, so the bottom edge meets the area underneath seamlessly
                                 // across the whole width. Adding the same colour as a stop to
@@ -1057,7 +1160,7 @@ fun NowPlayingScreenContent(
                                                     scaleY = artworkScale
                                                 }.background(Color.Transparent)
                                                 .shadow(
-                                                    elevation = 14.dp,
+                                                    elevation = if (LocalBatterySaver.current) 0.dp else 14.dp,
                                                     shape = RoundedCornerShape(14.dp),
                                                     spotColor =
                                                         spotShadowColor.copy(
@@ -1269,7 +1372,7 @@ fun NowPlayingScreenContent(
                                                 .align(Alignment.Center)
                                                 .background(Color.Transparent)
                                                 .shadow(
-                                                    elevation = 3.dp,
+                                                    elevation = if (LocalBatterySaver.current) 0.dp else 3.dp,
                                                     shape = RoundedCornerShape(8.dp),
                                                     spotColor = Color.Black.copy(alpha = 0.4f),
                                                     ambientColor = Color.Transparent,
@@ -2610,7 +2713,7 @@ fun NowPlayingScreenContent(
                                     )
                                 }
                             } else {
-                                PlayPauseButton(isPlaying = controllerState.isPlaying, modifier = Modifier.size(48.dp)) {
+                                PlayPauseButton(isPlaying = controllerState.isPlaying, modifier = Modifier.size(48.dp).springPress()) {
                                     sharedViewModel.onUIEvent(UIEvent.PlayPause)
                                 }
                             }

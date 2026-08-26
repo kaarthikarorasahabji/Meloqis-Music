@@ -143,6 +143,7 @@ import echo.music.iad1tya.ui.icon.Shuffle
 import echo.music.iad1tya.ui.icon.echoIcons
 import echo.music.iad1tya.ui.icon.Sort
 import echo.music.iad1tya.ui.icon.TipsAndUpdates
+import echo.music.iad1tya.ui.theme.LocalBatterySaver
 import echo.music.iad1tya.ui.theme.LocalIsDarkTheme
 import echo.music.iad1tya.ui.theme.seed
 import echo.music.iad1tya.ui.theme.typo
@@ -219,28 +220,40 @@ fun LocalPlaylistScreen(
 
     val aiPainter = rememberVectorPainter(echoIcons.TipsAndUpdates)
     val limit = 1.5f
-    val transition = rememberInfiniteTransition(label = "shimmer")
-    val progressAnimated by transition.animateFloat(
-        initialValue = -limit,
-        targetValue = limit,
-        animationSpec =
-            infiniteRepeatable(
-                animation = tween(5000, easing = LinearEasing),
-                repeatMode = RepeatMode.Reverse,
-            ),
-        label = "shimmer",
-    )
-    val infiniteTransition = rememberInfiniteTransition(label = "rotation")
-    val angle by infiniteTransition.animateFloat(
-        initialValue = 0f,
-        targetValue = 360f,
-        animationSpec =
-            infiniteRepeatable(
-                animation = tween(5000, easing = LinearEasing),
-                repeatMode = RepeatMode.Restart,
-            ),
-        label = "rotation",
-    )
+    // Battery Saver freezes the AI-suggestions button: the shimmer sweep and the border rotation both
+    // stop, so neither infinite clock is created — they resolve to static poses instead.
+    val batterySaver = LocalBatterySaver.current
+    val progressAnimated: Float
+    val angle: Float
+    if (batterySaver) {
+        progressAnimated = 0f
+        angle = 0f
+    } else {
+        val transition = rememberInfiniteTransition(label = "shimmer")
+        val progressAnim by transition.animateFloat(
+            initialValue = -limit,
+            targetValue = limit,
+            animationSpec =
+                infiniteRepeatable(
+                    animation = tween(5000, easing = LinearEasing),
+                    repeatMode = RepeatMode.Reverse,
+                ),
+            label = "shimmer",
+        )
+        val infiniteTransition = rememberInfiniteTransition(label = "rotation")
+        val angleAnim by infiniteTransition.animateFloat(
+            initialValue = 0f,
+            targetValue = 360f,
+            animationSpec =
+                infiniteRepeatable(
+                    animation = tween(5000, easing = LinearEasing),
+                    repeatMode = RepeatMode.Restart,
+                ),
+            label = "rotation",
+        )
+        progressAnimated = progressAnim
+        angle = angleAnim
+    }
 
     val lazyState = rememberLazyListState()
     val firstItemVisible by remember {

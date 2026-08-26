@@ -59,6 +59,12 @@ val LocalIsDarkTheme = staticCompositionLocalOf { true }
  */
 val LocalForcedDarkColorScheme = staticCompositionLocalOf<ColorScheme?> { null }
 
+/**
+ * True when Battery Saver is on. Provided by [AppTheme] and read across the tree so continuous
+ * animations, blur and heavy palette shadows can render a cheap static form instead.
+ */
+val LocalBatterySaver = staticCompositionLocalOf { false }
+
 /** Parses "RRGGBB" or "AARRGGBB" (optionally "#"-prefixed) into a [Color]; null if malformed. */
 fun parseThemeColorHex(hex: String): Color? {
     val clean = hex.trim().removePrefix("#")
@@ -108,6 +114,7 @@ fun AppTheme(
     themeMode: String = DataStoreManager.THEME_MODE_DARK,
     themeColorSource: String = DataStoreManager.THEME_COLOR_WALLPAPER,
     customThemeColor: Color? = null,
+    batterySaver: Boolean = false,
     content:
         @Composable()
         () -> Unit,
@@ -163,6 +170,7 @@ fun AppTheme(
                 LocalAppColors provides if (isDark) DarkAppColors else LightAppColors,
                 LocalIsDarkTheme provides isDark,
                 LocalForcedDarkColorScheme provides forcedDarkScheme,
+                LocalBatterySaver provides batterySaver,
                 content = content,
             )
         },

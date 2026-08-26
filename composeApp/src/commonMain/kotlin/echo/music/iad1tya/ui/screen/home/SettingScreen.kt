@@ -119,6 +119,7 @@ import echo.music.iad1tya.getPlatform
 import echo.music.iad1tya.ui.component.ActionButton
 import echo.music.iad1tya.ui.component.CenterLoadingBox
 import echo.music.iad1tya.ui.component.EndOfPage
+import echo.music.iad1tya.ui.component.MeloqisFooter
 import echo.music.iad1tya.ui.component.LoadingDialog
 import echo.music.iad1tya.ui.component.RippleIconButton
 import echo.music.iad1tya.ui.component.SettingItem
@@ -192,6 +193,8 @@ import echomusic.composeapp.generated.resources.backup_downloaded
 import echomusic.composeapp.generated.resources.backup_downloaded_description
 import echomusic.composeapp.generated.resources.backup_frequency
 import echomusic.composeapp.generated.resources.balance_media_loudness
+import echomusic.composeapp.generated.resources.battery_saver
+import echomusic.composeapp.generated.resources.battery_saver_info
 import echomusic.composeapp.generated.resources.better_lyrics
 import echomusic.composeapp.generated.resources.blog_notification_description
 import echomusic.composeapp.generated.resources.blog_notification_title
@@ -227,6 +230,9 @@ import echomusic.composeapp.generated.resources.custom_ai_model_id
 import echomusic.composeapp.generated.resources.custom_color
 import echomusic.composeapp.generated.resources.custom_model_id_messages
 import echomusic.composeapp.generated.resources.daily
+import echomusic.composeapp.generated.resources.data_battery
+import echomusic.composeapp.generated.resources.data_saver
+import echomusic.composeapp.generated.resources.data_saver_info
 import echomusic.composeapp.generated.resources.database
 import echomusic.composeapp.generated.resources.default_models
 import echomusic.composeapp.generated.resources.description_and_licenses
@@ -489,6 +495,8 @@ fun SettingScreen(
     val spotifyLoggedIn by viewModel.spotifyLogIn.collectAsStateWithLifecycle()
     val spotifyLyrics by viewModel.spotifyLyrics.collectAsStateWithLifecycle()
     val spotifyCanvas by viewModel.spotifyCanvas.collectAsStateWithLifecycle()
+    val dataSaver by viewModel.dataSaver.collectAsStateWithLifecycle()
+    val batterySaver by viewModel.batterySaver.collectAsStateWithLifecycle()
     val enableSponsorBlock by remember { viewModel.sponsorBlockEnabled.map { it == TRUE } }.collectAsStateWithLifecycle(initialValue = false)
     val skipSegments by viewModel.sponsorBlockCategories.collectAsStateWithLifecycle()
     val playerCache by viewModel.cacheSize.collectAsStateWithLifecycle()
@@ -1281,6 +1289,23 @@ fun SettingScreen(
 //                        }
                     }
                 }
+            }
+        }
+        item(key = "data_battery") {
+            ExpandableSection(title = stringResource(Res.string.data_battery), icon = echoIcons.Speed,
+                currentSection = currentSection,
+                onSectionClick = { currentSection = it }
+            ) {
+                SettingItem(
+                    title = stringResource(Res.string.data_saver),
+                    subtitle = stringResource(Res.string.data_saver_info),
+                    switch = (dataSaver to { viewModel.setDataSaver(it) }),
+                )
+                SettingItem(
+                    title = stringResource(Res.string.battery_saver),
+                    subtitle = stringResource(Res.string.battery_saver_info),
+                    switch = (batterySaver to { viewModel.setBatterySaver(it) }),
+                )
             }
         }
         // Deliberately not part of "storage" further down, which is Android-only: tracking and the
@@ -2236,6 +2261,13 @@ fun SettingScreen(
                     },
                 )
             }
+        }
+        item(key = "credit") {
+            MeloqisFooter(
+                onClick = {
+                    uriHandler.openUri("https://axenoraai.in")
+                },
+            )
         }
         item(key = "end") {
             EndOfPage()

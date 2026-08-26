@@ -127,6 +127,23 @@ internal class CrossfadeExoPlayerAdapter(
                 Logger.d(TAG, "Skip crossfade inside album: $skipCrossfadeInAlbum")
             }
         }
+        // Data Saver: no bitrate change. It stops the speculative next-track prefetch (the real data
+        // hog) and shrinks the read-ahead buffer. Battery Saver also disables prefetch (extra players
+        // burn CPU + radio). Both apply live — turning either on cancels and clears in-flight precache.
+        coroutineScope.launch {
+            dataStoreManager.dataSaver.collect { enabled ->
+                dataSaverActive = (enabled == DataStoreManager.TRUE)
+                Logger.d(TAG, "Data saver: $dataSaverActive")
+                applyPrecacheGate()
+            }
+        }
+        coroutineScope.launch {
+            dataStoreManager.batterySaver.collect { enabled ->
+                batterySaverActive = (enabled == DataStoreManager.TRUE)
+                Logger.d(TAG, "Battery saver: $batterySaverActive")
+                applyPrecacheGate()
+            }
+        }
     }
 
     // ========== State Management ==========
@@ -293,7 +310,26 @@ internal class CrossfadeExoPlayerAdapter(
     // VideoId -> PrecachedPlayer
     private val precachedPlayers = ConcurrentHashMap<String, PrecachedPlayer>()
     private var precacheEnabled = true
-    private val maxPrecacheCount = 2
+
+    /**
+     * Data Saver mirror of the DataStore flag. Read in [createExoPlayerInstance] to shrink the
+     * per-player read-ahead buffer and in the init collector to gate precaching. @Volatile because
+     * it is written from the DataStore collector and read on the playback/precache paths.
+     */
+    @Volatile
+    private var dataSaverActive = false
+
+    /**
+     * Battery Saver mirror of the DataStore flag. Precaching spins up extra players (CPU + radio), so
+     * it is disabled while Battery Saver is on — alongside the UI animations gated in the Compose layer.
+     */
+    @Volatile
+    private var batterySaverActive = false
+
+    // Baseline 1 (was 2): halves speculative next-track downloads for everyone, with no quality
+    // change. Crossfade still works — when no precache is present it builds the upcoming player
+    // ~3s early instead.
+    private val maxPrecacheCount = 1
     private var precacheJob: Job? = null
 
     // ========== Crossfade System ==========
@@ -544,8 +580,10 @@ internal class CrossfadeExoPlayerAdapter(
                     DefaultLoadControl
                         .Builder()
                         .setBufferDurationsMs(
-                            DefaultLoadControl.DEFAULT_MIN_BUFFER_MS * 4,
-                            DefaultLoadControl.DEFAULT_MAX_BUFFER_MS * 4,
+                            // Data Saver shrinks the read-ahead 4x -> 1x so less audio is fetched
+                            // beyond what is played. Bitrate is untouched, so quality is unchanged.
+                            DefaultLoadControl.DEFAULT_MIN_BUFFER_MS * (if (dataSaverActive) 1 else 4),
+                            DefaultLoadControl.DEFAULT_MAX_BUFFER_MS * (if (dataSaverActive) 1 else 4),
                             0,
                             0,
                         ).build(),
@@ -2893,6 +2931,20 @@ internal class CrossfadeExoPlayerAdapter(
         Logger.d(TAG, "Clearing all precache")
         precachedPlayers.values.forEach { cleanupPlayerInternal(it.player) }
         precachedPlayers.clear()
+    }
+
+    /**
+     * Recompute whether speculative precaching may run. Disabled when Data Saver or Battery Saver is
+     * on; turning either on also tears down players already precached. Called from the DataStore
+     * collectors, which run on the same looper as player creation, so releasing here is thread-safe.
+     */
+    private fun applyPrecacheGate() {
+        val shouldDisable = dataSaverActive || batterySaverActive
+        precacheEnabled = !shouldDisable
+        if (shouldDisable) {
+            cancelPrecaching()
+            clearAllPrecacheInternal()
+        }
     }
 
     // ========== Internal: Shuffle Management ==========

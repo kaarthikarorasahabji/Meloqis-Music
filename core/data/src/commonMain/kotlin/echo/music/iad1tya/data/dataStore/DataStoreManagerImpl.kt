@@ -669,6 +669,32 @@ internal class DataStoreManagerImpl(
         }
     }
 
+    override val dataSaver: Flow<String> =
+        settingsDataStore.data.map { preferences ->
+            preferences[DATA_SAVER] ?: FALSE
+        }
+
+    override suspend fun setDataSaver(dataSaver: Boolean) {
+        withContext(Dispatchers.IO) {
+            settingsDataStore.edit { settings ->
+                settings[DATA_SAVER] = if (dataSaver) TRUE else FALSE
+            }
+        }
+    }
+
+    override val batterySaver: Flow<String> =
+        settingsDataStore.data.map { preferences ->
+            preferences[BATTERY_SAVER] ?: FALSE
+        }
+
+    override suspend fun setBatterySaver(batterySaver: Boolean) {
+        withContext(Dispatchers.IO) {
+            settingsDataStore.edit { settings ->
+                settings[BATTERY_SAVER] = if (batterySaver) TRUE else FALSE
+            }
+        }
+    }
+
     override val spotifyClientToken: Flow<String> =
         settingsDataStore.data.map { preferences ->
             preferences[SPOTIFY_CLIENT_TOKEN] ?: ""
@@ -1641,6 +1667,8 @@ internal class DataStoreManagerImpl(
 
         val SPONSOR_BLOCK_ENABLED = stringPreferencesKey("sponsor_block_enabled")
         val MAX_SONG_CACHE_SIZE = intPreferencesKey("maxSongCacheSize")
+        val DATA_SAVER = stringPreferencesKey("data_saver")
+        val BATTERY_SAVER = stringPreferencesKey("battery_saver")
         val WATCH_VIDEO_INSTEAD_OF_PLAYING_AUDIO =
             stringPreferencesKey("watch_video_instead_of_playing_audio")
         val RADIO_AUDIO_ONLY = stringPreferencesKey("radio_audio_only")

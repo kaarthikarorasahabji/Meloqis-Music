@@ -20,6 +20,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import echo.music.iad1tya.ui.theme.LocalBatterySaver
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -53,17 +54,23 @@ fun InfiniteBorderAnimationView(
     oneCircleDurationMillis: Int = 3000,
     content: @Composable () -> Unit,
 ) {
-    val infiniteTransition = rememberInfiniteTransition(label = "Infinite Color Animation")
-    val degrees by infiniteTransition.animateFloat(
-        initialValue = 90f,
-        targetValue = 450f,
-        animationSpec =
-            infiniteRepeatable(
-                animation = tween(durationMillis = oneCircleDurationMillis, easing = LinearEasing),
-                repeatMode = RepeatMode.Restart,
-            ),
-        label = "Infinite Colors",
-    )
+    val batterySaver = LocalBatterySaver.current
+    val degrees: Float =
+        if (batterySaver) {
+            90f
+        } else {
+            val infiniteTransition = rememberInfiniteTransition(label = "Infinite Color Animation")
+            infiniteTransition.animateFloat(
+                initialValue = 90f,
+                targetValue = 450f,
+                animationSpec =
+                    infiniteRepeatable(
+                        animation = tween(durationMillis = oneCircleDurationMillis, easing = LinearEasing),
+                        repeatMode = RepeatMode.Restart,
+                    ),
+                label = "Infinite Colors",
+            ).value
+        }
     val scaleAnimationValue by animateFloatAsState(
         if (isAnimated) 1f else 0f,
         tween(800),
@@ -133,17 +140,23 @@ fun LimitedBorderAnimationView(
         }
     }
 
-    val infiniteTransition = rememberInfiniteTransition(label = "Infinite Color Animation")
-    val degrees by infiniteTransition.animateFloat(
-        initialValue = 0f,
-        targetValue = 360f,
-        animationSpec =
-            infiniteRepeatable(
-                animation = tween(durationMillis = oneCircleDurationMillis, easing = LinearEasing),
-                repeatMode = RepeatMode.Restart,
-            ),
-        label = "Infinite Colors",
-    )
+    val batterySaver = LocalBatterySaver.current
+    val degrees: Float =
+        if (batterySaver) {
+            0f
+        } else {
+            val infiniteTransition = rememberInfiniteTransition(label = "Infinite Color Animation")
+            infiniteTransition.animateFloat(
+                initialValue = 0f,
+                targetValue = 360f,
+                animationSpec =
+                    infiniteRepeatable(
+                        animation = tween(durationMillis = oneCircleDurationMillis, easing = LinearEasing),
+                        repeatMode = RepeatMode.Restart,
+                    ),
+                label = "Infinite Colors",
+            ).value
+        }
     Surface(
         modifier =
             Modifier

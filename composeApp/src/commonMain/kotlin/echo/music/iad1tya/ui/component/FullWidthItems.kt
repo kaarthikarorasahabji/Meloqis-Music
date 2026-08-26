@@ -82,6 +82,7 @@ import echo.music.iad1tya.ui.icon.MoreVert
 import echo.music.iad1tya.ui.icon.PushPin
 import echo.music.iad1tya.ui.icon.PlayArrow
 import echo.music.iad1tya.ui.icon.echoIcons
+import echo.music.iad1tya.ui.theme.LocalBatterySaver
 import echo.music.iad1tya.ui.theme.LocalForceDarkText
 import echo.music.iad1tya.ui.theme.typo
 import io.github.alexzhirkevich.compottie.Compottie
@@ -214,6 +215,9 @@ fun SongFullWidthItems(
                 ) {
                     if (index == null) {
                         val thumb = track?.thumbnails?.lastOrNull()?.url ?: songEntity?.thumbnails
+                        // Battery Saver: skip the 4dp blur behind the now-playing Lottie. The overlay + Lottie
+                        // still render; only the expensive per-frame blur pass on the artwork is dropped.
+                        val batterySaverActive = LocalBatterySaver.current
                         Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize().clip(RoundedCornerShape(4.dp))) {
                             AsyncImage(
                                 model =
@@ -229,7 +233,7 @@ fun SongFullWidthItems(
                                 contentDescription = null,
                                 contentScale = ContentScale.FillWidth,
                                 modifier = Modifier.fillMaxSize().let {
-                                    if (isPlaying) it.blur(4.dp) else it
+                                    if (isPlaying && !batterySaverActive) it.blur(4.dp) else it
                                 },
                             )
                             if (isPlaying) {

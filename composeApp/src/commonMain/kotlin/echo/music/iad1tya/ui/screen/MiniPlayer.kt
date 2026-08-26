@@ -133,6 +133,7 @@ import echo.music.iad1tya.ui.icon.QueueMusic
 import echo.music.iad1tya.ui.icon.echoIcons
 import echo.music.iad1tya.ui.icon.VolumeOff
 import echo.music.iad1tya.ui.icon.VolumeUp
+import echo.music.iad1tya.ui.theme.LocalBatterySaver
 import echo.music.iad1tya.ui.theme.LocalIsDarkTheme
 import echo.music.iad1tya.ui.theme.typo
 import echo.music.iad1tya.viewModel.SharedViewModel
@@ -593,17 +594,24 @@ fun MiniPlayer(
 
         // Crossfade: RGB rainbow color cycling while transitioning between tracks, mirroring the
         // Now Playing screen so the desktop bar signals a crossfade the same way.
-        val crossfadeTransition = rememberInfiniteTransition(label = "miniPlayerCrossfadeRainbow")
-        val rainbowHue by crossfadeTransition.animateFloat(
-            initialValue = 0f,
-            targetValue = 360f,
-            animationSpec =
-                infiniteRepeatable(
-                    animation = tween(1000, easing = LinearEasing),
-                    repeatMode = RepeatMode.Restart,
-                ),
-            label = "miniPlayerRainbowHue",
-        )
+        // Battery Saver: freeze the rainbow clock. progressColor below reads this hue only while
+        // crossfading, so a static value keeps the mini-player calm without a running animation.
+        val rainbowHue =
+            if (LocalBatterySaver.current) {
+                0f
+            } else {
+                val crossfadeTransition = rememberInfiniteTransition(label = "miniPlayerCrossfadeRainbow")
+                crossfadeTransition.animateFloat(
+                    initialValue = 0f,
+                    targetValue = 360f,
+                    animationSpec =
+                        infiniteRepeatable(
+                            animation = tween(1000, easing = LinearEasing),
+                            repeatMode = RepeatMode.Restart,
+                        ),
+                    label = "miniPlayerRainbowHue",
+                ).value
+            }
         val progressColor by animateColorAsState(
             targetValue =
                 if (timelineState.isCrossfading) {
