@@ -107,6 +107,7 @@ import echo.music.iad1tya.ui.component.MoodCategoryCard
 import echo.music.iad1tya.ui.component.rememberHolderPainter
 import echo.music.iad1tya.extension.getStringBlocking
 import echo.music.iad1tya.extension.toAppDeepLinkOrNull
+import echo.music.iad1tya.extension.nowPlayingTint
 import echo.music.iad1tya.ui.component.ArtistFullWidthItems
 import echo.music.iad1tya.ui.component.Chip
 import echo.music.iad1tya.ui.component.EndOfPage
@@ -124,6 +125,7 @@ import echo.music.iad1tya.ui.navigation.destination.list.AlbumDestination
 import echo.music.iad1tya.ui.navigation.destination.list.ArtistDestination
 import echo.music.iad1tya.ui.navigation.destination.list.PlaylistDestination
 import echo.music.iad1tya.ui.navigation.destination.list.PodcastDestination
+import echo.music.iad1tya.ui.theme.LocalNowPlayingColor
 import echo.music.iad1tya.ui.theme.typo
 import echo.music.iad1tya.viewModel.SearchScreenUIState
 import echo.music.iad1tya.viewModel.SearchType
@@ -304,6 +306,7 @@ fun SearchScreen(
         modifier =
             Modifier
                 .fillMaxSize()
+                .nowPlayingTint(LocalNowPlayingColor.current)
                 .background(Color.Transparent),
     ) {
         // Content scrolls under the bar (it is the haze source), so it needs top padding

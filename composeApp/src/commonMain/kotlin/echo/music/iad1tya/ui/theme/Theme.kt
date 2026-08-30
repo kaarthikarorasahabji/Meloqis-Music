@@ -65,6 +65,14 @@ val LocalForcedDarkColorScheme = staticCompositionLocalOf<ColorScheme?> { null }
  */
 val LocalBatterySaver = staticCompositionLocalOf { false }
 
+/**
+ * Accent colour extracted from the CURRENT track's artwork; eased on each song change. Drives the
+ * song-driven recolour of surfaces & accents only (Home header, page-background tint, mini-player) —
+ * NOT the base MaterialKolor scheme, so buttons/chips stay stable. Provided by the app root; null
+ * when nothing is playing (consumers then fall back to their own colour source).
+ */
+val LocalNowPlayingColor = staticCompositionLocalOf<Color?> { null }
+
 /** Parses "RRGGBB" or "AARRGGBB" (optionally "#"-prefixed) into a [Color]; null if malformed. */
 fun parseThemeColorHex(hex: String): Color? {
     val clean = hex.trim().removePrefix("#")

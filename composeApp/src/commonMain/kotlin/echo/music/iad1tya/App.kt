@@ -6,6 +6,8 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkHorizontally
 import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -33,6 +35,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.adaptive.currentWindowAdaptiveInfo
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -58,6 +61,11 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.window.core.layout.WindowSizeClass.Companion.WIDTH_DP_MEDIUM_LOWER_BOUND
 import coil3.toUri
+import com.kmpalette.loader.rememberNetworkLoader
+import com.kmpalette.rememberDominantColorState
+import io.ktor.client.HttpClient
+import io.ktor.client.engine.cio.CIO
+import io.ktor.http.Url
 import echo.music.iad1tya.domain.data.player.GenericMediaItem
 import echo.music.iad1tya.domain.manager.DataStoreManager
 import echo.music.iad1tya.domain.manager.DataStoreManager.Values.TRUE
@@ -86,6 +94,7 @@ import echo.music.iad1tya.ui.screen.player.NowPlayingScreen
 import echo.music.iad1tya.ui.screen.player.NowPlayingScreenContent
 import echo.music.iad1tya.ui.theme.AppTheme
 import echo.music.iad1tya.ui.theme.ForceDarkContent
+import echo.music.iad1tya.ui.theme.LocalNowPlayingColor
 import echo.music.iad1tya.ui.theme.parseThemeColorHex
 import echo.music.iad1tya.ui.theme.fontFamily
 import echo.music.iad1tya.ui.theme.typo
@@ -131,6 +140,7 @@ fun App(viewModel: SharedViewModel = koinInject()) {
 
     val sleepTimerState by viewModel.sleepTimerState.collectAsStateWithLifecycle()
     val nowPlayingData by viewModel.nowPlayingState.collectAsStateWithLifecycle()
+    val nowPlayingScreenData by viewModel.nowPlayingScreenData.collectAsStateWithLifecycle()
     val updateData by viewModel.updateResponse.collectAsStateWithLifecycle()
     val intent by viewModel.intent.collectAsStateWithLifecycle()
     val showNotificationPermissionDialog by viewModel.showNotificationPermissionDialog.collectAsStateWithLifecycle()
@@ -376,6 +386,32 @@ if (data.scheme == "wordbyword" && data.host == "lastfm-auth") {
             rememberBackdrop(
                 if (MaterialTheme.colorScheme.background.luminance() > 0.5f) Color.White else Color.Black,
             )
+        // === Song-driven recolour (surfaces & accents only) ===
+        // Extract the dominant colour of the CURRENT track's artwork with the same kmpalette pattern
+        // HomeScreen uses, then publish it as LocalNowPlayingColor so the Home header, page-background
+        // tint and mini-player breathe in the playing song's colour. The base MaterialKolor scheme
+        // (buttons/chips) is left untouched → satisfies the "surfaces & accents only" scope.
+        val nowPlayingThumb = nowPlayingScreenData.thumbnailURL
+        val songNetworkLoader = rememberNetworkLoader(remember { HttpClient(CIO) })
+        val songDominantColorState =
+            rememberDominantColorState(
+                defaultColor = MaterialTheme.colorScheme.primary,
+                defaultOnColor = MaterialTheme.colorScheme.onPrimary,
+                loader = songNetworkLoader,
+            )
+        LaunchedEffect(nowPlayingThumb) {
+            nowPlayingThumb?.let { songDominantColorState.updateFrom(Url(it)) }
+        }
+        // Ease on each song change; Battery Saver snaps (one-shot re-tint is fine — skip the clock).
+        val rawSongColor = songDominantColorState.color
+        val easedSongColor by animateColorAsState(rawSongColor, tween(600), label = "nowPlayingColor")
+        val songColor: Color? =
+            when {
+                nowPlayingThumb.isNullOrBlank() -> null
+                batterySaver -> rawSongColor
+                else -> easedSongColor
+            }
+        CompositionLocalProvider(LocalNowPlayingColor provides songColor) {
         Scaffold(
             bottomBar = {
                 if (!isTablet) {
@@ -817,5 +853,6 @@ if (data.scheme == "wordbyword" && data.host == "lastfm-auth") {
                 }
             },
         )
+        }
     }
 }

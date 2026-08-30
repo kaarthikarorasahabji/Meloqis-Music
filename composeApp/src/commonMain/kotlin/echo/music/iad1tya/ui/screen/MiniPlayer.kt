@@ -73,6 +73,7 @@ import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
@@ -135,6 +136,7 @@ import echo.music.iad1tya.ui.icon.VolumeOff
 import echo.music.iad1tya.ui.icon.VolumeUp
 import echo.music.iad1tya.ui.theme.LocalBatterySaver
 import echo.music.iad1tya.ui.theme.LocalIsDarkTheme
+import echo.music.iad1tya.ui.theme.LocalNowPlayingColor
 import echo.music.iad1tya.ui.theme.typo
 import echo.music.iad1tya.viewModel.SharedViewModel
 import echo.music.iad1tya.viewModel.UIEvent
@@ -256,6 +258,9 @@ fun MiniPlayer(
         remember {
             Animatable(Color.DarkGray)
         }
+    // Prefer the app-wide song colour (single source of truth for the recolour) so the mini-player
+    // matches the Home header exactly; fall back to the local palette when it isn't available yet.
+    val sharedSongColor = rememberUpdatedState(LocalNowPlayingColor.current)
 
     val offsetX = remember { Animatable(initialValue = 0f) }
     val offsetY = remember { Animatable(0f) }
@@ -276,10 +281,10 @@ fun MiniPlayer(
     }
 
     LaunchedEffect(Unit) {
-        snapshotFlow { paletteState.palette }
+        snapshotFlow { sharedSongColor.value to paletteState.palette }
             .distinctUntilChanged()
-            .collectLatest {
-                background.animateTo(it.getColorFromPalette())
+            .collectLatest { (shared, palette) ->
+                background.animateTo(shared ?: palette.getColorFromPalette())
             }
     }
 

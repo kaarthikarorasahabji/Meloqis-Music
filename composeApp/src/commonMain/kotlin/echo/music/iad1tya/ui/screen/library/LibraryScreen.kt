@@ -63,6 +63,7 @@ import echo.music.iad1tya.domain.utils.LocalResource
 import echo.music.iad1tya.logger.Logger
 import echo.music.iad1tya.extension.copy
 import echo.music.iad1tya.extension.isScrollingUp
+import echo.music.iad1tya.extension.nowPlayingTint
 import echo.music.iad1tya.ui.component.Chip
 import echo.music.iad1tya.ui.component.EndOfPage
 import echo.music.iad1tya.ui.component.GridLibraryPlaylist
@@ -72,6 +73,7 @@ import echo.music.iad1tya.ui.component.LibraryItemType
 import echo.music.iad1tya.ui.component.LibraryTilingBox
 import echo.music.iad1tya.ui.icon.PeopleAlt
 import echo.music.iad1tya.ui.icon.echoIcons
+import echo.music.iad1tya.ui.theme.LocalNowPlayingColor
 import echo.music.iad1tya.ui.theme.typo
 import echo.music.iad1tya.viewModel.LibraryViewModel
 import dev.chrisbanes.haze.hazeEffect
@@ -184,7 +186,7 @@ fun LibraryScreen(
     }
 
     Crossfade(
-        modifier = Modifier.hazeSource(hazeState),
+        modifier = Modifier.nowPlayingTint(LocalNowPlayingColor.current).hazeSource(hazeState),
         targetState = currentFilter,
     ) { filter ->
         when (filter) {

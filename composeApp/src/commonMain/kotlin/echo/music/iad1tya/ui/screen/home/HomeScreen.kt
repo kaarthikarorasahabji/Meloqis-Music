@@ -75,6 +75,7 @@ import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.graphics.luminance
@@ -100,7 +101,9 @@ import echo.music.iad1tya.domain.data.model.mood.Mood
 import echo.music.iad1tya.domain.extension.now
 import echo.music.iad1tya.domain.mediaservice.handler.PlaylistType
 import echo.music.iad1tya.domain.mediaservice.handler.QueueData
+import echo.music.iad1tya.domain.utils.connectArtists
 import echo.music.iad1tya.domain.utils.toSongEntity
+import echo.music.iad1tya.domain.utils.toListName
 import echo.music.iad1tya.domain.utils.toTrack
 import echo.music.iad1tya.logger.Logger
 import echo.music.iad1tya.ui.component.rememberHolderPainter
@@ -112,6 +115,9 @@ import echo.music.iad1tya.ui.component.CenterLoadingBox
 import echo.music.iad1tya.ui.component.Chip
 import echo.music.iad1tya.ui.component.DropdownButton
 import echo.music.iad1tya.ui.component.EndOfPage
+import echo.music.iad1tya.ui.component.EqualizerBars
+import echo.music.iad1tya.ui.component.HeroCarousel
+import echo.music.iad1tya.ui.component.HeroCarouselItem
 import echo.music.iad1tya.ui.component.HomeItem
 import echo.music.iad1tya.ui.component.HomeItemContentPlaylist
 import echo.music.iad1tya.ui.component.HomeShimmer
@@ -138,6 +144,7 @@ import echo.music.iad1tya.ui.screen.library.LibraryDynamicPlaylistType
 import echo.music.iad1tya.ui.navigation.destination.list.PlaylistDestination
 import echo.music.iad1tya.ui.navigation.destination.login.LoginDestination
 import echo.music.iad1tya.ui.theme.LocalBatterySaver
+import echo.music.iad1tya.ui.theme.LocalNowPlayingColor
 import echo.music.iad1tya.ui.theme.typo
 import echo.music.iad1tya.viewModel.HomeViewModel
 import echo.music.iad1tya.viewModel.HomeViewModel.Companion.HOME_PARAMS_COMMUTE
@@ -258,6 +265,8 @@ fun HomeScreen(
 
     val openAppTime by sharedViewModel.openAppTime.collectAsStateWithLifecycle()
     val shareLyricsPermissions by sharedViewModel.shareSavedLyrics.collectAsStateWithLifecycle()
+    val controllerState by sharedViewModel.controllerState.collectAsStateWithLifecycle()
+    val isSongPlaying = controllerState.isPlaying
     val lastShownSupportVersion = "never_show_again"
 
     val backgroundColor = MaterialTheme.colorScheme.background
@@ -265,7 +274,17 @@ fun HomeScreen(
     var topHeaderColor by remember {
         mutableStateOf(backgroundColor)
     }
-    val animatedColor by animateColorAsState(topHeaderColor, tween(500))
+    // Song-driven recolour: when a track is playing, the header breathes in THAT song's artwork
+    // colour (processed the same way as the home-thumbnail tone below). Falls back to the home
+    // feed's dominant colour when nothing is playing. Base scheme (buttons/chips) is untouched.
+    val nowPlayingColor = LocalNowPlayingColor.current
+    val headerTarget =
+        if (nowPlayingColor != null) {
+            if (isLightTheme) lerp(nowPlayingColor, Color.White, 0.85f) else nowPlayingColor.rgbFactor(0.3f)
+        } else {
+            topHeaderColor
+        }
+    val animatedColor by animateColorAsState(headerTarget, tween(500))
     // Bold header: the palette gradient's angle drifts slowly for a living feel. Battery Saver pins it
     // to a fixed 25° (no infinite transition created).
     val headerAngle: Float =
@@ -307,6 +326,46 @@ fun HomeScreen(
             topHeaderColor = if (isLightTheme) lerp(it, Color.White, 0.85f) else it.rgbFactor(0.3f)
         }
     }
+
+    // Hero carousel source: reuse the ALREADY-loaded home feed (no new network). Collect the
+    // playable songs (a real videoId + artwork) from across the rows into a handful of large
+    // edge-peek cards; tapping one plays it as a radio, exactly like the feed rows do.
+    val heroItems =
+        remember(homeData) {
+            homeData
+                .flatMap { it.contents }
+                .filterNotNull()
+                .filter { !it.videoId.isNullOrEmpty() && it.thumbnails.isNotEmpty() }
+                .distinctBy { it.videoId }
+                .take(7)
+                .map { content ->
+                    HeroCarouselItem(
+                        id = content.videoId!!,
+                        title = content.title,
+                        subtitle =
+                            content.artists
+                                .toListName()
+                                .connectArtists()
+                                .takeIf { it.isNotBlank() }
+                                ?: content.album?.name,
+                        thumbnailUrl = content.thumbnails.lastOrNull()?.url,
+                        onClick = {
+                            val firstQueue: Track = content.toTrack()
+                            viewModel.setQueueData(
+                                QueueData.Data(
+                                    listTracks = arrayListOf(firstQueue),
+                                    firstPlayedTrack = firstQueue,
+                                    playlistId = "RDAMVM${content.videoId}",
+                                    playlistName = content.title,
+                                    playlistType = PlaylistType.RADIO,
+                                    continuation = null,
+                                ),
+                            )
+                            viewModel.loadMediaItem(firstQueue, Config.SONG_CLICK)
+                        },
+                    )
+                }
+        }
 
 
 
@@ -430,7 +489,19 @@ fun HomeScreen(
         )
     }
 
-    Box {
+    Box(
+        // Gentle whole-page wash in the current song's colour (surfaces only; fades out downward).
+        modifier =
+            if (nowPlayingColor != null) {
+                Modifier.background(
+                    Brush.verticalGradient(
+                        listOf(nowPlayingColor.copy(alpha = 0.12f), Color.Transparent),
+                    ),
+                )
+            } else {
+                Modifier
+            },
+    ) {
         PullToRefreshBox(
             modifier =
                 Modifier
@@ -526,6 +597,16 @@ fun HomeScreen(
                                             url = accountInfo?.second ?: "",
                                         )
                                         Spacer(Modifier.height(8.dp))
+                                    }
+                                    if (index == 0 && heroItems.isNotEmpty()) {
+                                        HeroCarousel(
+                                            items = heroItems,
+                                            accentColor = nowPlayingColor ?: MaterialTheme.colorScheme.primary,
+                                            modifier =
+                                                Modifier
+                                                    .fillMaxWidth()
+                                                    .padding(bottom = 12.dp),
+                                        )
                                     }
                                     if (item.title == stringResource(Res.string.quick_picks)) {
                                         AnimatedVisibility(
@@ -728,7 +809,12 @@ fun HomeScreen(
                     enter = fadeIn() + expandVertically(),
                     exit = fadeOut() + shrinkVertically(),
                 ) {
-                    HomeTopAppBar(navController, accountInfo)
+                    HomeTopAppBar(
+                        navController = navController,
+                        accountInfo = accountInfo,
+                        isPlaying = isSongPlaying,
+                        accentColor = nowPlayingColor ?: MaterialTheme.colorScheme.onBackground,
+                    )
                 }
                 AnimatedVisibility(
                     visible = !isScrollingUp,
@@ -798,7 +884,12 @@ fun HomeScreen(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun HomeTopAppBar(navController: NavController, accountInfo: Pair<String?, String?>?) {
+fun HomeTopAppBar(
+    navController: NavController,
+    accountInfo: Pair<String?, String?>?,
+    isPlaying: Boolean,
+    accentColor: Color,
+) {
     TopAppBar(
         windowInsets =
             TopAppBarDefaults.windowInsets.exclude(
@@ -839,11 +930,20 @@ fun HomeTopAppBar(navController: NavController, accountInfo: Pair<String?, Strin
             }
         },
         title = {
-            Text(
-                text = stringResource(Res.string.app_name),
-                style = typo().titleMedium,
-                color = MaterialTheme.colorScheme.onBackground,
-            )
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    text = stringResource(Res.string.app_name),
+                    style = typo().titleMedium,
+                    color = MaterialTheme.colorScheme.onBackground,
+                )
+                // Equaliser beside "Meloqis Music", only while a track is playing.
+                AnimatedVisibility(visible = isPlaying) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Spacer(Modifier.width(8.dp))
+                        EqualizerBars(color = accentColor, size = 18.dp)
+                    }
+                }
+            }
         },
         actions = {
             RippleIconButton(imageVector = echoIcons.History, tint = MaterialTheme.colorScheme.onBackground) {

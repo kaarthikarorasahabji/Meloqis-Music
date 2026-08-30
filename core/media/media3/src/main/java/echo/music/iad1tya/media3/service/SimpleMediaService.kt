@@ -101,7 +101,12 @@ internal class SimpleMediaService :
                 MEDIA_NOTIFICATION.NOTIFICATION_CHANNEL_ID,
                 R.string.notification_channel_name,
             ).apply {
-                setSmallIcon(R.drawable.mono)
+                // Equalizer glyph in the status bar so the "now playing" notification mirrors the
+                // in-app equalizer animation. Android renders a notification's small icon statically —
+                // the platform template does not animate status-bar icons — so this is intentionally a
+                // static equalizer glyph (best-effort per design). No frame-swapping loop: it would
+                // only flicker, risk system rate-limiting and drain battery without animating on-device.
+                setSmallIcon(R.drawable.ic_eq)
             },
         )
 
@@ -168,7 +173,7 @@ internal class SimpleMediaService :
                     ).setMediaDescriptionAdapter(DefaultMediaDescriptionAdapter(mediaSession?.sessionActivity))
                     .build()
             playerNotificationManager.setPlayer(player)
-            playerNotificationManager.setSmallIcon(R.drawable.mono)
+            playerNotificationManager.setSmallIcon(R.drawable.ic_eq)
             mediaSession?.platformToken?.let { playerNotificationManager.setMediaSessionToken(it) }
         }
 

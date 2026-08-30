@@ -689,3 +689,19 @@ fun hsvToColor(
         alpha = 1f,
     )
 }
+
+/**
+ * Subtle top-down wash of the current now-playing colour behind a page's content, so surfaces
+ * recolour gently with the song. No-op when [color] is null (nothing playing). Kept very low alpha
+ * to preserve AMOLED/contrast — this tints surfaces, not the base scheme.
+ */
+fun Modifier.nowPlayingTint(color: Color?): Modifier =
+    if (color == null) {
+        this
+    } else {
+        this.background(
+            Brush.verticalGradient(
+                listOf(color.copy(alpha = 0.12f), Color.Transparent),
+            ),
+        )
+    }

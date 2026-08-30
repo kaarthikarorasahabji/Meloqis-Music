@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Equalizer glyph used as the media notification's small (status-bar) icon so the "now playing"
+  notification mirrors the in-app equalizer. Monochrome + round-capped bars so the system tint
+  renders cleanly at status-bar size. Bar heights (short / tall / medium) match the in-app
+  StaticEqualizerGlyph. Static by design: Android's notification template does not animate small
+  icons, so there is no frame set here — see SimpleMediaService for the rationale.
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <path
+        android:strokeColor="#FFFFFFFF"
+        android:strokeWidth="4"
+        android:strokeLineCap="round"
+        android:pathData="M7,18 L7,13 M12,18 L12,6 M17,18 L17,10" />
+</vector>
