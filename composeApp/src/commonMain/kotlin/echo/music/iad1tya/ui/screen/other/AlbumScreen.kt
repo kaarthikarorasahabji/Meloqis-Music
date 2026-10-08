@@ -41,6 +41,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
+import echo.music.iad1tya.ui.component.DownloadActivityIndicator
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
@@ -109,10 +110,6 @@ import dev.chrisbanes.haze.HazeTint
 import dev.chrisbanes.haze.hazeEffect
 import dev.chrisbanes.haze.hazeSource
 import dev.chrisbanes.haze.rememberHazeState
-import io.github.alexzhirkevich.compottie.Compottie
-import io.github.alexzhirkevich.compottie.LottieCompositionSpec
-import io.github.alexzhirkevich.compottie.rememberLottieComposition
-import io.github.alexzhirkevich.compottie.rememberLottiePainter
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.runBlocking
@@ -156,11 +153,7 @@ fun AlbumScreen(
     var albumBottomSheetShow by rememberSaveable { mutableStateOf(false) }
     var chosenSong: Track? by remember { mutableStateOf(null) }
 
-    val composition by rememberLottieComposition {
-        LottieCompositionSpec.JsonString(
-            Res.readBytes("files/downloading_animation.json").decodeToString(),
-        )
-    }
+
 
     LaunchedEffect(browseId) {
         viewModel.updateBrowseId(browseId)
@@ -586,15 +579,7 @@ fun AlbumScreen(
                                                                                         },
                                                                                 contentAlignment = Alignment.Center,
                                                                             ) {
-                                                                                Image(
-                                                                                    painter =
-                                                                                        rememberLottiePainter(
-                                                                                            composition = composition,
-                                                                                            iterations = Compottie.IterateForever,
-                                                                                        ),
-                                                                                    contentDescription = "Lottie animation",
-                                                                                    modifier = Modifier.size(28.dp),
-                                                                                )
+                                                                                DownloadActivityIndicator(size = 28.dp)
                                                                             }
                                                                         }
 
@@ -796,15 +781,7 @@ fun AlbumScreen(
                                                                                 },
                                                                         contentAlignment = Alignment.Center,
                                                                     ) {
-                                                                        Image(
-                                                                            painter =
-                                                                                rememberLottiePainter(
-                                                                                    composition = composition,
-                                                                                    iterations = Compottie.IterateForever,
-                                                                                ),
-                                                                            contentDescription = "Lottie animation",
-                                                                            modifier = Modifier.size(28.dp),
-                                                                        )
+                                                                        DownloadActivityIndicator(size = 28.dp)
                                                                     }
                                                                 }
 

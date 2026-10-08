@@ -130,39 +130,6 @@ private val DimOriginalColor = Color.LightGray.copy(alpha = 0.35f)
 private val DimTranslatedColor = Color(0xFF97971A).copy(alpha = 0.3f)
 private val DimRichPendingColor = Color.LightGray.copy(alpha = 0.6f)
 
-private data class TimedLineIndex(
-    val index: Int,
-    val startTimeMs: Long,
-)
-
-/**
- * Returns the original line index of the last [TimedLineIndex] whose [TimedLineIndex.startTimeMs]
- * is `<= nowMs`. Assumes the receiver is sorted ascending by [TimedLineIndex.startTimeMs].
- *
- * Rules:
- *  - empty list -> -1
- *  - nowMs strictly before the first start time -> -1
- *  - nowMs after the last start time -> the last entry's original index (sticky last line)
- */
-private fun List<TimedLineIndex>.activeIndexAt(nowMs: Long): Int {
-    if (isEmpty()) return -1
-    if (nowMs < first().startTimeMs) return -1
-    // Binary search for the last item whose startTimeMs <= nowMs.
-    var lo = 0
-    var hi = size - 1
-    var ans = -1
-    while (lo <= hi) {
-        val mid = (lo + hi) ushr 1
-        if (this[mid].startTimeMs <= nowMs) {
-            ans = mid
-            lo = mid + 1
-        } else {
-            hi = mid - 1
-        }
-    }
-    return if (ans >= 0) this[ans].index else -1
-}
-
 /**
  * Builds a [Map] from each ORIGINAL line index to its closest synced translated `words`
  * within [thresholdMs]. Two-pointer over both sorted lists; on ties an earlier translated

@@ -261,7 +261,7 @@ fun SearchScreen(
             isSearchSubmitted = false
             isExpanded = true
         }
-        if (searchText.isNotEmpty() && isFocused) {
+        if (isFocused || searchText.isBlank()) {
             searchViewModel.suggestQuery(searchText)
         }
     }

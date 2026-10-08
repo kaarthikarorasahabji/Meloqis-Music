@@ -68,6 +68,9 @@ import echo.music.iad1tya.getPlatform
 import echo.music.iad1tya.utils.VersionManager
 import echo.music.iad1tya.viewModel.base.BaseViewModel
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -308,7 +311,7 @@ class SharedViewModel(
 //            controllerStateJob.join()
         }
 
-        runBlocking {
+        viewModelScope.launch {
             dataStoreManager.getString("miniplayer_guide").first().let {
                 isFirstMiniplayer = it != STATUS_DONE
             }
@@ -755,8 +758,8 @@ class SharedViewModel(
         type: String,
         index: Int? = null,
     ) {
-        quality = runBlocking { dataStoreManager.quality.first() }
         viewModelScope.launch {
+            quality = dataStoreManager.quality.first()
             mediaPlayerHandler.clearMediaItems()
             songRepository.insertSong(track.toSongEntity()).lastOrNull()?.let {
                 println("insertSong: $it")
@@ -1706,22 +1709,35 @@ class SharedViewModel(
         _recreateActivity.value = false
     }
 
-    fun playNext(listTrack: ArrayList<Track>) {
+    private val queueActionMutex = Mutex()
+
+    private fun performQueueAction(action: suspend () -> Unit) {
         viewModelScope.launch {
-            if (listTrack.isNotEmpty()) mediaPlayerHandler.playNext(listTrack.first())
+            try {
+                queueActionMutex.withLock { action() }
+            } catch (cancelled: CancellationException) {
+                throw cancelled
+            } catch (error: Exception) {
+                Logger.e(tag, "Queue action failed: ${error.message}")
+                makeToast(getString(Res.string.error))
+            }
+        }
+    }
+
+    fun playNext(listTrack: ArrayList<Track>) {
+        val track = listTrack.firstOrNull() ?: return
+        performQueueAction {
+            mediaPlayerHandler.playNext(track)
             makeToast(getString(Res.string.play_next))
         }
     }
 
     fun addListToQueue(listTrack: ArrayList<Track>) {
-        viewModelScope.launch {
-            if (listTrack.size == 1 && dataStoreManager.endlessQueue.first() == TRUE) {
-                mediaPlayerHandler.playNext(listTrack.first())
-                makeToast(getString(Res.string.play_next))
-            } else {
-                mediaPlayerHandler.loadMoreCatalog(listTrack)
-                makeToast(getString(Res.string.added_to_queue))
-            }
+        if (listTrack.isEmpty()) return
+        val tracks = ArrayList(listTrack)
+        performQueueAction {
+            mediaPlayerHandler.loadMoreCatalog(tracks, isAddToQueue = true)
+            makeToast(getString(Res.string.added_to_queue))
         }
     }
 

@@ -1159,6 +1159,7 @@ fun QueueBottomSheet(
                     itemsIndexed(
                         queue,
                         key = { i, t -> i.toString() + t.videoId },
+                        contentType = { _, _ -> "reorderableSong" },
                     ) { index, track ->
                         if (index != -1) {
                             DraggableItem(
@@ -1168,6 +1169,8 @@ fun QueueBottomSheet(
                             ) { _ ->
                                 SongFullWidthItems(
                                     track = track,
+                                    enablePlayNextGesture = false,
+                                    shouldShowDragHandle = true,
                                     isPlaying = track.videoId == songEntity?.videoId,
                                     modifier =
                                         Modifier
@@ -1209,6 +1212,7 @@ fun QueueBottomSheet(
 }
 
 private enum class QueueItemAction {
+    NEXT,
     UP,
     DOWN,
     DELETE,
@@ -1235,6 +1239,7 @@ fun QueueItemBottomSheet(
         }
     val listAction =
         listOf(
+            QueueItemAction.NEXT,
             QueueItemAction.UP,
             QueueItemAction.DOWN,
             QueueItemAction.DELETE,
@@ -1292,6 +1297,7 @@ fun QueueItemBottomSheet(
                     items(listAction) { action ->
                         val disable =
                             when (action) {
+                                QueueItemAction.NEXT -> index == musicServiceHandler.currentOrderIndex()
                                 QueueItemAction.UP -> !canMoveUp
                                 QueueItemAction.DOWN -> !canMoveDown
                                 QueueItemAction.DELETE -> false
@@ -1304,6 +1310,13 @@ fun QueueItemBottomSheet(
                                     .clickable {
                                         hideModalBottomSheet()
                                         when (action) {
+                                            QueueItemAction.NEXT -> {
+                                                coroutineScope.launch {
+                                                    val current = musicServiceHandler.currentOrderIndex()
+                                                    val target = current + 1 - if (index < current) 1 else 0
+                                                    if (current >= 0) musicServiceHandler.swap(index, target)
+                                                }
+                                            }
                                             QueueItemAction.UP -> {
                                                 coroutineScope.launch {
                                                     musicServiceHandler.moveItemUp(index)
@@ -1330,6 +1343,9 @@ fun QueueItemBottomSheet(
                                         .align(Alignment.CenterStart),
                             ) {
                                 when (action) {
+                                    QueueItemAction.NEXT -> {
+                                        Image(imageVector = echoIcons.PlayCircle, contentDescription = stringResource(Res.string.play_next))
+                                    }
                                     QueueItemAction.UP -> {
                                         Image(
                                             imageVector = echoIcons.KeyboardDoubleArrowUp,
@@ -1356,6 +1372,7 @@ fun QueueItemBottomSheet(
                                     text =
                                         stringResource(
                                             when (action) {
+                                                QueueItemAction.NEXT -> Res.string.play_next
                                                 QueueItemAction.UP -> Res.string.move_up
                                                 QueueItemAction.DOWN -> Res.string.move_down
                                                 QueueItemAction.DELETE -> Res.string.delete

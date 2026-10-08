@@ -301,7 +301,10 @@ class SettingsViewModel(
 
     fun resetEqualizer() {
         val flat = List(EQUALIZER_BAND_COUNT) { 0f }
-        viewModelScope.launch { dataStoreManager.setEqualizerBands(flat) }
+        viewModelScope.launch {
+            dataStoreManager.setEqualizerBands(flat)
+            dataStoreManager.setEqualizerPreamp(0f)
+        }
     }
 
     fun setEqualizerEnabled(enabled: Boolean) {

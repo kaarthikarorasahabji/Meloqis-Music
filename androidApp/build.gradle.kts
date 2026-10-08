@@ -8,6 +8,13 @@ plugins {
     id("com.google.firebase.crashlytics")
 }
 
+// The separately installed preview uses the existing Firebase project configuration.
+androidComponents.onVariants(androidComponents.selector().withBuildType("performance")) {
+    tasks.named<com.google.gms.googleservices.GoogleServicesTask>("processPerformanceGoogleServices") {
+        applicationId.set("echo.music.iad1tya")
+    }
+}
+
 android {
     val abis = arrayOf("armeabi-v7a", "arm64-v8a", "x86_64")
 
@@ -98,6 +105,15 @@ android {
             // applicationIdSuffix = ".dev"
             versionNameSuffix = "-dev"
         }
+        create("performance") {
+            initWith(getByName("release"))
+            signingConfig = signingConfigs.getByName("debug")
+            applicationIdSuffix = ".performance"
+            versionNameSuffix = "-performance"
+            matchingFallbacks += listOf("release")
+            // A separate install keeps the user's existing library and login intact.
+            resValue("string", "app_name", "Meloqis Preview")
+        }
     }
     compileOptions {
         isCoreLibraryDesugaringEnabled = true
@@ -134,6 +150,11 @@ android {
         sourceCompatibility = JavaVersion.VERSION_21
         targetCompatibility = JavaVersion.VERSION_21
     }
+}
+
+// Local previews do not need to publish a development mapping to Crashlytics.
+tasks.matching { it.name == "uploadCrashlyticsMappingFilePerformance" }.configureEach {
+    enabled = false
 }
 
 dependencies {

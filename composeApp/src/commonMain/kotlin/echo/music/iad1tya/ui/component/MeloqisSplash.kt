@@ -27,14 +27,14 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.material3.Text
 import echomusic.composeapp.generated.resources.Res
-import echomusic.composeapp.generated.resources.mono
+import echomusic.composeapp.generated.resources.meloqis_logo
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.painterResource
 
 /**
  * Meloqis Music startup animation: a full-screen brand-gradient overlay with a
- * spring-scaled note glyph and wordmark that fades out to reveal the app.
+ * scaled melody mark and wordmark that fades out to reveal the app.
  * Self-contained (own colours) so it works regardless of the resolved theme.
  */
 @Composable
@@ -47,12 +47,12 @@ fun MeloqisSplashOverlay(onFinished: () -> Unit) {
         launch {
             scale.animateTo(
                 targetValue = 1f,
-                animationSpec = spring(dampingRatio = 0.5f, stiffness = Spring.StiffnessLow),
+                animationSpec = tween(280),
             )
         }
-        contentAlpha.animateTo(1f, tween(600))
-        delay(1000)
-        overlayAlpha.animateTo(0f, tween(520))
+        contentAlpha.animateTo(1f, tween(180))
+        delay(600)
+        overlayAlpha.animateTo(0f, tween(180))
         onFinished()
     }
 
@@ -64,9 +64,9 @@ fun MeloqisSplashOverlay(onFinished: () -> Unit) {
                 .background(
                     Brush.linearGradient(
                         listOf(
-                            Color(0xFFFF6A3D),
-                            Color(0xFFFA2D48),
-                            Color(0xFFFF2D78),
+                            Color(0xFF101525),
+                            Color(0xFF24213D),
+                            Color(0xFF123C3A),
                         ),
                     ),
                 ),
@@ -77,7 +77,7 @@ fun MeloqisSplashOverlay(onFinished: () -> Unit) {
             verticalArrangement = Arrangement.Center,
         ) {
             Image(
-                painter = painterResource(Res.drawable.mono),
+                painter = painterResource(Res.drawable.meloqis_logo),
                 contentDescription = "Meloqis Music",
                 modifier =
                     Modifier
@@ -109,9 +109,9 @@ fun MeloqisSplashOverlay(onFinished: () -> Unit) {
 
         // Developer credit tag, pinned to the bottom during loading.
         Text(
-            text = "developed by Kaarthik Dass Arora Sahab Ji",
+            text = "Developed by Kaarthik Dass Arora Sahab Ji",
             color = Color.White.copy(alpha = 0.9f),
-            fontSize = 12.sp,
+            fontSize = 14.sp,
             fontWeight = FontWeight.Medium,
             textAlign = TextAlign.Center,
             modifier =

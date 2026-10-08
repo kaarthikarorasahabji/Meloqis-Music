@@ -12,9 +12,10 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.MarqueeAnimationMode
 import androidx.compose.foundation.basicMarquee
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.background
 import androidx.compose.foundation.focusable
-import androidx.compose.foundation.gestures.detectHorizontalDragGestures
+import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -31,6 +32,8 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -38,8 +41,12 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -52,6 +59,8 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
@@ -85,10 +94,6 @@ import echo.music.iad1tya.ui.icon.echoIcons
 import echo.music.iad1tya.ui.theme.LocalBatterySaver
 import echo.music.iad1tya.ui.theme.LocalForceDarkText
 import echo.music.iad1tya.ui.theme.typo
-import io.github.alexzhirkevich.compottie.Compottie
-import io.github.alexzhirkevich.compottie.LottieCompositionSpec
-import io.github.alexzhirkevich.compottie.rememberLottieComposition
-import io.github.alexzhirkevich.compottie.rememberLottiePainter
 import kotlinx.coroutines.flow.mapNotNull
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.painterResource
@@ -102,6 +107,9 @@ import echomusic.composeapp.generated.resources.playlist
 import echomusic.composeapp.generated.resources.podcasts
 import echomusic.composeapp.generated.resources.radio
 import echomusic.composeapp.generated.resources.you
+import echo.music.iad1tya.viewModel.SharedViewModel
+import echo.music.iad1tya.domain.utils.toTrack
+import echomusic.composeapp.generated.resources.add_to_queue
 import kotlin.math.roundToInt
 
 /**
@@ -114,6 +122,7 @@ fun SongFullWidthItems(
     songEntity: SongEntity? = null,
     isPlaying: Boolean,
     shouldShowDragHandle: Boolean = false,
+    enablePlayNextGesture: Boolean = true,
     onMoreClickListener: ((videoId: String) -> Unit)? = null,
     onClickListener: ((videoId: String) -> Unit)? = null,
     onAddToQueue: ((videoId: String) -> Unit)? = null,
@@ -123,20 +132,35 @@ fun SongFullWidthItems(
 ) {
     val contentColor = if (forceDark) Color.White else MaterialTheme.colorScheme.onSurface
     val subtitleColor = if (forceDark) Color(0xC4FFFFFF) else MaterialTheme.colorScheme.onSurfaceVariant
-    val maxOffset = 360f
+    val maxOffset = with(LocalDensity.current) { 96.dp.toPx() }
+    val queueActions: SharedViewModel = koinInject()
+    val queueTrack = remember(track, songEntity) { track ?: songEntity?.toTrack() }
+    var showQueueMenu by remember(queueTrack?.videoId) { mutableStateOf(false) }
+    val currentPlayNext by rememberUpdatedState(onAddToQueue)
+    val currentVideoId by rememberUpdatedState(track?.videoId ?: songEntity?.videoId.orEmpty())
     val coroutineScope = rememberCoroutineScope()
     val density = LocalDensity.current
     val songRepository: SongRepository = koinInject<SongRepository>()
-    val downloadState by songRepository
-        .getSongAsFlow(songEntity?.videoId ?: track?.videoId ?: "")
-        .mapNotNull { it?.downloadState }
-        .collectAsState(initial = DownloadState.STATE_NOT_DOWNLOADED)
-    val composition by rememberLottieComposition {
-        LottieCompositionSpec.JsonString(
-            Res.readBytes("files/audio_playing_animation.json").decodeToString(),
-        )
+    val downloadFlow = remember(songRepository, currentVideoId) {
+        songRepository.getSongAsFlow(currentVideoId).mapNotNull { it?.downloadState }
     }
+    val downloadState by downloadFlow.collectAsStateWithLifecycle(initialValue = DownloadState.STATE_NOT_DOWNLOADED)
     val offsetX = remember { Animatable(initialValue = 0f) }
+    var dragOffset by remember { mutableFloatStateOf(0f) }
+    var isDragging by remember { mutableStateOf(false) }
+    val revealAction by remember(maxOffset) {
+        derivedStateOf { (if (isDragging) dragOffset else offsetX.value) >= maxOffset * 0.75f }
+    }
+    val haptics = LocalHapticFeedback.current
+    val currentQueueTrack by rememberUpdatedState(queueTrack)
+    val resetDrag: () -> Unit = {
+        coroutineScope.launch {
+            offsetX.snapTo(dragOffset)
+            isDragging = false
+            offsetX.animateTo(0f)
+            dragOffset = 0f
+        }
+    }
     var heightDp by remember { mutableStateOf(0.dp) }
 
     Box(
@@ -144,7 +168,7 @@ fun SongFullWidthItems(
         modifier,
     ) {
         Crossfade(
-            offsetX.value >= maxOffset / 2,
+            revealAction,
         ) { shouldShowAddToQueue ->
             if (shouldShowAddToQueue) {
                 Box(
@@ -167,35 +191,32 @@ fun SongFullWidthItems(
         Box(
             modifier =
                 modifier
-                    .offset { IntOffset(offsetX.value.roundToInt(), 0) }
-                    .clickable {
-                        onClickListener?.invoke(track?.videoId ?: songEntity?.videoId ?: "")
-                    }.animateContentSize()
-                    .pointerInput(Unit) {
-                        if (!isPlaying && onAddToQueue != null) {
-                            detectHorizontalDragGestures(
-                                onHorizontalDrag = { change, dragAmount ->
-                                    if (offsetX.value + dragAmount > 0) {
-                                        change.consume()
-                                        coroutineScope.launch {
-                                            offsetX.snapTo(
-                                                (offsetX.value + dragAmount).coerceAtMost(maxOffset),
-                                            )
-                                        }
-                                    }
-                                },
-                                onDragEnd = {
-                                    if (offsetX.value == maxOffset) {
-                                        onAddToQueue(
-                                            track?.videoId ?: songEntity?.videoId ?: "",
-                                        )
-                                    }
-                                    coroutineScope.launch {
-                                        offsetX.animateTo(0f)
-                                    }
-                                },
-                            )
-                        }
+                    .offset { IntOffset((if (isDragging) dragOffset else offsetX.value).roundToInt(), 0) }
+                    .clickable { onClickListener?.invoke(currentVideoId) }
+                    .pointerInput(maxOffset, queueTrack?.videoId, enablePlayNextGesture) {
+                        if (!enablePlayNextGesture) return@pointerInput
+                        detectDragGesturesAfterLongPress(
+                            onDragStart = {
+                                dragOffset = 0f
+                                isDragging = true
+                                haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                            },
+                            onDrag = { change, amount ->
+                                change.consume()
+                                dragOffset = (dragOffset + amount.x).coerceIn(0f, maxOffset)
+                            },
+                            onDragEnd = {
+                                if (dragOffset >= maxOffset * 0.75f) {
+                                    val callback = currentPlayNext
+                                    if (callback != null) callback(currentVideoId)
+                                    else currentQueueTrack?.let { queueActions.playNext(arrayListOf(it)) }
+                                } else if (dragOffset < maxOffset * 0.1f && currentQueueTrack != null) {
+                                    showQueueMenu = true
+                                }
+                                resetDrag()
+                            },
+                            onDragCancel = { resetDrag() },
+                        )
                     }.onGloballyPositioned { coordinates ->
                         with(density) {
                             heightDp = coordinates.size.height.toDp()
@@ -238,28 +259,12 @@ fun SongFullWidthItems(
                             )
                             if (isPlaying) {
                                 Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.4f)))
-                                Image(
-                                    painter =
-                                        rememberLottiePainter(
-                                            composition = composition,
-                                            iterations = Compottie.IterateForever,
-                                        ),
-                                    contentDescription = "Lottie animation",
-                                    colorFilter = androidx.compose.ui.graphics.ColorFilter.tint(Color.White)
-                                )
+                                EqualizerBars(color = Color.White, size = 24.dp)
                             }
                         }
                     } else {
                         if (isPlaying) {
-                            Image(
-                                painter =
-                                    rememberLottiePainter(
-                                        composition = composition,
-                                        iterations = Compottie.IterateForever,
-                                    ),
-                                contentDescription = "Lottie animation",
-                                colorFilter = androidx.compose.ui.graphics.ColorFilter.tint(contentColor)
-                            )
+                            EqualizerBars(color = contentColor, size = 24.dp)
                         } else {
                             Text(
                                 text = (index + 1).toString(),
@@ -365,6 +370,22 @@ fun SongFullWidthItems(
                 }
             }
         }
+        DropdownMenu(expanded = showQueueMenu, onDismissRequest = { showQueueMenu = false }) {
+            DropdownMenuItem(
+                text = { Text(stringResource(Res.string.play_next)) },
+                onClick = {
+                    showQueueMenu = false
+                    queueTrack?.let { queueActions.playNext(arrayListOf(it)) }
+                },
+            )
+            DropdownMenuItem(
+                text = { Text(stringResource(Res.string.add_to_queue)) },
+                onClick = {
+                    showQueueMenu = false
+                    queueTrack?.let { queueActions.addListToQueue(arrayListOf(it)) }
+                },
+            )
+        }
     }
 }
 
@@ -378,11 +399,6 @@ fun SuggestItems(
 ) {
     val contentColor = if (forceDark) Color.White else MaterialTheme.colorScheme.onSurface
     val subtitleColor = if (forceDark) Color(0xC4FFFFFF) else MaterialTheme.colorScheme.onSurfaceVariant
-    val composition by rememberLottieComposition {
-        LottieCompositionSpec.JsonString(
-            Res.readBytes("files/audio_playing_animation.json").decodeToString(),
-        )
-    }
     Box(
         modifier =
             Modifier
@@ -401,15 +417,7 @@ fun SuggestItems(
             Box(modifier = Modifier.size(40.dp)) {
                 Crossfade(isPlaying) {
                     if (it) {
-                        Image(
-                            painter =
-                                rememberLottiePainter(
-                                    composition = composition,
-                                    iterations = Compottie.IterateForever,
-                                ),
-                            contentDescription = "Lottie animation",
-                            colorFilter = androidx.compose.ui.graphics.ColorFilter.tint(Color.Gray)
-                        )
+                        EqualizerBars(color = Color.Gray, size = 24.dp)
                     } else {
                         val thumb = track.thumbnails?.lastOrNull()?.url
                         AsyncImage(

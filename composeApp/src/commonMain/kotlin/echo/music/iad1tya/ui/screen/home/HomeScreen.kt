@@ -61,8 +61,11 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.pulltorefresh.PullToRefreshDefaults
 import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
+import kotlinx.coroutines.CancellationException
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.State
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -126,6 +129,7 @@ import echo.music.iad1tya.ui.component.MoodMomentAndGenreHomeItem
 import echo.music.iad1tya.ui.component.OfflineErrorState
 import echo.music.iad1tya.ui.component.NowPlayingBottomSheet
 import echo.music.iad1tya.ui.component.QuickPicksItem
+import echo.music.iad1tya.ui.component.SupportProjectDialog
 import echo.music.iad1tya.ui.component.ReviewDialog
 import echo.music.iad1tya.ui.component.RippleIconButton
 import echo.music.iad1tya.ui.component.ShareSavedLyricsDialog
@@ -169,8 +173,7 @@ import dev.chrisbanes.haze.hazeSource
 import dev.chrisbanes.haze.materials.ExperimentalHazeMaterialsApi
 import dev.chrisbanes.haze.materials.HazeMaterials
 import dev.chrisbanes.haze.rememberHazeState
-import io.ktor.client.HttpClient
-import io.ktor.client.engine.cio.CIO
+import echo.music.iad1tya.ui.component.rememberArtworkNetworkClient
 import io.ktor.http.Url
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.painterResource
@@ -267,7 +270,6 @@ fun HomeScreen(
     val shareLyricsPermissions by sharedViewModel.shareSavedLyrics.collectAsStateWithLifecycle()
     val controllerState by sharedViewModel.controllerState.collectAsStateWithLifecycle()
     val isSongPlaying = controllerState.isPlaying
-    val lastShownSupportVersion = "never_show_again"
 
     val backgroundColor = MaterialTheme.colorScheme.background
     val isLightTheme = backgroundColor.luminance() > 0.5f
@@ -287,9 +289,9 @@ fun HomeScreen(
     val animatedColor by animateColorAsState(headerTarget, tween(500))
     // Bold header: the palette gradient's angle drifts slowly for a living feel. Battery Saver pins it
     // to a fixed 25° (no infinite transition created).
-    val headerAngle: Float =
+    val headerAngle: State<Float> =
         if (LocalBatterySaver.current) {
-            25f
+            rememberUpdatedState(25f)
         } else {
             val headerTransition = rememberInfiniteTransition(label = "homeHeader")
             headerTransition
@@ -302,10 +304,10 @@ fun HomeScreen(
                             repeatMode = RepeatMode.Reverse,
                         ),
                     label = "homeHeaderAngle",
-                ).value
+                )
         }
     val mainHomeThumbnail by viewModel.mainHomeThumbnail.collectAsStateWithLifecycle()
-    val networkLoader = rememberNetworkLoader(HttpClient(CIO))
+    val networkLoader = rememberNetworkLoader(rememberArtworkNetworkClient())
     val dominantColorState =
         rememberDominantColorState(
             defaultColor = backgroundColor,
@@ -314,8 +316,14 @@ fun HomeScreen(
         )
 
     LaunchedEffect(mainHomeThumbnail) {
+        try {
         mainHomeThumbnail?.let {
             dominantColorState.updateFrom(Url(it))
+        }
+        } catch (cancelled: CancellationException) {
+            throw cancelled
+        } catch (error: Exception) {
+            Logger.w("ArtworkColor", "Could not load artwork color: ${error.message}")
         }
     }
 
@@ -462,31 +470,13 @@ fun HomeScreen(
 
 
 
-    val currentVersion = echo.music.iad1tya.utils.VersionManager.getVersionName()
     var showSupportDialog by rememberSaveable { mutableStateOf(false) }
-
-    LaunchedEffect(lastShownSupportVersion) {
-        if (lastShownSupportVersion == null) return@LaunchedEffect
-        
-        if (lastShownSupportVersion == "never_show_again") {
-            showSupportDialog = false
-            return@LaunchedEffect
-        }
-        
-        if (false && lastShownSupportVersion != currentVersion) {
-            showSupportDialog = true
-        } else if (false) {
-            showSupportDialog = true
-        }
+    LaunchedEffect(Unit) {
+        // Persist before showing, so a navigation or restart cannot prompt twice this week.
+        showSupportDialog = viewModel.claimWeeklySupportPrompt()
     }
-
     if (showSupportDialog) {
-        echo.music.iad1tya.ui.component.SupportProjectDialog(
-            onDismiss = {
-                showSupportDialog = false
-                
-            }
-        )
+        SupportProjectDialog(onDismiss = { showSupportDialog = false })
     }
 
     Box(
@@ -567,7 +557,7 @@ fun HomeScreen(
                                             Modifier
                                                 .fillMaxWidth()
                                                 .height(300.dp)
-                                                .angledGradientBackground(listOf(animatedColor, backgroundColor), headerAngle),
+                                                .angledGradientBackground(listOf(animatedColor, backgroundColor)) { headerAngle.value },
                                     ) {
                                         Box(
                                             modifier =
@@ -763,7 +753,10 @@ fun HomeScreen(
                                 }
                             }
                         }
-                        item {
+                        item(key = "developerFooter") {
+                            echo.music.iad1tya.ui.component.MeloqisFooter(onClick = {
+                                navController.navigate(echo.music.iad1tya.ui.navigation.destination.home.AboutDeveloperDestination)
+                            })
                             EndOfPage()
                         }
                     }

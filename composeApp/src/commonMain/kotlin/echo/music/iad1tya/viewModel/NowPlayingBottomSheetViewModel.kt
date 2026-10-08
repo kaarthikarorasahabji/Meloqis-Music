@@ -59,6 +59,7 @@ class NowPlayingBottomSheetViewModel(
     private val songRepository: SongRepository,
 ) : BaseViewModel() {
     private val downloadUtils: DownloadHandler by inject()
+    private val sharedViewModel: SharedViewModel by inject()
     private val _uiState: MutableStateFlow<NowPlayingBottomSheetUIState> =
         MutableStateFlow(
             NowPlayingBottomSheetUIState(
@@ -325,14 +326,12 @@ class NowPlayingBottomSheetViewModel(
 
                 is NowPlayingBottomSheetUIEvent.PlayNext -> {
                     val songEntity = songRepository.getSongById(songUIState.videoId).singleOrNull() ?: return@launch
-                    mediaPlayerHandler.playNext(songEntity.toTrack())
-                    makeToast(getString(Res.string.play_next))
+                    sharedViewModel.playNext(arrayListOf(songEntity.toTrack()))
                 }
 
                 is NowPlayingBottomSheetUIEvent.AddToQueue -> {
                     val songEntity = songRepository.getSongById(songUIState.videoId).singleOrNull() ?: return@launch
-                    mediaPlayerHandler.loadMoreCatalog(arrayListOf(songEntity.toTrack()), isAddToQueue = true)
-                    makeToast(getString(Res.string.added_to_queue))
+                    sharedViewModel.addListToQueue(arrayListOf(songEntity.toTrack()))
                 }
 
                 is NowPlayingBottomSheetUIEvent.ChangeLyricsProvider -> {

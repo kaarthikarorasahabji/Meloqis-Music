@@ -2,9 +2,7 @@ package echo.music.iad1tya
 
 import echo.music.iad1tya.R
 
-import android.annotation.SuppressLint
 import android.app.Application
-import android.database.CursorWindow
 import android.util.Log
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.work.Configuration
@@ -13,6 +11,7 @@ import cat.ereza.customactivityoncrash.config.CaocConfig
 import coil3.ImageLoader
 import coil3.PlatformContext
 import coil3.SingletonImageLoader
+import coil3.memory.MemoryCache
 import coil3.disk.DiskCache
 import coil3.network.okhttp.OkHttpNetworkFetcherFactory
 import coil3.request.CachePolicy
@@ -28,7 +27,7 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 import multiplatform.network.cmptoast.AppContext
 import okhttp3.OkHttpClient
-import okio.FileSystem
+import okio.Path.Companion.toOkioPath
 import org.koin.android.ext.koin.androidContext
 import org.koin.android.ext.koin.androidLogger
 import org.koin.core.component.KoinComponent
@@ -38,7 +37,6 @@ import org.koin.core.context.startKoin
 import org.koin.core.logger.Level
 import echo.music.iad1tya.crashlytics.configCrashlytics
 import echo.music.iad1tya.lastfm.configLastfm
-import java.lang.reflect.Field
 
 class EchoMusicApplication :
     Application(),
@@ -89,12 +87,6 @@ class EchoMusicApplication :
             .restartActivity(MainActivity::class.java) // default: null (your app's launch activity)
             .apply()
 
-        @SuppressLint("DiscouragedPrivateApi")
-        val field: Field = CursorWindow::class.java.getDeclaredField("sCursorWindowSize")
-        field.isAccessible = true
-        val expectSize = 100 * 1024 * 1024
-        field.set(null, expectSize)
-
         AppContext.apply {
             set(applicationContext)
         }
@@ -117,13 +109,15 @@ class EchoMusicApplication :
                         },
                     ),
                 )
+            }.memoryCache {
+                MemoryCache.Builder().maxSizePercent(context, 0.15).build()
             }.diskCachePolicy(CachePolicy.ENABLED)
             .networkCachePolicy(CachePolicy.ENABLED)
             .diskCache(
                 DiskCache
                     .Builder()
-                    .directory(FileSystem.SYSTEM_TEMPORARY_DIRECTORY / "image_cache")
-                    .maxSizeBytes(512L * 1024 * 1024)
+                    .directory(context.cacheDir.resolve("image_cache").toOkioPath())
+                    .maxSizeBytes(128L * 1024 * 1024)
                     .build(),
             ).crossfade(true)
             .build()

@@ -183,6 +183,7 @@ import echomusic.composeapp.generated.resources.auto_download_liked_songs_descri
 import echomusic.composeapp.generated.resources.anonymous
 import echomusic.composeapp.generated.resources.app_name
 import echomusic.composeapp.generated.resources.audio
+import echomusic.composeapp.generated.resources.about_developer
 import echomusic.composeapp.generated.resources.author
 import echomusic.composeapp.generated.resources.auto_backup
 import echomusic.composeapp.generated.resources.auto_backup_description
@@ -417,6 +418,7 @@ fun SettingScreen(
     val pl = com.mohamedrejeb.calf.core.LocalPlatformContext.current
     val localDensity = LocalDensity.current
     val uriHandler = LocalUriHandler.current
+    val supportDeveloper = echo.music.iad1tya.ui.component.rememberDeveloperSupportAction()
     val coroutineScope = rememberCoroutineScope()
 
     var width by rememberSaveable { mutableIntStateOf(0) }
@@ -2231,19 +2233,17 @@ fun SettingScreen(
                     },
                 )
                 SettingItem(
-                    title = stringResource(Res.string.author),
+                    title = stringResource(Res.string.about_developer),
                     subtitle = stringResource(Res.string.iad1tya_dev),
                     onClick = {
-                        uriHandler.openUri("https://axenoraai.in")
+                        navController.navigate(echo.music.iad1tya.ui.navigation.destination.home.AboutDeveloperDestination)
                     },
                 )
 
                 SettingItem(
                     title = stringResource(Res.string.buy_me_a_coffee),
                     subtitle = stringResource(Res.string.donation),
-                    onClick = {
-                        uriHandler.openUri("https://intradeus.github.io/http-protocol-redirector/?r=upi://pay?pa=kaarthikdassarorasahabji@sbi%26pn=Kaarthik%20Dass%20Arora%20Sahab%20Ji%26cu=INR")
-                    },
+                    onClick = supportDeveloper,
                 )
                 SettingItem(
                     title = stringResource(Res.string.support_upi_crypto),
@@ -2263,11 +2263,9 @@ fun SettingScreen(
             }
         }
         item(key = "credit") {
-            MeloqisFooter(
-                onClick = {
-                    uriHandler.openUri("https://axenoraai.in")
-                },
-            )
+            MeloqisFooter(onClick = {
+                navController.navigate(echo.music.iad1tya.ui.navigation.destination.home.AboutDeveloperDestination)
+            })
         }
         item(key = "end") {
             EndOfPage()
@@ -2863,6 +2861,11 @@ fun SettingScreen(
                         navController.navigateUp()
                     }
                 }
+            }
+        },
+        actions = {
+            RippleIconButton(imageVector = echoIcons.Info, tint = MaterialTheme.colorScheme.onSurface) {
+                navController.navigate(echo.music.iad1tya.ui.navigation.destination.home.AboutDeveloperDestination)
             }
         },
         modifier =

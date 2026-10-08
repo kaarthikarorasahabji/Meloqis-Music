@@ -26,7 +26,8 @@ import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.CancellationException
 import org.jetbrains.compose.resources.StringResource
 import echomusic.composeapp.generated.resources.Res
 import echomusic.composeapp.generated.resources.albums
@@ -112,12 +113,18 @@ class SearchViewModel(
 
     private val requestedArtwork = mutableSetOf<String>()
 
+    private var searchJob: Job? = null
+    private var suggestionJob: Job? = null
+    private var historyJob: Job? = null
+
     var regionCode: String? = null
     var language: String? = null
 
     init {
-        regionCode = runBlocking { dataStoreManager.location.first() }
-        language = runBlocking { dataStoreManager.getString(SELECTED_LANGUAGE).first() }
+        viewModelScope.launch {
+            regionCode = dataStoreManager.location.first()
+            language = dataStoreManager.getString(SELECTED_LANGUAGE).first()
+        }
         getSearchHistory()
         getMoodAndGenres()
     }
@@ -155,7 +162,8 @@ class SearchViewModel(
     }
 
     private fun getSearchHistory() {
-        viewModelScope.launch {
+        historyJob?.cancel()
+        historyJob = viewModelScope.launch {
             searchRepository.getSearchHistory().collect { values ->
                 if (values.isNotEmpty()) {
                     values.toQueryList().reversed().let { list ->
@@ -182,14 +190,15 @@ class SearchViewModel(
     fun deleteSearchHistory() {
         viewModelScope.launch {
             searchRepository.deleteSearchHistory()
-            delay(1000)
             getSearchHistory()
         }
     }
 
     fun searchSongs(query: String) {
+        searchJob?.cancel()
+        suggestionJob?.cancel()
         _searchScreenUIState.value = SearchScreenUIState.Loading
-        viewModelScope.launch {
+        searchJob = viewModelScope.launch {
             searchRepository.getSearchDataSong(query).collect { values ->
                 when (values) {
                     is Resource.Success -> {
@@ -210,8 +219,10 @@ class SearchViewModel(
     }
 
     fun searchAll(query: String) {
+        searchJob?.cancel()
+        suggestionJob?.cancel()
         _searchScreenUIState.value = SearchScreenUIState.Loading
-        viewModelScope.launch {
+        searchJob = viewModelScope.launch {
             var song = ArrayList<SongsResult>()
             val video = ArrayList<VideosResult>()
             var album = ArrayList<AlbumsResult>()
@@ -329,6 +340,8 @@ class SearchViewModel(
                     )
                 }
                 _searchScreenUIState.value = SearchScreenUIState.Success
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 e.printStackTrace()
                 _searchScreenUIState.value = SearchScreenUIState.Error
@@ -337,7 +350,13 @@ class SearchViewModel(
     }
 
     fun suggestQuery(query: String) {
-        viewModelScope.launch {
+        suggestionJob?.cancel()
+        if (query.isBlank()) {
+            _searchScreenState.update { it.copy(suggestQueries = emptyList(), suggestYTItems = emptyList()) }
+            return
+        }
+        suggestionJob = viewModelScope.launch {
+            delay(300)
             searchRepository.getSuggestQuery(query).collect { values ->
                 when (values) {
                     is Resource.Success -> {
@@ -361,8 +380,10 @@ class SearchViewModel(
     }
 
     fun searchAlbums(query: String) {
+        searchJob?.cancel()
+        suggestionJob?.cancel()
         _searchScreenUIState.value = SearchScreenUIState.Loading
-        viewModelScope.launch {
+        searchJob = viewModelScope.launch {
             searchRepository.getSearchDataAlbum(query).collect { values ->
                 when (values) {
                     is Resource.Success -> {
@@ -386,8 +407,10 @@ class SearchViewModel(
     }
 
     fun searchFeaturedPlaylist(query: String) {
+        searchJob?.cancel()
+        suggestionJob?.cancel()
         _searchScreenUIState.value = SearchScreenUIState.Loading
-        viewModelScope.launch {
+        searchJob = viewModelScope.launch {
             searchRepository.getSearchDataFeaturedPlaylist(query).collect { values ->
                 when (values) {
                     is Resource.Success -> {
@@ -411,8 +434,10 @@ class SearchViewModel(
     }
 
     fun searchPodcast(query: String) {
+        searchJob?.cancel()
+        suggestionJob?.cancel()
         _searchScreenUIState.value = SearchScreenUIState.Loading
-        viewModelScope.launch {
+        searchJob = viewModelScope.launch {
             searchRepository.getSearchDataPodcast(query).collect { values ->
                 when (values) {
                     is Resource.Success -> {
@@ -436,8 +461,10 @@ class SearchViewModel(
     }
 
     fun searchArtists(query: String) {
+        searchJob?.cancel()
+        suggestionJob?.cancel()
         _searchScreenUIState.value = SearchScreenUIState.Loading
-        viewModelScope.launch {
+        searchJob = viewModelScope.launch {
             searchRepository.getSearchDataArtist(query).collect { values ->
                 when (values) {
                     is Resource.Success -> {
@@ -461,8 +488,10 @@ class SearchViewModel(
     }
 
     fun searchPlaylists(query: String) {
+        searchJob?.cancel()
+        suggestionJob?.cancel()
         _searchScreenUIState.value = SearchScreenUIState.Loading
-        viewModelScope.launch {
+        searchJob = viewModelScope.launch {
             searchRepository.getSearchDataPlaylist(query).collect { values ->
                 when (values) {
                     is Resource.Success -> {
@@ -486,8 +515,10 @@ class SearchViewModel(
     }
 
     fun searchVideos(query: String) {
+        searchJob?.cancel()
+        suggestionJob?.cancel()
         _searchScreenUIState.value = SearchScreenUIState.Loading
-        viewModelScope.launch {
+        searchJob = viewModelScope.launch {
             searchRepository.getSearchDataVideo(query).collect { values ->
                 when (values) {
                     is Resource.Success -> {

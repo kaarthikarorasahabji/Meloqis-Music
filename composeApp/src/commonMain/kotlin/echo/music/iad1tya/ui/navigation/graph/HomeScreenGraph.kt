@@ -17,6 +17,9 @@ fun NavGraphBuilder.homeScreenGraph(
     innerPadding: PaddingValues,
     navController: NavController,
 ) {
+    composable<echo.music.iad1tya.ui.navigation.destination.home.AboutDeveloperDestination> {
+        echo.music.iad1tya.ui.screen.home.AboutDeveloperScreen(navController, innerPadding)
+    }
     composable<MoodDestination> { entry ->
         val params = entry.toRoute<MoodDestination>().params
         MoodScreen(

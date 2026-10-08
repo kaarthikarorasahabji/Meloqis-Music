@@ -2,7 +2,6 @@ package echo.music.iad1tya.ui.component
 
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.FastOutLinearInEasing
-import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.layout.Column
@@ -16,6 +15,7 @@ import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
@@ -32,11 +32,12 @@ fun rememberDragDropState(
     onSwap: (Int, Int) -> Unit,
 ): DragDropState {
     val scope = rememberCoroutineScope()
+    val latestOnSwap = rememberUpdatedState(onSwap)
     val state =
         remember(lazyListState) {
             DragDropState(
                 state = lazyListState,
-                onSwap = onSwap,
+                onSwap = { from, to -> latestOnSwap.value(from, to) },
                 scope = scope,
             )
         }
@@ -44,15 +45,7 @@ fun rememberDragDropState(
 }
 
 fun LazyListState.getVisibleItemInfoFor(absoluteIndex: Int): LazyListItemInfo? =
-    this
-        .layoutInfo
-        .visibleItemsInfo
-        .getOrNull(
-            absoluteIndex -
-                this.layoutInfo.visibleItemsInfo
-                    .first()
-                    .index,
-        )
+    layoutInfo.visibleItemsInfo.firstOrNull { it.index == absoluteIndex }
 
 val LazyListItemInfo.offsetEnd: Int
     get() = this.offset + this.size
@@ -66,21 +59,19 @@ fun LazyItemScope.DraggableItem(
     modifier: Modifier,
     content: @Composable ColumnScope.(isDragging: Boolean) -> Unit,
 ) {
-    val current: Float by animateFloatAsState(dragDropState.draggingItemOffset)
-    val previous: Float by animateFloatAsState(dragDropState.previousItemOffset.value)
     val dragging = index == dragDropState.currentIndexOfDraggedItem
     val draggingModifier =
         if (dragging) {
             Modifier
                 .zIndex(1f)
                 .graphicsLayer {
-                    translationY = current
+                    translationY = dragDropState.draggingItemOffset
                 }
         } else if (index == dragDropState.previousIndexOfDraggedItem) {
             Modifier
                 .zIndex(1f)
                 .graphicsLayer {
-                    translationY = previous
+                    translationY = dragDropState.previousItemOffset.value
                 }
         } else {
             Modifier.animateItem(
@@ -124,17 +115,13 @@ class DragDropState internal constructor(
     private val initialOffsets: Pair<Int, Int>?
         get() = initiallyDraggedElement?.let { Pair(it.offset, it.offsetEnd) }
 
-    private val currentElement: LazyListItemInfo?
-        get() =
-            currentIndexOfDraggedItem?.let {
-                state.getVisibleItemInfoFor(absoluteIndex = it)
-            }
-
     private var currentSwapFromTo by mutableStateOf<Pair<Int, Int>?>(null)
 
     fun onDragStart(offset: Offset) {
+        currentSwapFromTo = null
+        draggedDistance = 0f
         state.layoutInfo.visibleItemsInfo
-            .firstOrNull { item -> offset.y.toInt() in item.offset..(item.offset + item.size) }
+            .firstOrNull { item -> item.contentType == "reorderableSong" && offset.y.toInt() in item.offset..(item.offset + item.size) }
             ?.also {
                 currentIndexOfDraggedItem = it.index
                 initiallyDraggedElement = it
@@ -172,28 +159,13 @@ class DragDropState internal constructor(
     fun onDrag(offset: Offset) {
         draggedDistance += offset.y
 
-        initialOffsets?.let { (topOffset, bottomOffset) ->
-            val startOffset = topOffset + draggedDistance
-            val endOffset = bottomOffset + draggedDistance
-
-            currentElement?.let { hovered ->
-                state.layoutInfo.visibleItemsInfo
-                    .filterNot { item -> item.offsetEnd < startOffset || item.offset > endOffset || hovered.index == item.index }
-                    .apply {
-                        forEach { item ->
-                            Logger.w("QueueBottomSheet", "onDrag: ${item.index}")
-                        }
-                    }.firstOrNull { item ->
-                        val delta = (startOffset - hovered.offset)
-                        when {
-                            delta > 0 -> (endOffset > item.offsetEnd)
-                            else -> (startOffset < item.offset)
-                        }
-                    }?.also { item ->
-                        currentIndexOfDraggedItem?.let { current ->
-                            currentSwapFromTo = Pair(current, item.index)
-                        }
-                    }
+        initialOffsets?.let { (top, bottom) ->
+            val center = (top + bottom) / 2f + draggedDistance
+            val target = state.layoutInfo.visibleItemsInfo.filter { it.contentType == "reorderableSong" }.minByOrNull {
+                kotlin.math.abs(center - (it.offset + it.size / 2f))
+            }
+            currentSwapFromTo = currentIndexOfDraggedItem?.let { from ->
+                target?.let { from to it.index }
             }
         }
     }

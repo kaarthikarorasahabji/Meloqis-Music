@@ -71,6 +71,13 @@
 #    public static int d(...);
 #    public static int v(...);
 #}
+
+# Keep error diagnostics, but remove verbose app logging from optimized builds.
+-assumenosideeffects class echo.music.iad1tya.logger.Logger {
+    public void d(...);
+    public void i(...);
+    public void w(...);
+}
 ## Rules for NewPipeExtractor
 -keep class org.schabi.newpipe.extractor.timeago.patterns.** { *; }
 -keep class org.schabi.newpipe.extractor.timeago.patterns.** { *; }

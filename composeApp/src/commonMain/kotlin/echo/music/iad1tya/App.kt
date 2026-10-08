@@ -34,6 +34,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.adaptive.currentWindowAdaptiveInfo
+import kotlinx.coroutines.CancellationException
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
@@ -63,8 +64,7 @@ import androidx.window.core.layout.WindowSizeClass.Companion.WIDTH_DP_MEDIUM_LOW
 import coil3.toUri
 import com.kmpalette.loader.rememberNetworkLoader
 import com.kmpalette.rememberDominantColorState
-import io.ktor.client.HttpClient
-import io.ktor.client.engine.cio.CIO
+import echo.music.iad1tya.ui.component.rememberArtworkNetworkClient
 import io.ktor.http.Url
 import echo.music.iad1tya.domain.data.player.GenericMediaItem
 import echo.music.iad1tya.domain.manager.DataStoreManager
@@ -146,7 +146,7 @@ fun App(viewModel: SharedViewModel = koinInject()) {
     val showNotificationPermissionDialog by viewModel.showNotificationPermissionDialog.collectAsStateWithLifecycle()
 
 
-    val isLiquidGlassEnabled by viewModel.getEnableLiquidGlass().collectAsStateWithLifecycle(DataStoreManager.FALSE)
+    val liquidGlassPreference by viewModel.getEnableLiquidGlass().collectAsStateWithLifecycle(DataStoreManager.FALSE)
     // Analytics only makes sense with local tracking on, so its tab follows that setting.
     val isLocalTrackingEnabled by viewModel.getLocalTrackingEnabled().collectAsStateWithLifecycle(DataStoreManager.FALSE)
     val showAnalyticsTab = isLocalTrackingEnabled == TRUE
@@ -154,7 +154,9 @@ fun App(viewModel: SharedViewModel = koinInject()) {
     val themeMode by viewModel.getThemeMode().collectAsStateWithLifecycle(DataStoreManager.THEME_MODE_DARK)
     val themeColorSource by viewModel.getThemeColorSource().collectAsStateWithLifecycle(DataStoreManager.THEME_COLOR_WALLPAPER)
     val customThemeColorHex by viewModel.getCustomThemeColor().collectAsStateWithLifecycle(DataStoreManager.DEFAULT_THEME_COLOR_HEX)
-    val batterySaver by viewModel.batterySaver.collectAsStateWithLifecycle()
+    val batterySaverPreference by viewModel.batterySaver.collectAsStateWithLifecycle()
+    val batterySaver = batterySaverPreference || echo.music.iad1tya.expect.rememberDeviceReducedEffects()
+    val isLiquidGlassEnabled = if (batterySaver) DataStoreManager.FALSE else liquidGlassPreference
     // MiniPlayer visibility logic
     var isShowMiniPlayer by rememberSaveable {
         mutableStateOf(true)
@@ -392,7 +394,7 @@ if (data.scheme == "wordbyword" && data.host == "lastfm-auth") {
         // tint and mini-player breathe in the playing song's colour. The base MaterialKolor scheme
         // (buttons/chips) is left untouched → satisfies the "surfaces & accents only" scope.
         val nowPlayingThumb = nowPlayingScreenData.thumbnailURL
-        val songNetworkLoader = rememberNetworkLoader(remember { HttpClient(CIO) })
+        val songNetworkLoader = rememberNetworkLoader(rememberArtworkNetworkClient())
         val songDominantColorState =
             rememberDominantColorState(
                 defaultColor = MaterialTheme.colorScheme.primary,
@@ -400,11 +402,17 @@ if (data.scheme == "wordbyword" && data.host == "lastfm-auth") {
                 loader = songNetworkLoader,
             )
         LaunchedEffect(nowPlayingThumb) {
+            try {
             nowPlayingThumb?.let { songDominantColorState.updateFrom(Url(it)) }
+            } catch (cancelled: CancellationException) {
+                throw cancelled
+            } catch (error: Exception) {
+                Logger.w("ArtworkColor", "Could not load artwork color: ${error.message}")
+            }
         }
         // Ease on each song change; Battery Saver snaps (one-shot re-tint is fine — skip the clock).
         val rawSongColor = songDominantColorState.color
-        val easedSongColor by animateColorAsState(rawSongColor, tween(600), label = "nowPlayingColor")
+        val easedSongColor by animateColorAsState(rawSongColor, tween(if (batterySaver) 0 else 600), label = "nowPlayingColor")
         val songColor: Color? =
             when {
                 nowPlayingThumb.isNullOrBlank() -> null

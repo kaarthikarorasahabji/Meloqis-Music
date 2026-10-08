@@ -1154,7 +1154,8 @@ internal class MediaServiceHandlerImpl(
     }
 
     override fun removeMediaItem(position: Int) {
-        player.removeMediaItem(position)
+        if (position !in _queueData.value.data.listTracks.indices) return
+        player.removeMediaItem(player.getUnshuffledIndex(position))
         val temp =
             _queueData.value.data.listTracks
                 .toMutableList()
@@ -1199,20 +1200,11 @@ internal class MediaServiceHandlerImpl(
 
     override fun currentSongIndex(): Int = player.currentMediaItemIndex
 
-    override suspend fun swap(
-        from: Int,
-        to: Int,
-    ) {
-//        if (from < to) {
-//            for (i in from until to) {
-//                moveItemDown(i)
-//            }
-//        } else {
-//            for (i in from downTo to + 1) {
-//                moveItemUp(i)
-//            }
-//        }
-        moveMediaItem(from, to)
+    override suspend fun swap(from: Int, to: Int) {
+        val indices = queueData.value.data.listTracks.indices
+        if (from !in indices || to !in indices || from == to) return
+        player.moveQueueItem(from, to)
+        _currentSongIndex.value = player.currentMediaItemIndex
     }
 
     override fun resetCrossfade() {
@@ -1581,33 +1573,11 @@ internal class MediaServiceHandlerImpl(
     override fun getCurrentMediaItem(): GenericMediaItem? = player.currentMediaItem
 
     override suspend fun moveItemUp(position: Int) {
-        moveMediaItem(position, position - 1)
-        queueData.value.data.listTracks.toMutableList().let { list ->
-            val temp = list[position]
-            list[position] = list[position - 1]
-            list[position - 1] = temp
-            _queueData.update {
-                it.copy(
-                    data = it.data.copy(listTracks = list),
-                )
-            }
-        }
-        _currentSongIndex.value = player.currentMediaItemIndex
+        swap(position, position - 1)
     }
 
     override suspend fun moveItemDown(position: Int) {
-        moveMediaItem(position, position + 1)
-        queueData.value.data.listTracks.toMutableList().let { list ->
-            val temp = list[position]
-            list[position] = list[position + 1]
-            list[position + 1] = temp
-            _queueData.update {
-                it.copy(
-                    data = it.data.copy(listTracks = list),
-                )
-            }
-        }
-        _currentSongIndex.value = player.currentMediaItemIndex
+        swap(position, position + 1)
     }
 
     override fun addFirstMediaItemToIndex(
@@ -1997,9 +1967,9 @@ internal class MediaServiceHandlerImpl(
 
     override fun currentOrderIndex(): Int =
         if (player.shuffleModeEnabled) {
-            queueData.value.data.listTracks.indexOfLast {
-                it.videoId == player.currentMediaItem?.mediaId?.removePrefix(MERGING_DATA_TYPE.VIDEO)
-            }
+            (0 until player.mediaItemCount).firstOrNull {
+                player.getUnshuffledIndex(it) == player.currentMediaItemIndex
+            } ?: -1
         } else {
             currentSongIndex()
         }
@@ -2724,10 +2694,13 @@ internal class MediaServiceHandlerImpl(
                 return
             }
         }
-        list
-            .mapNotNull {
-                listTrack.firstOrNull { track -> track.videoId == it.mediaId }
-            }.let { sorted ->
+        val tracksById = listTrack.groupBy { it.videoId }
+        val occurrences = mutableMapOf<String, Int>()
+        list.mapNotNull { item ->
+            val occurrence = occurrences.getOrElse(item.mediaId) { 0 }
+            occurrences[item.mediaId] = occurrence + 1
+            tracksById[item.mediaId]?.getOrNull(occurrence)
+        }.let { sorted ->
                 if (sorted.size != listTrack.size) return
                 Logger.d(TAG, "Reordering shuffled queue: ${sorted.map { it.title }}")
                 _queueData.update {

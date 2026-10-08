@@ -26,7 +26,13 @@ class CoilBitmapLoader(
 
     override fun decodeBitmap(data: ByteArray): ListenableFuture<Bitmap> =
         coroutineScope.future(Dispatchers.IO) {
-            BitmapFactory.decodeByteArray(data, 0, data.size)
+            val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+            BitmapFactory.decodeByteArray(data, 0, data.size, bounds)
+            val options = BitmapFactory.Options()
+            while (maxOf(bounds.outWidth, bounds.outHeight) / options.inSampleSize > 512) {
+                options.inSampleSize *= 2
+            }
+            BitmapFactory.decodeByteArray(data, 0, data.size, options)
                 ?: error("Could not decode image data")
         }
 
@@ -39,6 +45,7 @@ class CoilBitmapLoader(
                             .Builder(context)
                             .data(uri)
                             .allowHardware(false)
+                            .size(512, 512)
                             .build(),
                     )
                 )

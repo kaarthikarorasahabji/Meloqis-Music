@@ -884,7 +884,8 @@ internal class CrossfadeExoPlayerAdapter(
         playlist.add(mediaItem)
 
         if (internalShuffleModeEnabled) {
-            createShuffleOrder()
+            // Appending must preserve the queue the user has already arranged.
+            insertIntoShuffleOrder(playlist.lastIndex, shuffleOrder.lastIndex)
         }
 
         notifyTimelineChanged("TIMELINE_CHANGE_REASON_PLAYLIST_CHANGED")
@@ -1008,6 +1009,22 @@ internal class CrossfadeExoPlayerAdapter(
 
             notifyTimelineChanged("TIMELINE_CHANGE_REASON_PLAYLIST_CHANGED")
 
+            clearPrecacheExceptCurrentInternal()
+            triggerPrecachingInternal()
+        }
+    }
+
+    override fun moveQueueItem(fromIndex: Int, toIndex: Int) {
+        if (!internalShuffleModeEnabled) {
+            moveMediaItem(fromIndex, toIndex)
+            return
+        }
+        if (fromIndex !in shuffleOrder.indices || toIndex !in shuffleOrder.indices) return
+        val originalIndex = shuffleOrder.removeAt(fromIndex)
+        shuffleOrder.add(toIndex, originalIndex)
+        shuffleOrder.forEachIndexed { position, index -> shuffleIndices[index] = position }
+        notifyTimelineChanged("TIMELINE_CHANGE_REASON_PLAYLIST_CHANGED")
+        coroutineScope.launch {
             clearPrecacheExceptCurrentInternal()
             triggerPrecachingInternal()
         }

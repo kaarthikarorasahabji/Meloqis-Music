@@ -78,6 +78,10 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.rememberModalBottomSheetState
+import echo.music.iad1tya.ui.component.TimedLineIndex
+import echo.music.iad1tya.ui.component.activeIndexAt
+import androidx.compose.runtime.State
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
@@ -464,8 +468,8 @@ fun NowPlayingScreenContent(
     // Aurora: two slow, out-of-phase drift clocks feed the blob centres drawn in the backdrop below.
     // Battery Saver freezes both to a static mid-pose, so no infinite transition is created at all.
     val auroraEnabled = !LocalBatterySaver.current
-    val auroraDriftA: Float
-    val auroraDriftB: Float
+    val auroraDriftA: State<Float>
+    val auroraDriftB: State<Float>
     if (auroraEnabled) {
         val auroraTransition = rememberInfiniteTransition(label = "aurora")
         auroraDriftA =
@@ -479,7 +483,7 @@ fun NowPlayingScreenContent(
                             repeatMode = RepeatMode.Reverse,
                         ),
                     label = "auroraDriftA",
-                ).value
+                )
         auroraDriftB =
             auroraTransition
                 .animateFloat(
@@ -491,10 +495,10 @@ fun NowPlayingScreenContent(
                             repeatMode = RepeatMode.Reverse,
                         ),
                     label = "auroraDriftB",
-                ).value
+                )
     } else {
-        auroraDriftA = 0.5f
-        auroraDriftB = 0.5f
+        auroraDriftA = rememberUpdatedState(0.5f)
+        auroraDriftB = rememberUpdatedState(0.5f)
     }
 
     var spotShadowColor by remember {
@@ -689,40 +693,19 @@ fun NowPlayingScreenContent(
         }
     }
 
-    // Canvas subtitle sync
-    LaunchedEffect(timelineState, screenDataState.lyricsData?.lyrics) {
-        val lyrics = screenDataState.lyricsData?.lyrics
-        if (lyrics == null || lyrics.syncType == "UNSYNCED" || lyrics.syncType == null) {
-            currentLyricLineIndex = -1
-            return@LaunchedEffect
-        }
-        val lines = lyrics.lines ?: return@LaunchedEffect
-        val translatedLines =
-            screenDataState.lyricsData
-                ?.translatedLyrics
-                ?.first
-                ?.lines
-        if (timelineState.current > 0L) {
-            lines.indices.forEach { i ->
-                val startTimeMs = lines[i].startTimeMs.toLongOrNull() ?: 0L
-                val endTimeMs =
-                    if (i < lines.size - 1) {
-                        lines[i + 1].startTimeMs.toLongOrNull() ?: 0L
-                    } else {
-                        startTimeMs + 60000
-                    }
-                if (timelineState.current in startTimeMs..endTimeMs) {
-                    currentLyricLineIndex = i
-                }
-            }
-            if (lines.isNotEmpty() &&
-                timelineState.current in 0..(lines.getOrNull(0)?.startTimeMs?.toLongOrNull() ?: 0L)
-            ) {
-                currentLyricLineIndex = -1
-            }
+    // Parse/sort once per lyric set, then use a logarithmic lookup per playback tick.
+    val canvasLyrics = screenDataState.lyricsData?.lyrics
+    val canvasTimedLines = remember(canvasLyrics) {
+        if (canvasLyrics?.syncType == null || canvasLyrics.syncType == "UNSYNCED") {
+            emptyList()
         } else {
-            currentLyricLineIndex = -1
+            canvasLyrics.lines.orEmpty().mapIndexedNotNull { index, line ->
+                line.startTimeMs.toLongOrNull()?.let { TimedLineIndex(index, it) }
+            }.sortedBy { it.startTimeMs }
         }
+    }
+    LaunchedEffect(timelineState.current, canvasTimedLines) {
+        currentLyricLineIndex = canvasTimedLines.activeIndexAt(timelineState.current)
     }
 
     if (showSheet) {
@@ -877,7 +860,7 @@ fun NowPlayingScreenContent(
                                                 ),
                                             center =
                                                 Offset(
-                                                    blobW * (0.22f + 0.16f * auroraDriftA),
+                                                    blobW * (0.22f + 0.16f * auroraDriftA.value),
                                                     gradientHeight * 0.26f,
                                                 ),
                                             radius = blobW * 0.62f,
@@ -894,7 +877,7 @@ fun NowPlayingScreenContent(
                                                 ),
                                             center =
                                                 Offset(
-                                                    blobW * (0.82f - 0.20f * auroraDriftB),
+                                                    blobW * (0.82f - 0.20f * auroraDriftB.value),
                                                     gradientHeight * 0.15f,
                                                 ),
                                             radius = blobW * 0.50f,
@@ -911,7 +894,7 @@ fun NowPlayingScreenContent(
                                                 ),
                                             center =
                                                 Offset(
-                                                    blobW * (0.50f + 0.12f * auroraDriftA),
+                                                    blobW * (0.50f + 0.12f * auroraDriftA.value),
                                                     gradientHeight * 0.46f,
                                                 ),
                                             radius = blobW * 0.55f,

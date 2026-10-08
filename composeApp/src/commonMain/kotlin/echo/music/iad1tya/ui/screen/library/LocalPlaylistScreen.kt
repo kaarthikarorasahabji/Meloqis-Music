@@ -55,6 +55,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
+import echo.music.iad1tya.ui.component.DownloadActivityIndicator
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -156,10 +157,6 @@ import dev.chrisbanes.haze.hazeEffect
 import dev.chrisbanes.haze.hazeSource
 import dev.chrisbanes.haze.materials.ExperimentalHazeMaterialsApi
 import dev.chrisbanes.haze.rememberHazeState
-import io.github.alexzhirkevich.compottie.Compottie
-import io.github.alexzhirkevich.compottie.LottieCompositionSpec
-import io.github.alexzhirkevich.compottie.rememberLottieComposition
-import io.github.alexzhirkevich.compottie.rememberLottiePainter
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -210,11 +207,7 @@ fun LocalPlaylistScreen(
     viewModel: LocalPlaylistViewModel = koinViewModel(),
     navController: NavController,
 ) {
-    val composition by rememberLottieComposition {
-        LottieCompositionSpec.JsonString(
-            Res.readBytes("files/downloading_animation.json").decodeToString(),
-        )
-    }
+
 
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
@@ -903,15 +896,7 @@ fun LocalPlaylistScreen(
                                                                             },
                                                                     contentAlignment = Alignment.Center,
                                                                 ) {
-                                                                    Image(
-                                                                        painter =
-                                                                            rememberLottiePainter(
-                                                                                composition = composition,
-                                                                                iterations = Compottie.IterateForever,
-                                                                            ),
-                                                                        contentDescription = "Lottie animation",
-                                                                        modifier = Modifier.size(28.dp),
-                                                                    )
+                                                                    DownloadActivityIndicator(size = 28.dp)
                                                                 }
                                                             }
 
@@ -1147,15 +1132,7 @@ fun LocalPlaylistScreen(
                                                                     },
                                                             contentAlignment = Alignment.Center,
                                                         ) {
-                                                            Image(
-                                                                painter =
-                                                                    rememberLottiePainter(
-                                                                        composition = composition,
-                                                                        iterations = Compottie.IterateForever,
-                                                                    ),
-                                                                contentDescription = "Lottie animation",
-                                                                modifier = Modifier.size(28.dp),
-                                                            )
+                                                            DownloadActivityIndicator(size = 28.dp)
                                                         }
                                                     }
 
@@ -1329,7 +1306,7 @@ fun LocalPlaylistScreen(
                 }
             }
         }
-        items(count = trackPagingItems.itemCount, key = { index ->
+        items(count = trackPagingItems.itemCount, contentType = { "reorderableSong" }, key = { index ->
             val item = trackPagingItems[index]
             (item?.first?.videoId ?: "") + "item_$index" + item?.second?.inPlaylist + item?.second?.position
         }) { index ->
@@ -1341,6 +1318,7 @@ fun LocalPlaylistScreen(
                             forceDark = true,
                             isPlaying = true,
                             shouldShowDragHandle = changingOrder,
+                            enablePlayNextGesture = !changingOrder,
                             songEntity = item,
                             onMoreClickListener = { onItemMoreClick(it) },
                             onClickListener = {
@@ -1359,6 +1337,7 @@ fun LocalPlaylistScreen(
                             forceDark = true,
                             isPlaying = false,
                             shouldShowDragHandle = changingOrder,
+                            enablePlayNextGesture = !changingOrder,
                             songEntity = item,
                             onMoreClickListener = { onItemMoreClick(it) },
                             onClickListener = {

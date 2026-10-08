@@ -42,6 +42,7 @@ kotlin {
         compileSdk = 37
         minSdk = 26
         withJava()
+        withHostTestBuilder {}
         androidResources {
             enable = true
         }
@@ -128,10 +129,6 @@ kotlin {
             implementation(libs.datastore.preferences)
 
             // Lottie
-            implementation(libs.compottie)
-            implementation(libs.compottie.dot)
-            implementation(libs.compottie.network)
-            implementation(libs.compottie.resources)
 
             // Paging 3
             implementation(libs.androidx.paging.common)

@@ -346,7 +346,7 @@ developed with ❤️ by Kaarthik Dass Arora Sahab Ji</string>
     <string name="data_saver_info">Stop pre-downloading upcoming tracks. Audio quality stays the same.</string>
     <string name="battery_saver">Battery Saver</string>
     <string name="battery_saver_info">Freeze animations and effects to save battery.</string>
-    <string name="developed_credit">Developed with ❤️ BY Kaarthik Dass Arora Sahab Ji</string>
+    <string name="developed_credit">Developed with love by Kaarthik Dass Arora Sahab Ji</string>
     <string name="spotify_lyrics_provider">Lyrics provided by Spotify</string>
     <string name="offline_mode">Offline mode</string>
     <string name="added_to_youtube_liked">Added to YouTube Liked</string>
@@ -698,4 +698,21 @@ developed with ❤️ by Kaarthik Dass Arora Sahab Ji</string>
     <string name="open_system_equalizer">Open system equalizer</string>
     <string name="use_your_system_equalizer">Use your system equalizer</string>
 
+    <string name="player_play">Play</string>
+    <string name="player_pause">Pause</string>
+    <string name="player_previous">Previous track</string>
+    <string name="player_next">Next track</string>
+    <string name="player_seek_back">Seek backward</string>
+    <string name="player_seek_forward">Seek forward</string>
+    <string name="support_developer_title">Support the developer</string>
+    <string name="support_developer_message">Enjoying Meloqis? Buy the developer a coffee and help keep the music flowing. Support is optional. We’ll only ask once a week.</string>
+    <string name="support_coffee_button">Buy a coffee · ₹50+</string>
+    <string name="support_later">Maybe later</string>
+    <string name="support_upi_unavailable">No UPI app could be opened. Install a UPI app or use UPI ID kaarthikdassarorasahabji@sbi to support from ₹50.</string>
+    <string name="about_developer">About the developer</string>
+    <string name="developer_role">Creator of Meloqis Music</string>
+    <string name="developer_message">Meloqis brings your music, lyrics, and listening controls together in one place.</string>
+    <string name="developer_support_message">Help support continued development with a coffee from ₹50.</string>
+    <string name="developer_website">Visit developer website</string>
+    <string name="developer_source">Explore Meloqis on GitHub</string>
 </resources>

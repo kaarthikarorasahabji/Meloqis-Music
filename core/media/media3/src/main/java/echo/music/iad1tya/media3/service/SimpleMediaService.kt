@@ -24,7 +24,7 @@ import androidx.media3.session.MediaSession
 import androidx.media3.session.SessionToken
 import androidx.media3.ui.DefaultMediaDescriptionAdapter
 import androidx.media3.ui.PlayerNotificationManager
-import com.google.common.util.concurrent.MoreExecutors
+import com.google.common.util.concurrent.ListenableFuture
 import echo.music.iad1tya.common.MEDIA_NOTIFICATION
 import echo.music.iad1tya.domain.manager.DataStoreManager
 import echo.music.iad1tya.domain.mediaservice.handler.MediaPlayerHandler
@@ -32,29 +32,24 @@ import echo.music.iad1tya.logger.Logger
 import echo.music.iad1tya.media3.R
 import echo.music.iad1tya.media3.extension.toCommandButton
 import echo.music.iad1tya.media3.utils.CoilBitmapLoader
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.isActive
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
 import org.koin.core.qualifier.named
 import kotlin.system.exitProcess
-import kotlin.time.Duration.Companion.seconds
 
 @UnstableApi
 internal class SimpleMediaService :
     MediaLibraryService(),
     KoinComponent {
-    private val coroutineScope by inject<CoroutineScope>(named(echo.music.iad1tya.common.Config.SERVICE_SCOPE))
     // Session-level player from DI: the ForwardingPlayer wrapped with Cast support in the
     // full build (plain ForwardingPlayer in the FOSS build).
     private val player: Player by inject<Player>(qualifier = named(echo.music.iad1tya.common.Config.MAIN_PLAYER))
     private val coilBitmapLoader: CoilBitmapLoader by inject<CoilBitmapLoader>()
 
     private var mediaSession: MediaLibrarySession? = null
+    private var controllerFuture: ListenableFuture<MediaController>? = null
 
     private val simpleMediaSessionCallback: MediaLibrarySession.Callback by inject<MediaLibrarySession.Callback>()
 
@@ -127,8 +122,7 @@ internal class SimpleMediaService :
         }
 
         val sessionToken = SessionToken(this, ComponentName(this, SimpleMediaService::class.java))
-        val controllerFuture = MediaController.Builder(this, sessionToken).buildAsync()
-        controllerFuture.addListener({ controllerFuture.get() }, MoreExecutors.directExecutor())
+        controllerFuture = MediaController.Builder(this, sessionToken).buildAsync()
 
         if (runBlocking { dataStoreManager.keepServiceAlive.first() == DataStoreManager.TRUE }) {
             val notificationManager = getSystemService<NotificationManager>()
@@ -162,12 +156,9 @@ internal class SimpleMediaService :
                                         startForeground(notificationId, notification)
                                     }
                                 }
-                                coroutineScope.launch {
-                                    while (coroutineScope.isActive) {
-                                        startFg()
-                                        delay(30.seconds)
-                                    }
-                                }
+                                // Foreground status persists until stopped; a new loop per
+                                // notification leaked the old service and multiplied wakeups.
+                                startFg()
                             }
                         },
                     ).setMediaDescriptionAdapter(DefaultMediaDescriptionAdapter(mediaSession?.sessionActivity))
@@ -210,16 +201,11 @@ internal class SimpleMediaService :
         Logger.w("Service", "Starting release process")
         runBlocking {
             try {
-                // Release MediaSession (don't release player - CrossfadeExoPlayerAdapter manages it)
-                mediaSession?.run {
-                    this.player.pause()
-                    this.player.playWhenReady = false
-                    // Don't call this.player.release() - CrossfadeExoPlayerAdapter manages player lifecycle
-                    this.release()
-                }
-                // Release handler (contains coroutines and jobs, which also releases the adapter)
+                player.pause()
+                player.playWhenReady = false
+                releaseSessionResources()
+                // The handler owns the player/adapter lifecycle.
                 simpleMediaServiceHandler.release()
-                mediaSession = null
                 Logger.w("Service", "Simple Media Service Released")
             } catch (e: Exception) {
                 Logger.e("Service", "Error during release")
@@ -229,11 +215,29 @@ internal class SimpleMediaService :
 
     @UnstableApi
     override fun onDestroy() {
-        super.onDestroy()
         Logger.w("Service", "Simple Media Service Destroyed")
-        if (simpleMediaServiceHandler.shouldReleaseOnTaskRemoved()) {
-            release()
+        try {
+            if (simpleMediaServiceHandler.shouldReleaseOnTaskRemoved()) {
+                release()
+            }
+        } finally {
+            // A service's session must always be released, even when the shared
+            // player is retained. Otherwise recreating this service reuses a live ID.
+            releaseSessionResources()
+            super.onDestroy()
         }
+    }
+
+    private fun releaseSessionResources() {
+        simpleMediaServiceHandler.onUpdateNotification = {}
+        if (::playerNotificationManager.isInitialized) {
+            playerNotificationManager.setPlayer(null)
+        }
+        controllerFuture?.let { MediaController.releaseFuture(it) }
+        controllerFuture = null
+        val session = mediaSession
+        mediaSession = null
+        session?.release()
     }
 
     override fun onTrimMemory(level: Int) {

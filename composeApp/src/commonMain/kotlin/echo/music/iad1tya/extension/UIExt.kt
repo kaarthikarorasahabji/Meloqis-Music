@@ -180,6 +180,12 @@ fun Modifier.springPress(pressedScale: Float = 0.9f): Modifier =
 fun Modifier.angledGradientBackground(
     colors: List<Color>,
     degrees: Float,
+) = angledGradientBackground(colors) { degrees }
+
+/** Read animated angles during drawing, avoiding recomposition of the surrounding screen. */
+fun Modifier.angledGradientBackground(
+    colors: List<Color>,
+    degrees: () -> Float,
 ) = this.then(
     if (colors.size < 2) {
         Modifier
@@ -224,7 +230,7 @@ fun Modifier.angledGradientBackground(
                 return@drawBehind
             }
 
-            val degreesNormalised = (degrees % 360).let { if (it < 0) it + 360 else it }
+            val degreesNormalised = (degrees() % 360).let { if (it < 0) it + 360 else it }
 
             val alpha = (degreesNormalised * PI / 180).toFloat()
 

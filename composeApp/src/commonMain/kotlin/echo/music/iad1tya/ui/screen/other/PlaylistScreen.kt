@@ -50,6 +50,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
+import echo.music.iad1tya.ui.component.DownloadActivityIndicator
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
@@ -134,10 +135,6 @@ import dev.chrisbanes.haze.hazeSource
 import dev.chrisbanes.haze.materials.ExperimentalHazeMaterialsApi
 import dev.chrisbanes.haze.materials.HazeMaterials
 import dev.chrisbanes.haze.rememberHazeState
-import io.github.alexzhirkevich.compottie.Compottie
-import io.github.alexzhirkevich.compottie.LottieCompositionSpec
-import io.github.alexzhirkevich.compottie.rememberLottieComposition
-import io.github.alexzhirkevich.compottie.rememberLottiePainter
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -175,11 +172,7 @@ fun PlaylistScreen(
     val id = playlistId.removePrefix("VL")
     val tag = "PlaylistScreen"
 
-    val composition by rememberLottieComposition {
-        LottieCompositionSpec.JsonString(
-            Res.readBytes("files/downloading_animation.json").decodeToString(),
-        )
-    }
+
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val continuation by viewModel.continuation.collectAsStateWithLifecycle()
     val listColors by viewModel.listColors.collectAsStateWithLifecycle()
@@ -750,15 +743,7 @@ fun PlaylistScreen(
                                                                                                 },
                                                                                         contentAlignment = Alignment.Center,
                                                                                     ) {
-                                                                                        Image(
-                                                                                            painter =
-                                                                                                rememberLottiePainter(
-                                                                                                    composition = composition,
-                                                                                                    iterations = Compottie.IterateForever,
-                                                                                                ),
-                                                                                            contentDescription = "Lottie animation",
-                                                                                            modifier = Modifier.size(28.dp),
-                                                                                        )
+                                                                                        DownloadActivityIndicator(size = 28.dp)
                                                                                     }
                                                                                 }
 
@@ -971,15 +956,7 @@ fun PlaylistScreen(
                                                                                         },
                                                                                 contentAlignment = Alignment.Center,
                                                                             ) {
-                                                                                Image(
-                                                                                    painter =
-                                                                                        rememberLottiePainter(
-                                                                                            composition = composition,
-                                                                                            iterations = Compottie.IterateForever,
-                                                                                        ),
-                                                                                    contentDescription = "Lottie animation",
-                                                                                    modifier = Modifier.size(28.dp),
-                                                                                )
+                                                                                DownloadActivityIndicator(size = 28.dp)
                                                                             }
                                                                         }
 

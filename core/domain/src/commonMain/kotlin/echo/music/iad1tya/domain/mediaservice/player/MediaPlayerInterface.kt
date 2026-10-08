@@ -58,6 +58,11 @@ interface MediaPlayerInterface {
         toIndex: Int,
     )
 
+    /** Move in the displayed playback order, which can differ from storage order in shuffle. */
+    fun moveQueueItem(fromIndex: Int, toIndex: Int) {
+        moveMediaItem(getUnshuffledIndex(fromIndex), getUnshuffledIndex(toIndex))
+    }
+
     fun clearMediaItems()
 
     fun replaceMediaItem(
