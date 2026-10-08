@@ -32,4 +32,3 @@ internal fun List<TimedLineIndex>.activeIndexAt(nowMs: Long): Int {
     }
     return if (ans >= 0) this[ans].index else -1
 }
-
