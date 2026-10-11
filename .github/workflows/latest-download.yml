@@ -8,7 +8,7 @@ on:
       tag:
         description: Published release tag
         required: true
-        default: v1.5.1
+        default: v1.5.2
 
 permissions:
   contents: write
@@ -28,4 +28,15 @@ jobs:
           test "$count" = "1"
           gh release download "$RELEASE_TAG" --pattern '*-universal.apk' --dir apk
           cp apk/*-universal.apk Meloqis-Music-latest.apk
-          gh release upload "$RELEASE_TAG" Meloqis-Music-latest.apk --clobber
+          gh release download "$RELEASE_TAG" --pattern '*-arm64-v8a.apk' --dir apk
+          gh release download "$RELEASE_TAG" --pattern '*-armeabi-v7a.apk' --dir apk
+          gh release download "$RELEASE_TAG" --pattern '*-x86_64.apk' --dir apk
+          cp apk/*-arm64-v8a.apk Meloqis-Music-latest-arm64.apk
+          cp apk/*-armeabi-v7a.apk Meloqis-Music-latest-armeabi-v7a.apk
+          cp apk/*-x86_64.apk Meloqis-Music-latest-x86_64.apk
+          gh release upload "$RELEASE_TAG" \
+            Meloqis-Music-latest.apk \
+            Meloqis-Music-latest-arm64.apk \
+            Meloqis-Music-latest-armeabi-v7a.apk \
+            Meloqis-Music-latest-x86_64.apk \
+            --clobber
