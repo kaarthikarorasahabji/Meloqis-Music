@@ -15,6 +15,9 @@ import echo.music.iad1tya.domain.data.player.GenericCastState
 import echo.music.iad1tya.domain.extension.toNetScapeString
 import echo.music.iad1tya.domain.manager.DataStoreManager
 import echo.music.iad1tya.domain.mediaservice.handler.DownloadHandler
+import echo.music.iad1tya.domain.mediaservice.player.EQUALIZER_BAND_COUNT
+import echo.music.iad1tya.domain.mediaservice.player.normalizeEqualizerBands
+import echo.music.iad1tya.domain.mediaservice.player.normalizeEqualizerPreampDb
 import echo.music.iad1tya.domain.repository.AccountRepository
 import echo.music.iad1tya.domain.repository.CacheRepository
 import echo.music.iad1tya.domain.repository.CommonRepository
@@ -33,6 +36,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.lastOrNull
@@ -263,72 +267,99 @@ class SettingsViewModel(
 
     private var equalizerCollectorsStarted = false
 
+    private fun writeEqualizerSetting(operation: suspend () -> Unit) {
+        viewModelScope.launch {
+            try {
+                operation()
+            } catch (cancelled: CancellationException) {
+                throw cancelled
+            } catch (error: Exception) {
+                Logger.e("SettingsViewModel", "Equalizer update failed: ${error.message}")
+            }
+        }
+    }
+
     fun getEqualizer() {
         if (equalizerCollectorsStarted) return
         equalizerCollectorsStarted = true
         viewModelScope.launch {
             launch {
-                dataStoreManager.equalizerEnabled.collect {
+                dataStoreManager.equalizerEnabled.catch { error ->
+                    Logger.e("SettingsViewModel", "Reading equalizer state failed: ${error.message}")
+                    emit(DataStoreManager.FALSE)
+                }.collect {
                     _equalizerEnabled.emit(it == DataStoreManager.TRUE)
                 }
             }
             launch {
-                dataStoreManager.equalizerBands.collect { stored ->
-                    val parsed = stored.split(",").mapNotNull { it.trim().toFloatOrNull() }
-                    _equalizerBands.emit(
-                        List(EQUALIZER_BAND_COUNT) { parsed.getOrElse(it) { 0f } },
-                    )
+                dataStoreManager.equalizerBands.catch { error ->
+                    Logger.e("SettingsViewModel", "Reading equalizer bands failed: ${error.message}")
+                    emit("")
+                }.collect { stored ->
+                    val parsed = stored.split(",").map { it.trim().toFloatOrNull() ?: Float.NaN }
+                    _equalizerBands.emit(normalizeEqualizerBands(parsed))
                 }
             }
             launch {
-                dataStoreManager.equalizerPreamp.collect { _equalizerPreamp.emit(it) }
+                dataStoreManager.equalizerPreamp.catch { error ->
+                    Logger.e("SettingsViewModel", "Reading equalizer preamp failed: ${error.message}")
+                    emit(0f)
+                }.collect { _equalizerPreamp.emit(normalizeEqualizerPreampDb(it)) }
             }
             launch {
-                dataStoreManager.equalizerAutoEqProfile.collect { _equalizerAutoEqProfile.emit(it) }
+                dataStoreManager.equalizerAutoEqProfile.catch { error ->
+                    Logger.e("SettingsViewModel", "Reading AutoEq selection failed: ${error.message}")
+                    emit("")
+                }.collect { _equalizerAutoEqProfile.emit(it) }
             }
         }
     }
 
 
     fun applyEqualizerPreset(preset: List<Float>, preampDb: Float) {
-        val bands = preset.toMutableList()
-        viewModelScope.launch { dataStoreManager.setEqualizerBands(bands); dataStoreManager.setEqualizerPreamp(preampDb) }
+        val bands = normalizeEqualizerBands(preset)
+        val preamp = normalizeEqualizerPreampDb(preampDb)
+        writeEqualizerSetting { dataStoreManager.setEqualizerBands(bands); dataStoreManager.setEqualizerPreamp(preamp) }
     }
 
     fun setEqualizerBands(bands: List<Float>) {
-        viewModelScope.launch { dataStoreManager.setEqualizerBands(bands) }
+        val safeBands = normalizeEqualizerBands(bands)
+        writeEqualizerSetting { dataStoreManager.setEqualizerBands(safeBands) }
     }
 
     fun resetEqualizer() {
         val flat = List(EQUALIZER_BAND_COUNT) { 0f }
-        viewModelScope.launch {
+        writeEqualizerSetting {
             dataStoreManager.setEqualizerBands(flat)
             dataStoreManager.setEqualizerPreamp(0f)
         }
     }
 
     fun setEqualizerEnabled(enabled: Boolean) {
-        viewModelScope.launch { dataStoreManager.setEqualizerEnabled(enabled) }
+        writeEqualizerSetting { dataStoreManager.setEqualizerEnabled(enabled) }
     }
 
     fun setEqualizerBand(
         index: Int,
         valueDb: Float,
     ) {
+        if (index !in 0 until EQUALIZER_BAND_COUNT) return
         val bands = _equalizerBands.value.toMutableList()
-        bands[index] = valueDb
-        viewModelScope.launch { dataStoreManager.setEqualizerBands(bands) }
+        bands[index] = valueDb.takeIf(Float::isFinite)?.coerceIn(-12f, 12f) ?: 0f
+        writeEqualizerSetting { dataStoreManager.setEqualizerBands(normalizeEqualizerBands(bands)) }
     }
 
     fun setEqualizerPreamp(valueDb: Float) {
-        viewModelScope.launch { dataStoreManager.setEqualizerPreamp(valueDb) }
+        val safePreamp = normalizeEqualizerPreampDb(valueDb)
+        writeEqualizerSetting { dataStoreManager.setEqualizerPreamp(safePreamp) }
     }
 
     fun setEqualizerAutoEqProfile(
         label: String,
         bandsDb: List<Float>,
     ) {
-        viewModelScope.launch { dataStoreManager.setEqualizerAutoEqProfile(label, bandsDb) }
+        val safeBands = normalizeEqualizerBands(bandsDb)
+        writeEqualizerSetting { dataStoreManager.setEqualizerAutoEqProfile(label, safeBands) }
     }
 
     init {
@@ -1951,7 +1982,5 @@ expect fun getFileDir(): String
 expect fun changeLanguageNative(code: String)
 
 /** Number of equalizer bands, matching the ISO centres the desktop backend installs. */
-const val EQUALIZER_BAND_COUNT = 10
-
 /** Band centre labels, for display only — the backend owns the actual frequencies. */
 val EQUALIZER_BAND_LABELS = listOf("31", "62", "125", "250", "500", "1k", "2k", "4k", "8k", "16k")

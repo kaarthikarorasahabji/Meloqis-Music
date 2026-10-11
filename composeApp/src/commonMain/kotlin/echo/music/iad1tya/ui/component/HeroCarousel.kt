@@ -48,6 +48,7 @@ data class HeroCarouselItem(
     val subtitle: String?,
     val thumbnailUrl: String?,
     val onClick: () -> Unit,
+    val isPlaying: Boolean = false,
 )
 
 /**
@@ -187,7 +188,7 @@ fun HeroCarousel(
  * larger square. Best-effort string rewrite — falls back to the original URL when the shape is
  * unfamiliar.
  */
-private fun upscaleThumbUrl(url: String?): String? {
+internal fun upscaleThumbUrl(url: String?): String? {
     if (url.isNullOrBlank()) return url
     return when {
         Regex("[wh]\\d{2,4}").containsMatchIn(url) -> Regex("([wh])\\d{2,4}").replace(url, "$1544")

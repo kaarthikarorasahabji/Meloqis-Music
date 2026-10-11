@@ -31,9 +31,10 @@ fun EqualizerBars(
     modifier: Modifier = Modifier,
     color: Color = Color.White,
     size: Dp = 18.dp,
+    isActive: Boolean = true,
 ) {
     val lifecycleState by LocalLifecycleOwner.current.lifecycle.currentStateAsState()
-    val animate = !LocalBatterySaver.current && lifecycleState.isAtLeast(Lifecycle.State.STARTED)
+    val animate = isActive && !LocalBatterySaver.current && lifecycleState.isAtLeast(Lifecycle.State.STARTED)
     val phase = if (animate) {
         rememberInfiniteTransition(label = "playingBars").animateFloat(
             initialValue = 0f,

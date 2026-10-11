@@ -54,6 +54,8 @@ import echo.music.iad1tya.domain.mediaservice.handler.SleepTimerState
 import echo.music.iad1tya.domain.mediaservice.handler.ToastType
 import echo.music.iad1tya.domain.mediaservice.player.MediaPlayerInterface
 import echo.music.iad1tya.domain.mediaservice.player.MediaPlayerListener
+import echo.music.iad1tya.domain.mediaservice.player.normalizeEqualizerBands
+import echo.music.iad1tya.domain.mediaservice.player.normalizeEqualizerPreampDb
 import echo.music.iad1tya.domain.repository.AnalyticsRepository
 import echo.music.iad1tya.domain.repository.LocalPlaylistRepository
 import echo.music.iad1tya.domain.repository.SongRepository
@@ -318,8 +320,12 @@ internal class MediaServiceHandlerImpl(
                     // alone so switching back on returns to the user's own shape.
                     player.setEqualizer(
                         bandsDb =
-                            if (enabled) bands.split(",").mapNotNull { it.trim().toFloatOrNull() } else emptyList(),
-                        preampDb = if (enabled) preamp else 0f,
+                            if (enabled) {
+                                normalizeEqualizerBands(bands.split(",").map { it.trim().toFloatOrNull() ?: Float.NaN })
+                            } else {
+                                emptyList()
+                            },
+                        preampDb = if (enabled) normalizeEqualizerPreampDb(preamp) else 0f,
                     )
                 }
         }

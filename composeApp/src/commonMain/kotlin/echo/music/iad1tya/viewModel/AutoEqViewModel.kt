@@ -4,7 +4,9 @@ import androidx.lifecycle.viewModelScope
 import echo.music.iad1tya.domain.data.entities.AutoEqEntryEntity
 import echo.music.iad1tya.domain.manager.DataStoreManager
 import echo.music.iad1tya.domain.repository.AutoEqRepository
+import echo.music.iad1tya.logger.Logger
 import echo.music.iad1tya.viewModel.base.BaseViewModel
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -49,7 +51,14 @@ class AutoEqViewModel(
             // what debounce would do here — without depending on a preview flow operator.
             _query.collectLatest { term ->
                 delay(SEARCH_DEBOUNCE_MS)
-                _results.emit(autoEqRepository.search(term))
+                try {
+                    _results.emit(autoEqRepository.search(term))
+                } catch (cancelled: CancellationException) {
+                    throw cancelled
+                } catch (error: Exception) {
+                    Logger.e("AutoEqViewModel", "Searching profiles failed: ${error.message}")
+                    _results.value = emptyList()
+                }
             }
         }
     }
@@ -67,15 +76,23 @@ class AutoEqViewModel(
      */
     fun onOpen() {
         viewModelScope.launch {
-            _cachedPaths.value = autoEqRepository.cachedCurvePaths()
-            val cached = autoEqRepository.cachedCount()
-            _status.value = if (cached == 0) AutoEqStatus.DOWNLOADING else AutoEqStatus.READY
-            if (cached > 0) _results.emit(autoEqRepository.search(_query.value))
+            var cached = 0
+            try {
+                _cachedPaths.value = autoEqRepository.cachedCurvePaths()
+                cached = autoEqRepository.cachedCount()
+                _status.value = if (cached == 0) AutoEqStatus.DOWNLOADING else AutoEqStatus.READY
+                if (cached > 0) _results.emit(autoEqRepository.search(_query.value))
 
-            val changed = autoEqRepository.refreshIndex()
-            if (changed) _results.emit(autoEqRepository.search(_query.value))
-            _status.value =
-                if (autoEqRepository.cachedCount() == 0) AutoEqStatus.UNAVAILABLE else AutoEqStatus.READY
+                val changed = autoEqRepository.refreshIndex()
+                if (changed) _results.emit(autoEqRepository.search(_query.value))
+                _status.value =
+                    if (autoEqRepository.cachedCount() == 0) AutoEqStatus.UNAVAILABLE else AutoEqStatus.READY
+            } catch (cancelled: CancellationException) {
+                throw cancelled
+            } catch (error: Exception) {
+                Logger.e("AutoEqViewModel", "Loading profile index failed: ${error.message}")
+                _status.value = if (cached == 0) AutoEqStatus.UNAVAILABLE else AutoEqStatus.READY
+            }
         }
     }
 
@@ -92,19 +109,27 @@ class AutoEqViewModel(
     ) {
         viewModelScope.launch {
             _status.value = AutoEqStatus.APPLYING
-            val curve = autoEqRepository.loadCurve(entry)
-            if (curve == null) {
+            try {
+                val curve = autoEqRepository.loadCurve(entry)
+                if (curve == null) {
+                    _status.value = AutoEqStatus.READY
+                    onResult(false)
+                    return@launch
+                }
+                dataStoreManager.setEqualizerPreamp(curve.preampDb)
+                dataStoreManager.setEqualizerBands(curve.bandsDb)
+                dataStoreManager.setEqualizerAutoEqProfile(labelFor(entry), curve.bandsDb)
+                // A first pick has just put this curve on disk, so the mark has to move with it.
+                _cachedPaths.value = autoEqRepository.cachedCurvePaths()
+                _status.value = AutoEqStatus.READY
+                onResult(true)
+            } catch (cancelled: CancellationException) {
+                throw cancelled
+            } catch (error: Exception) {
+                Logger.e("AutoEqViewModel", "Applying profile failed: ${error.message}")
                 _status.value = AutoEqStatus.READY
                 onResult(false)
-                return@launch
             }
-            dataStoreManager.setEqualizerPreamp(curve.preampDb)
-            dataStoreManager.setEqualizerBands(curve.bandsDb)
-            dataStoreManager.setEqualizerAutoEqProfile(labelFor(entry), curve.bandsDb)
-            // A first pick has just put this curve on disk, so the mark has to move with it.
-            _cachedPaths.value = autoEqRepository.cachedCurvePaths()
-            _status.value = AutoEqStatus.READY
-            onResult(true)
         }
     }
 

@@ -60,7 +60,6 @@ import coil3.request.ImageRequest
 import coil3.request.crossfade
 import echo.music.iad1tya.common.LibraryChipType
 import echo.music.iad1tya.domain.utils.LocalResource
-import echo.music.iad1tya.logger.Logger
 import echo.music.iad1tya.extension.copy
 import echo.music.iad1tya.extension.isScrollingUp
 import echo.music.iad1tya.extension.nowPlayingTint
@@ -82,7 +81,6 @@ import dev.chrisbanes.haze.materials.ExperimentalHazeMaterialsApi
 import dev.chrisbanes.haze.materials.HazeMaterials
 import dev.chrisbanes.haze.rememberHazeState
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
 import org.jetbrains.compose.resources.getString
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
@@ -141,8 +139,7 @@ fun LibraryScreen(
     }
     var showAddSheet by remember { mutableStateOf(false) }
 
-    LaunchedEffect(nowPlaying) {
-        Logger.w("LibraryScreen", "Check nowPlaying: $nowPlaying")
+    LaunchedEffect(Unit) {
         viewModel.getRecentlyAdded()
     }
 
@@ -382,11 +379,13 @@ fun LibraryScreen(
                     Spacer(modifier = Modifier.height(5.dp))
                     TextButton(
                         onClick = {
-                            if (newTitle.isBlank()) {
-                                viewModel.makeToast(runBlocking { getString(Res.string.playlist_name_cannot_be_empty) })
-                            } else {
-                                viewModel.createPlaylist(newTitle)
-                                hideEditTitleBottomSheet()
+                            coroutineScope.launch {
+                                if (newTitle.isBlank()) {
+                                    viewModel.makeToast(getString(Res.string.playlist_name_cannot_be_empty))
+                                } else {
+                                    viewModel.createPlaylist(newTitle)
+                                    hideEditTitleBottomSheet()
+                                }
                             }
                         },
                         modifier =

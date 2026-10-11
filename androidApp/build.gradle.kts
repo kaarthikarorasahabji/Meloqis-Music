@@ -17,6 +17,15 @@ androidComponents.onVariants(androidComponents.selector().withBuildType("perform
 
 android {
     val abis = arrayOf("armeabi-v7a", "arm64-v8a", "x86_64")
+    val releaseKeystorePath = System.getenv("RELEASE_KEYSTORE_PATH")
+    val releaseKeyAlias = System.getenv("RELEASE_KEY_ALIAS")
+    val releaseStorePassword = System.getenv("RELEASE_STORE_PASSWORD")
+    val releaseKeyPassword = System.getenv("RELEASE_KEY_PASSWORD")
+    val hasReleaseSigning =
+        !releaseKeystorePath.isNullOrBlank() &&
+            !releaseKeyAlias.isNullOrBlank() &&
+            !releaseStorePassword.isNullOrBlank() &&
+            !releaseKeyPassword.isNullOrBlank()
 
     namespace = "echo.music.iad1tya"
     compileSdk = 37
@@ -77,6 +86,17 @@ android {
         }
     }
 
+    signingConfigs {
+        if (hasReleaseSigning) {
+            create("production") {
+                storeFile = file(releaseKeystorePath!!)
+                storePassword = releaseStorePassword
+                keyAlias = releaseKeyAlias
+                keyPassword = releaseKeyPassword
+            }
+        }
+    }
+
     bundle {
         language {
             enableSplit = false
@@ -85,6 +105,9 @@ android {
 
     buildTypes {
         release {
+            if (hasReleaseSigning) {
+                signingConfig = signingConfigs.getByName("production")
+            }
             isMinifyEnabled = true
             isShrinkResources = true
             proguardFiles(

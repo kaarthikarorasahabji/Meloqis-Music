@@ -12,6 +12,8 @@ import echo.music.iad1tya.common.SUPPORTED_LANGUAGE
 import echo.music.iad1tya.common.SponsorBlockType
 import echo.music.iad1tya.domain.data.model.network.ProxyConfiguration
 import echo.music.iad1tya.domain.manager.DataStoreManager
+import echo.music.iad1tya.domain.mediaservice.player.normalizeEqualizerBands
+import echo.music.iad1tya.domain.mediaservice.player.normalizeEqualizerPreampDb
 import echo.music.iad1tya.domain.manager.DataStoreManager.Values.AI_PROVIDER_GEMINI
 import echo.music.iad1tya.domain.manager.DataStoreManager.Values.FALSE
 import echo.music.iad1tya.domain.manager.DataStoreManager.Values.GITHUB
@@ -579,11 +581,12 @@ internal class DataStoreManagerImpl(
 
     override suspend fun setEqualizerBands(bandsDb: List<Float>) {
         withContext(Dispatchers.IO) {
+            val safeBands = normalizeEqualizerBands(bandsDb)
             settingsDataStore.edit { settings ->
                 // Blank when flat, so "no equalizer" and "an equalizer set to zero" are the same
                 // stored state and neither installs a filter chain.
                 settings[EQUALIZER_BANDS] =
-                    if (bandsDb.all { it == 0f }) "" else bandsDb.joinToString(",")
+                    if (safeBands.all { it == 0f }) "" else safeBands.joinToString(",")
             }
         }
     }
@@ -596,7 +599,7 @@ internal class DataStoreManagerImpl(
     override suspend fun setEqualizerPreamp(preampDb: Float) {
         withContext(Dispatchers.IO) {
             settingsDataStore.edit { settings ->
-                settings[EQUALIZER_PREAMP] = preampDb.toString()
+                settings[EQUALIZER_PREAMP] = normalizeEqualizerPreampDb(preampDb).toString()
             }
         }
     }
@@ -613,7 +616,7 @@ internal class DataStoreManagerImpl(
         withContext(Dispatchers.IO) {
             settingsDataStore.edit { settings ->
                 settings[EQUALIZER_AUTOEQ_PROFILE] =
-                    if (label.isBlank()) "" else label + "\n" + bandsDb.joinToString(",")
+                    if (label.isBlank()) "" else label + "\n" + normalizeEqualizerBands(bandsDb).joinToString(",")
             }
         }
     }

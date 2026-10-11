@@ -21,20 +21,22 @@ import echo.music.iad1tya.domain.repository.SongRepository
 import echo.music.iad1tya.domain.utils.LocalResource
 import echo.music.iad1tya.domain.utils.Resource
 import echo.music.iad1tya.domain.utils.isRadioPlaylistId
+import echo.music.iad1tya.logger.Logger
 import echo.music.iad1tya.viewModel.base.BaseViewModel
 import kotlinx.collections.immutable.toImmutableList
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.delay
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.lastOrNull
 import kotlinx.coroutines.flow.mapLatest
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
 import kotlinx.datetime.LocalDateTime
 import echomusic.composeapp.generated.resources.Res
 import echomusic.composeapp.generated.resources.added_local_playlist
@@ -49,6 +51,27 @@ class LibraryViewModel(
     private val albumRepository: AlbumRepository,
     private val podcastRepository: PodcastRepository,
 ) : BaseViewModel() {
+    private val libraryJobs = mutableMapOf<String, Job>()
+
+    private fun collectLibraryData(
+        key: String,
+        onFailure: (Exception) -> Unit,
+        block: suspend () -> Unit,
+    ) {
+        libraryJobs.remove(key)?.cancel()
+        libraryJobs[key] =
+            viewModelScope.launch {
+                try {
+                    block()
+                } catch (cancelled: CancellationException) {
+                    throw cancelled
+                } catch (error: Exception) {
+                    Logger.e("LibraryViewModel", "$key failed: ${error.message}")
+                    onFailure(error)
+                }
+            }
+    }
+
     private val _currentScreen: MutableStateFlow<LibraryChipType> = MutableStateFlow(LibraryChipType.YOUR_LIBRARY)
     val currentScreen: StateFlow<LibraryChipType> get() = _currentScreen.asStateFlow()
     private val _recentlyAdded: MutableStateFlow<LocalResource<List<RecentlyType>>> =
@@ -117,12 +140,18 @@ class LibraryViewModel(
     fun setCurrentScreen(chipType: LibraryChipType) {
         _currentScreen.value = chipType
         viewModelScope.launch {
-            dataStoreManager.putString("library_current_screen", chipType.toStringValue())
+            try {
+                dataStoreManager.putString("library_current_screen", chipType.toStringValue())
+            } catch (cancelled: CancellationException) {
+                throw cancelled
+            } catch (error: Exception) {
+                Logger.e("LibraryViewModel", "Saving library tab failed: ${error.message}")
+            }
         }
     }
 
     fun getRecentlyAdded() {
-        viewModelScope.launch {
+        collectLibraryData("recentlyAdded", { _recentlyAdded.value = LocalResource.Error(it.message ?: "Unable to load library") }) {
             commonRepository.getAllRecentData().collectLatest { data ->
                 val temp: MutableList<RecentlyType> = mutableListOf()
                 temp.addAll(data)
@@ -153,7 +182,7 @@ class LibraryViewModel(
 
     fun getYouTubePlaylist() {
         _youTubePlaylist.value = LocalResource.Loading()
-        viewModelScope.launch {
+        collectLibraryData("youtubePlaylists", { _youTubePlaylist.value = LocalResource.Error(it.message ?: "Unable to load playlists") }) {
             playlistRepository.getLibraryPlaylist().collect { data ->
                 _youTubePlaylist.value = LocalResource.Success(data ?: emptyList())
             }
@@ -162,21 +191,19 @@ class LibraryViewModel(
 
     fun getYouTubeMixedForYou() {
         _youTubeMixForYou.value = LocalResource.Loading()
-        viewModelScope.launch {
+        collectLibraryData("youtubeMixes", { _youTubeMixForYou.value = LocalResource.Error(it.message ?: "Unable to load mixes") }) {
             playlistRepository.getMixedForYou().collect { data ->
                 _youTubeMixForYou.value = LocalResource.Success(data ?: emptyList())
             }
         }
     }
 
-    fun getYouTubeLoggedIn(): Boolean = runBlocking { dataStoreManager.loggedIn.first() } == DataStoreManager.TRUE
-
     fun getPlaylistFavorite() {
-        viewModelScope.launch {
-            albumRepository.getLikedAlbums().collect { album ->
-                val temp: MutableList<PlaylistType> = mutableListOf()
-                temp.addAll(album)
-                playlistRepository.getLikedPlaylists().collect { playlist ->
+        _favoritePlaylist.value = LocalResource.Loading()
+        collectLibraryData("favoritePlaylists", { _favoritePlaylist.value = LocalResource.Error(it.message ?: "Unable to load favorites") }) {
+            combine(albumRepository.getLikedAlbums(), playlistRepository.getLikedPlaylists()) { album, playlist ->
+                    val temp: MutableList<PlaylistType> = mutableListOf()
+                    temp.addAll(album)
                     temp.addAll(playlist)
                     val sortedList =
                         temp.sortedWith<PlaylistType>(
@@ -205,14 +232,16 @@ class LibraryViewModel(
                                 timeP0.compareTo(timeP1) // Sort in descending order by inLibrary time
                             },
                         )
+                    sortedList
+                }.collect { sortedList ->
                     _favoritePlaylist.value = LocalResource.Success(sortedList)
-                }
             }
         }
     }
 
     fun getFavoritePodcasts() {
-        viewModelScope.launch {
+        _favoritePodcasts.value = LocalResource.Loading()
+        collectLibraryData("favoritePodcasts", { _favoritePodcasts.value = LocalResource.Error(it.message ?: "Unable to load podcasts") }) {
             podcastRepository.getFavoritePodcasts().collectLatest { podcasts ->
                 val sortedList = podcasts.sortedByDescending { it.favoriteTime }
                 _favoritePodcasts.value = LocalResource.Success(sortedList)
@@ -222,7 +251,7 @@ class LibraryViewModel(
 
     fun getCanvasSong() {
         _listCanvasSong.value = LocalResource.Loading()
-        viewModelScope.launch {
+        collectLibraryData("canvasSongs", { _listCanvasSong.value = LocalResource.Error(it.message ?: "Unable to load songs") }) {
             songRepository.getCanvasSong(max = 5).collect { data ->
                 _listCanvasSong.value = LocalResource.Success(data)
             }
@@ -231,7 +260,7 @@ class LibraryViewModel(
 
     fun getLocalPlaylist() {
         _yourLocalPlaylist.value = LocalResource.Loading()
-        viewModelScope.launch {
+        collectLibraryData("localPlaylists", { _yourLocalPlaylist.value = LocalResource.Error(it.message ?: "Unable to load playlists") }) {
             localPlaylistRepository.getAllLocalPlaylists().collect { values ->
 //                    _listLocalPlaylist.postValue(values)
                 _yourLocalPlaylist.value = LocalResource.Success(values.reversed())
@@ -240,7 +269,8 @@ class LibraryViewModel(
     }
 
     fun getDownloadedPlaylist() {
-        viewModelScope.launch {
+        _downloadedPlaylist.value = LocalResource.Loading()
+        collectLibraryData("downloadedPlaylists", { _downloadedPlaylist.value = LocalResource.Error(it.message ?: "Unable to load downloads") }) {
             playlistRepository.getAllDownloadedPlaylist().collect { values ->
                 _downloadedPlaylist.value = LocalResource.Success(values)
             }
@@ -249,7 +279,7 @@ class LibraryViewModel(
 
     fun getChartPlaylists() {
         _chartPlaylists.value = LocalResource.Loading()
-        viewModelScope.launch {
+        collectLibraryData("chartPlaylists", { _chartPlaylists.value = LocalResource.Error(it.message ?: "Unable to load charts") }) {
             playlistRepository.getChartPlaylist().collectLatest {
                 when (it) {
                     is Resource.Success -> _chartPlaylists.value = LocalResource.Success(it.data ?: emptyList())
@@ -261,26 +291,37 @@ class LibraryViewModel(
 
     fun createPlaylist(title: String) {
         viewModelScope.launch {
-            val localPlaylistEntity = LocalPlaylistEntity(title = title)
-            localPlaylistRepository
-                .insertLocalPlaylist(
-                    localPlaylistEntity,
-                    getString(Res.string.added_local_playlist),
-                ).lastOrNull()
-                ?.let {
-                    log("Created playlist with id: $it")
-                }
-            getLocalPlaylist()
+            try {
+                val localPlaylistEntity = LocalPlaylistEntity(title = title)
+                localPlaylistRepository
+                    .insertLocalPlaylist(
+                        localPlaylistEntity,
+                        getString(Res.string.added_local_playlist),
+                    ).lastOrNull()
+                    ?.let {
+                        log("Created playlist with id: $it")
+                    }
+                getLocalPlaylist()
+            } catch (cancelled: CancellationException) {
+                throw cancelled
+            } catch (error: Exception) {
+                Logger.e("LibraryViewModel", "Creating playlist failed: ${error.message}")
+            }
         }
     }
 
     fun deleteSong(videoId: String) {
         _recentlyAdded.value = LocalResource.Loading()
         viewModelScope.launch {
-            songRepository.setInLibrary(videoId, Config.REMOVED_SONG_DATE_TIME)
-            songRepository.resetTotalPlayTime(videoId)
-            delay(500) // Wait for the database to update
-            getRecentlyAdded()
+            try {
+                songRepository.setInLibrary(videoId, Config.REMOVED_SONG_DATE_TIME)
+                songRepository.resetTotalPlayTime(videoId)
+            } catch (cancelled: CancellationException) {
+                throw cancelled
+            } catch (error: Exception) {
+                Logger.e("LibraryViewModel", "Removing library item failed: ${error.message}")
+                _recentlyAdded.value = LocalResource.Error(error.message ?: "Unable to update library")
+            }
         }
     }
 }

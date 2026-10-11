@@ -4,11 +4,6 @@ import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.Crossfade
 import androidx.compose.animation.animateColorAsState
-import androidx.compose.animation.core.LinearEasing
-import androidx.compose.animation.core.RepeatMode
-import androidx.compose.animation.core.animateFloat
-import androidx.compose.animation.core.infiniteRepeatable
-import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
@@ -38,6 +33,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
@@ -64,8 +60,6 @@ import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import kotlinx.coroutines.CancellationException
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.State
-import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -86,6 +80,8 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import coil3.compose.AsyncImage
@@ -110,7 +106,6 @@ import echo.music.iad1tya.domain.utils.toListName
 import echo.music.iad1tya.domain.utils.toTrack
 import echo.music.iad1tya.logger.Logger
 import echo.music.iad1tya.ui.component.rememberHolderPainter
-import echo.music.iad1tya.extension.angledGradientBackground
 import echo.music.iad1tya.extension.artworkScrimBrush
 import echo.music.iad1tya.extension.isScrollingUp
 import echo.music.iad1tya.extension.rgbFactor
@@ -119,8 +114,8 @@ import echo.music.iad1tya.ui.component.Chip
 import echo.music.iad1tya.ui.component.DropdownButton
 import echo.music.iad1tya.ui.component.EndOfPage
 import echo.music.iad1tya.ui.component.EqualizerBars
-import echo.music.iad1tya.ui.component.HeroCarousel
 import echo.music.iad1tya.ui.component.HeroCarouselItem
+import echo.music.iad1tya.ui.component.ListeningRoom
 import echo.music.iad1tya.ui.component.HomeItem
 import echo.music.iad1tya.ui.component.HomeItemContentPlaylist
 import echo.music.iad1tya.ui.component.HomeShimmer
@@ -142,12 +137,12 @@ import echo.music.iad1tya.ui.navigation.destination.home.HomeDestination
 import echo.music.iad1tya.ui.navigation.destination.home.MoodDestination
 import echo.music.iad1tya.ui.navigation.destination.home.RecentlySongsDestination
 import echo.music.iad1tya.ui.navigation.destination.home.SettingsDestination
+import echo.music.iad1tya.ui.navigation.destination.home.EqualizerDestination
 import echo.music.iad1tya.ui.navigation.destination.library.LibraryDynamicPlaylistDestination
 import echo.music.iad1tya.ui.navigation.destination.list.ArtistDestination
 import echo.music.iad1tya.ui.screen.library.LibraryDynamicPlaylistType
 import echo.music.iad1tya.ui.navigation.destination.list.PlaylistDestination
 import echo.music.iad1tya.ui.navigation.destination.login.LoginDestination
-import echo.music.iad1tya.ui.theme.LocalBatterySaver
 import echo.music.iad1tya.ui.theme.LocalNowPlayingColor
 import echo.music.iad1tya.ui.theme.typo
 import echo.music.iad1tya.viewModel.HomeViewModel
@@ -182,7 +177,6 @@ import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinViewModel
 import echomusic.composeapp.generated.resources.Res
 import echomusic.composeapp.generated.resources.all
-import echomusic.composeapp.generated.resources.app_name
 import echomusic.composeapp.generated.resources.cancel
 import echomusic.composeapp.generated.resources.chart
 import echomusic.composeapp.generated.resources.commute
@@ -209,6 +203,7 @@ import echomusic.composeapp.generated.resources.warning
 import echomusic.composeapp.generated.resources.welcome_back
 import echomusic.composeapp.generated.resources.what_is_best_choice_today
 import echomusic.composeapp.generated.resources.workout
+import echomusic.composeapp.generated.resources.meloqis_logo
 
 
 private val listOfHomeChip =
@@ -269,6 +264,7 @@ fun HomeScreen(
     val openAppTime by sharedViewModel.openAppTime.collectAsStateWithLifecycle()
     val shareLyricsPermissions by sharedViewModel.shareSavedLyrics.collectAsStateWithLifecycle()
     val controllerState by sharedViewModel.controllerState.collectAsStateWithLifecycle()
+    val nowPlayingTrack by sharedViewModel.nowPlayingState.collectAsStateWithLifecycle()
     val isSongPlaying = controllerState.isPlaying
 
     val backgroundColor = MaterialTheme.colorScheme.background
@@ -280,6 +276,8 @@ fun HomeScreen(
     // colour (processed the same way as the home-thumbnail tone below). Falls back to the home
     // feed's dominant colour when nothing is playing. Base scheme (buttons/chips) is untouched.
     val nowPlayingColor = LocalNowPlayingColor.current
+    val activeMediaId =
+        nowPlayingTrack?.mediaItem?.mediaId.takeIf { controllerState.isPlaying }
     val headerTarget =
         if (nowPlayingColor != null) {
             if (isLightTheme) lerp(nowPlayingColor, Color.White, 0.85f) else nowPlayingColor.rgbFactor(0.3f)
@@ -287,25 +285,6 @@ fun HomeScreen(
             topHeaderColor
         }
     val animatedColor by animateColorAsState(headerTarget, tween(500))
-    // Bold header: the palette gradient's angle drifts slowly for a living feel. Battery Saver pins it
-    // to a fixed 25° (no infinite transition created).
-    val headerAngle: State<Float> =
-        if (LocalBatterySaver.current) {
-            rememberUpdatedState(25f)
-        } else {
-            val headerTransition = rememberInfiniteTransition(label = "homeHeader")
-            headerTransition
-                .animateFloat(
-                    initialValue = 12f,
-                    targetValue = 38f,
-                    animationSpec =
-                        infiniteRepeatable(
-                            animation = tween(9000, easing = LinearEasing),
-                            repeatMode = RepeatMode.Reverse,
-                        ),
-                    label = "homeHeaderAngle",
-                )
-        }
     val mainHomeThumbnail by viewModel.mainHomeThumbnail.collectAsStateWithLifecycle()
     val networkLoader = rememberNetworkLoader(rememberArtworkNetworkClient())
     val dominantColorState =
@@ -335,11 +314,9 @@ fun HomeScreen(
         }
     }
 
-    // Hero carousel source: reuse the ALREADY-loaded home feed (no new network). Collect the
-    // playable songs (a real videoId + artwork) from across the rows into a handful of large
-    // edge-peek cards; tapping one plays it as a radio, exactly like the feed rows do.
+    // Listening Room source: reuse artwork and tracks already loaded for the home feed.
     val heroItems =
-        remember(homeData) {
+        remember(homeData, activeMediaId) {
             homeData
                 .flatMap { it.contents }
                 .filterNotNull()
@@ -357,6 +334,7 @@ fun HomeScreen(
                                 .takeIf { it.isNotBlank() }
                                 ?: content.album?.name,
                         thumbnailUrl = content.thumbnails.lastOrNull()?.url,
+                        isPlaying = activeMediaId == content.videoId,
                         onClick = {
                             val firstQueue: Track = content.toTrack()
                             viewModel.setQueueData(
@@ -557,7 +535,15 @@ fun HomeScreen(
                                             Modifier
                                                 .fillMaxWidth()
                                                 .height(300.dp)
-                                                .angledGradientBackground(listOf(animatedColor, backgroundColor)) { headerAngle.value },
+                                                .background(
+                                                    Brush.verticalGradient(
+                                                        listOf(
+                                                            animatedColor.copy(alpha = 0.38f),
+                                                            animatedColor.copy(alpha = 0.12f),
+                                                            Color.Transparent,
+                                                        ),
+                                                    ),
+                                                ),
                                     ) {
                                         Box(
                                             modifier =
@@ -589,7 +575,7 @@ fun HomeScreen(
                                         Spacer(Modifier.height(8.dp))
                                     }
                                     if (index == 0 && heroItems.isNotEmpty()) {
-                                        HeroCarousel(
+                                        ListeningRoom(
                                             items = heroItems,
                                             accentColor = nowPlayingColor ?: MaterialTheme.colorScheme.primary,
                                             modifier =
@@ -924,17 +910,27 @@ fun HomeTopAppBar(
         },
         title = {
             Row(verticalAlignment = Alignment.CenterVertically) {
+                Image(
+                    painter = painterResource(Res.drawable.meloqis_logo),
+                    contentDescription = null,
+                    modifier = Modifier.size(30.dp),
+                )
+                Spacer(Modifier.width(7.dp))
                 Text(
-                    text = stringResource(Res.string.app_name),
+                    text = "Meloqis Music",
                     style = typo().titleMedium,
                     color = MaterialTheme.colorScheme.onBackground,
                 )
-                // Equaliser beside "Meloqis Music", only while a track is playing.
-                AnimatedVisibility(visible = isPlaying) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Spacer(Modifier.width(8.dp))
-                        EqualizerBars(color = accentColor, size = 18.dp)
-                    }
+                Spacer(Modifier.width(4.dp))
+                androidx.compose.material3.IconButton(
+                    onClick = { navController.navigate(EqualizerDestination) },
+                    modifier = Modifier.semantics { contentDescription = "Open equalizer" },
+                ) {
+                    EqualizerBars(
+                        color = accentColor,
+                        size = 18.dp,
+                        isActive = isPlaying,
+                    )
                 }
             }
         },

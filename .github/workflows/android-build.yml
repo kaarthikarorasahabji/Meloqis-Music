@@ -14,6 +14,8 @@ jobs:
   build:
     name: Validate Android release
     runs-on: ubuntu-latest
+    env:
+      RELEASE_KEYSTORE_BASE64: ${{ secrets.RELEASE_KEYSTORE_BASE64 }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -23,14 +25,36 @@ jobs:
           java-version: '21'
           distribution: microsoft
           cache: gradle
+      - name: Prepare release signing keystore
+        if: ${{ env.RELEASE_KEYSTORE_BASE64 != '' }}
+        env:
+          RELEASE_KEYSTORE_BASE64: ${{ secrets.RELEASE_KEYSTORE_BASE64 }}
+        run: |
+          printf '%s' "$RELEASE_KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/meloqis-release.jks"
+          chmod 600 "$RUNNER_TEMP/meloqis-release.jks"
+          echo "RELEASE_KEYSTORE_PATH=$RUNNER_TEMP/meloqis-release.jks" >> "$GITHUB_ENV"
       - name: Build and test
+        env:
+          RELEASE_KEYSTORE_PATH: ${{ env.RELEASE_KEYSTORE_PATH }}
+          RELEASE_STORE_PASSWORD: ${{ secrets.RELEASE_STORE_PASSWORD }}
+          RELEASE_KEY_ALIAS: ${{ secrets.RELEASE_KEY_ALIAS }}
+          RELEASE_KEY_PASSWORD: ${{ secrets.RELEASE_KEY_PASSWORD }}
         run: |
           chmod +x gradlew
           ./gradlew :androidApp:assembleRelease :composeApp:testAndroidHostTest --no-configuration-cache --console=plain -x :androidApp:uploadCrashlyticsMappingFileRelease
-      - name: Upload unsigned CI artifacts
+      - name: Verify signed release APKs
+        if: ${{ env.RELEASE_KEYSTORE_PATH != '' }}
+        run: |
+          apksigner="$(find "$ANDROID_HOME/build-tools" -name apksigner -type f | sort -V | tail -n 1)"
+          test -n "$apksigner"
+          cert_output="$("$apksigner" verify --verbose --print-certs androidApp/build/outputs/apk/release/androidApp-universal-release.apk)"
+          printf '%s\n' "$cert_output"
+          # Existing v1.5.0 installs trust this certificate; reject an incompatible update key.
+          grep -Fq 'certificate SHA-256 digest: 24be20817821f8c532c6f7289d358d0460b9862c5e5ef627802ed92498aa904b' <<< "$cert_output"
+      - name: Upload release APK artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: Meloqis-unsigned-ci-apks
+          name: Meloqis-release-apks-${{ github.sha }}
           path: androidApp/build/outputs/apk/release/*.apk
       - name: Upload test results
         if: always()
