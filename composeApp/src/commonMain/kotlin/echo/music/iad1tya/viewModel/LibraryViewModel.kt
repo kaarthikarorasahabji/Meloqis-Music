@@ -122,7 +122,8 @@ class LibraryViewModel(
                 launch {
                     dataStoreManager.getString("library_current_screen").first()?.let { chipType ->
                         LibraryChipType.fromStringValue(chipType)?.let {
-                            _currentScreen.value = it
+                            val isLoggedIn = dataStoreManager.loggedIn.first() == DataStoreManager.TRUE
+                            _currentScreen.value = it.availableLibraryTab(isLoggedIn)
                         }
                     }
                 }

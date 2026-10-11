@@ -75,11 +75,6 @@ import echo.music.iad1tya.ui.icon.echoIcons
 import echo.music.iad1tya.ui.theme.LocalNowPlayingColor
 import echo.music.iad1tya.ui.theme.typo
 import echo.music.iad1tya.viewModel.LibraryViewModel
-import dev.chrisbanes.haze.hazeEffect
-import dev.chrisbanes.haze.hazeSource
-import dev.chrisbanes.haze.materials.ExperimentalHazeMaterialsApi
-import dev.chrisbanes.haze.materials.HazeMaterials
-import dev.chrisbanes.haze.rememberHazeState
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.getString
 import org.jetbrains.compose.resources.painterResource
@@ -107,7 +102,7 @@ import echomusic.composeapp.generated.resources.your_library
 import echomusic.composeapp.generated.resources.your_playlists
 import echomusic.composeapp.generated.resources.your_youtube_playlists
 
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalHazeMaterialsApi::class)
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun LibraryScreen(
     innerPadding: PaddingValues,
@@ -129,11 +124,6 @@ fun LibraryScreen(
     val chartPlaylists by viewModel.chartPlaylists.collectAsStateWithLifecycle()
     val recentlyAdded by viewModel.recentlyAdded.collectAsStateWithLifecycle()
     val accountThumbnail by viewModel.accountThumbnail.collectAsStateWithLifecycle()
-    val hazeState =
-        rememberHazeState(
-            blurEnabled = true,
-        )
-
     var topAppBarHeight by remember {
         mutableStateOf(0.dp)
     }
@@ -183,7 +173,7 @@ fun LibraryScreen(
     }
 
     Crossfade(
-        modifier = Modifier.nowPlayingTint(LocalNowPlayingColor.current).hazeSource(hazeState),
+        modifier = Modifier.nowPlayingTint(LocalNowPlayingColor.current),
         targetState = currentFilter,
     ) { filter ->
         when (filter) {
@@ -402,9 +392,7 @@ fun LibraryScreen(
     Column(
         Modifier
             .background(Color.Transparent)
-            .hazeEffect(hazeState, style = HazeMaterials.ultraThin()) {
-                blurEnabled = true
-            }.onGloballyPositioned { coordinates ->
+            .onGloballyPositioned { coordinates ->
                 topAppBarHeight = with(density) { coordinates.size.height.toDp() }
             },
     ) {
@@ -418,7 +406,7 @@ fun LibraryScreen(
             },
             colors =
                 TopAppBarDefaults.topAppBarColors(
-                    containerColor = Color.Transparent,
+                    containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.94f),
                 ),
 
             actions = {

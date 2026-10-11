@@ -590,4 +590,12 @@ enum class LibraryChipType {
                 else -> null
             }
     }
+
+    /** Resolve persisted tabs to screens that are currently exposed by the Library UI. */
+    fun availableLibraryTab(isLoggedIn: Boolean): LibraryChipType =
+        when {
+            this == CHART || this == YOUTUBE_MIX_FOR_YOU -> YOUR_LIBRARY
+            this == YOUTUBE_MUSIC_PLAYLIST && !isLoggedIn -> YOUR_LIBRARY
+            else -> this
+        }
 }
