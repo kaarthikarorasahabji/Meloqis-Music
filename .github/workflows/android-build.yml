@@ -6,12 +6,22 @@ on:
   pull_request:
     branches: ["main"]
   workflow_dispatch:
+    inputs:
+      artifact_run_id:
+        description: Optional successful build run to publish without rebuilding
+        required: false
+        default: ''
+      release_tag:
+        description: Release tag for an existing successful build
+        required: false
+        default: v1.7.0
 
 permissions:
   contents: read
 
 jobs:
   build:
+    if: ${{ inputs.artifact_run_id == '' }}
     name: Validate Android release
     runs-on: ubuntu-latest
     env:
@@ -69,3 +79,46 @@ jobs:
         with:
           name: Meloqis-test-results
           path: composeApp/build/test-results/testAndroidHostTest/
+  publish-verified-build:
+    if: ${{ inputs.artifact_run_id != '' }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      actions: read
+    steps:
+      - uses: actions/checkout@v4
+      - name: Select the successful source build
+        id: source
+        env:
+          GH_TOKEN: ${{ github.token }}
+          BUILD_RUN_ID: ${{ inputs.artifact_run_id }}
+        run: |
+          [[ "$BUILD_RUN_ID" =~ ^[0-9]+$ ]]
+          test "$(gh run view "$BUILD_RUN_ID" --json conclusion --jq .conclusion)" = success
+          source_sha=$(gh run view "$BUILD_RUN_ID" --json headSha --jq .headSha)
+          echo "sha=$source_sha" >> "$GITHUB_OUTPUT"
+      - uses: actions/download-artifact@v4
+        with:
+          name: Meloqis-release-apks-${{ steps.source.outputs.sha }}
+          run-id: ${{ inputs.artifact_run_id }}
+          github-token: ${{ github.token }}
+          path: androidApp/build/outputs/apk/release
+      - name: Prepare and inspect release files
+        env:
+          RELEASE_TAG: ${{ inputs.release_tag }}
+        run: |
+          python3 scripts/prepare-release-assets.py "$RELEASE_TAG"
+          python3 - <<'PY'
+          from pathlib import Path
+          from zipfile import ZipFile
+          for apk in Path('build/publish-release').glob('*.apk'):
+              with ZipFile(apk) as archive:
+                  assert not any('mediapipe' in name.lower() for name in archive.namelist()), apk.name
+          PY
+      - name: Publish the verified update
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ inputs.release_tag }}
+          SOURCE_SHA: ${{ steps.source.outputs.sha }}
+        run: |
+          gh release create "$RELEASE_TAG" build/publish-release/* --target "$SOURCE_SHA" --title "Meloqis Music ${RELEASE_TAG#v}" --notes-file docs/RELEASE-1.7.0.md
