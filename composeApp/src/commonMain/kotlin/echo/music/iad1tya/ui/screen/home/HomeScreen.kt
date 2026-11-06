@@ -237,6 +237,7 @@ fun HomeScreen(
 ) {
     val coroutineScope = rememberCoroutineScope()
     val scrollState = rememberLazyListState()
+    echo.music.iad1tya.ui.component.AirScrollEffect(scrollState)
     val isScrollingUp by scrollState.isScrollingUp()
     val accountInfo by viewModel.accountInfo.collectAsStateWithLifecycle()
     val homeData by viewModel.homeItemList.collectAsStateWithLifecycle()
@@ -265,7 +266,7 @@ fun HomeScreen(
     val shareLyricsPermissions by sharedViewModel.shareSavedLyrics.collectAsStateWithLifecycle()
     val controllerState by sharedViewModel.controllerState.collectAsStateWithLifecycle()
     val nowPlayingTrack by sharedViewModel.nowPlayingState.collectAsStateWithLifecycle()
-    val isSongPlaying = controllerState.isPlaying
+    val isSongPlaying = controllerState.isPlaying && !nowPlayingTrack?.mediaItem?.mediaId.isNullOrBlank()
 
     val backgroundColor = MaterialTheme.colorScheme.background
     val isLightTheme = backgroundColor.luminance() > 0.5f
@@ -573,6 +574,13 @@ fun HomeScreen(
                                             url = accountInfo?.second ?: "",
                                         )
                                         Spacer(Modifier.height(8.dp))
+                                    }
+                                    if (index == 0) {
+                                        echo.music.iad1tya.ui.component.StudioHeading(
+                                            eyebrow = "YOUR LISTENING STUDIO",
+                                            title = "Find your frequency.",
+                                            subtitle = "A little discovery. A lot of you.",
+                                        )
                                     }
                                     if (index == 0 && heroItems.isNotEmpty()) {
                                         ListeningRoom(

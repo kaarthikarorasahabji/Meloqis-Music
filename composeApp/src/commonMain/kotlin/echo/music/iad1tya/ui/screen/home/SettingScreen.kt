@@ -2212,6 +2212,7 @@ fun SettingScreen(
             }
         }
         item(key = "about_us") {
+            echo.music.iad1tya.ui.component.FestivalSettings()
             ExpandableSection(title = stringResource(Res.string.about_us), icon = echoIcons.Info,
                 currentSection = currentSection,
                 onSectionClick = { currentSection = it }
@@ -2221,13 +2222,25 @@ fun SettingScreen(
                     subtitle = stringResource(Res.string.version_format, VersionManager.getVersionName()),
                 )
                 SettingItem(
-                    title = stringResource(Res.string.auto_check_for_update),
-                    subtitle = stringResource(Res.string.auto_check_for_update_description),
-                    switch = (autoCheckUpdate to { viewModel.setAutoCheckUpdate(it) }),
+                    title = "Privacy policy",
+                    subtitle = "How Meloqis Music handles your data",
+                    onClick = { uriHandler.openUri("https://axenoraai.in/meloqis/privacy.html") },
                 )
                 SettingItem(
+                    title = "Support and data deletion",
+                    subtitle = "Contact support or remove your app data",
+                    onClick = { uriHandler.openUri("https://axenoraai.in/meloqis/support.html") },
+                )
+                if (echo.music.iad1tya.BuildKonfig.playStore == 0) {
+                    SettingItem(
+                        title = stringResource(Res.string.auto_check_for_update),
+                        subtitle = stringResource(Res.string.auto_check_for_update_description),
+                        switch = (autoCheckUpdate to { viewModel.setAutoCheckUpdate(it) }),
+                    )
+                }
+                SettingItem(
                     title = stringResource(Res.string.check_for_update),
-                    subtitle = checkForUpdateSubtitle,
+                    subtitle = if (echo.music.iad1tya.BuildKonfig.playStore == 1) "Open Google Play" else checkForUpdateSubtitle,
                     onClick = {
                         sharedViewModel.checkForUpdate()
                     },

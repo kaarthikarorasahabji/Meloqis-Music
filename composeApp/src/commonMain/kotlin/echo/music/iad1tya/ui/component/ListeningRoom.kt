@@ -84,7 +84,7 @@ fun ListeningRoom(
         ) {
             Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
                 Text(
-                    text = "THE LISTENING ROOM",
+                    text = "ON THE TURNTABLE",
                     color = accentColor,
                     fontSize = 10.sp,
                     letterSpacing = 1.5.sp,
@@ -108,7 +108,7 @@ fun ListeningRoom(
             contentPadding = PaddingValues(0.dp),
             pageSpacing = 10.dp,
             userScrollEnabled = items.size > 1,
-            modifier = Modifier.fillMaxWidth().height(188.dp),
+            modifier = Modifier.fillMaxWidth().height(240.dp),
         ) { page ->
             val item = items[page]
             val playingHere = page == pagerState.currentPage && item.isPlaying
@@ -134,15 +134,7 @@ fun ListeningRoom(
                     Modifier
                         .fillMaxSize()
                         .clip(RoundedCornerShape(28.dp))
-                        .background(
-                            Brush.linearGradient(
-                                listOf(
-                                    accentColor.copy(alpha = 0.2f),
-                                    surface,
-                                    MaterialTheme.colorScheme.surface,
-                                ),
-                            ),
-                        ).border(
+                        .background(surface).border(
                             width = 1.dp,
                             color = accentColor.copy(alpha = 0.16f),
                             shape = RoundedCornerShape(28.dp),
@@ -178,7 +170,7 @@ fun ListeningRoom(
                         )
                         Text(
                             text = item.title,
-                            style = typo().titleLarge,
+                            style = typo().headlineSmall,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.onSurface,
                             maxLines = 2,

@@ -3,7 +3,7 @@
 
   <h1>Meloqis Music</h1>
 
-  <p><b>A beautiful, Apple Music-inspired Android player that paints itself with the colour of every song — with streaming, synced lyrics, offline playback, and living colour.</b></p>
+  <p><b>Your listening studio — an Android music player with artwork-driven colour, synced lyrics, offline playback, and optional camera swipe controls.</b></p>
   <p>
     <a href="https://github.com/kaarthikarorasahabji/Meloqis-Music/releases/latest">Download</a> •
     <a href="https://axenoraai.in">Axenora AI</a> •
@@ -24,7 +24,8 @@
 ## Features
 
 * **Living colour** — the whole interface re-tints itself in real time from the album art of whatever's playing.
-* Apple Music-inspired design with smooth motion and an animated startup experience.
+* Listening Studio design with a turntable feature, rounded navigation dock and animated startup.
+* Optional [Air Controls (beta)](docs/air-controls.md): camera swipes for next/previous tracks, scrolling or music volume. Off by default; processed locally.
 * High-quality audio streaming (up to 256kbps for supported accounts).
 * Browse charts, podcasts, moods, and genres.
 * Comprehensive search functionality across the music catalog.
@@ -58,6 +59,8 @@ cd Meloqis-Music
 ```
 
 The debug APKs are produced in `androidApp/build/outputs/apk/debug/`. Requires JDK 21 and the Android SDK.
+
+For a signed Google Play App Bundle and public hosting files, see the [launch guide](docs/PLAY-STORE-LAUNCH.md). Run `scripts/build-play-release.ps1` for the Play distribution and `scripts/package-hosting.ps1` for the website archive. Keep `release-private/` off public hosting and out of version control.
 
 ## In-app updates
 

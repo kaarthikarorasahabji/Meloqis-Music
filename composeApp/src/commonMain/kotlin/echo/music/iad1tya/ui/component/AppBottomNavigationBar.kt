@@ -72,7 +72,10 @@ fun AppBottomNavigationBar(
     Box(
         modifier =
             Modifier
-                .wrapContentSize(),
+                .fillMaxWidth()
+                .padding(horizontal = 12.dp, vertical = 6.dp)
+                .clip(androidx.compose.foundation.shape.RoundedCornerShape(28.dp))
+                .background(MaterialTheme.colorScheme.surfaceContainer),
     ) {
         NavigationBar(
             windowInsets = WindowInsets(0, 0, 0, 0),
@@ -118,8 +121,8 @@ fun AppBottomNavigationBar(
                     icon = screen.icon,
                     colors =
                         NavigationBarItemDefaults.colors(
-                            indicatorColor = MaterialTheme.colorScheme.surfaceContainerHighest,
-                            selectedIconColor = MaterialTheme.colorScheme.onSurface,
+                            indicatorColor = MaterialTheme.colorScheme.primaryContainer,
+                            selectedIconColor = MaterialTheme.colorScheme.onPrimaryContainer,
                             unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
                         ),
                     modifier =

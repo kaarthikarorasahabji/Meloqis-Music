@@ -67,6 +67,12 @@ class EchoMusicApplication :
 
         // initialize WorkManager
         WorkManager.initialize(this, workConfig)
+        echo.music.iad1tya.ui.component.FestivalEngine.onSubscriptionChanged = { enabled ->
+            val messaging = com.google.firebase.messaging.FirebaseMessaging.getInstance()
+            if (enabled) messaging.subscribeToTopic(echo.music.iad1tya.ui.component.FestivalEngine.TOPIC)
+            else messaging.unsubscribeFromTopic(echo.music.iad1tya.ui.component.FestivalEngine.TOPIC)
+        }
+        echo.music.iad1tya.ui.component.FestivalEngine.initialize(this)
 
         // Initialize and start AutoBackupScheduler
         autoBackupScheduler = AutoBackupScheduler(this, dataStoreManager)

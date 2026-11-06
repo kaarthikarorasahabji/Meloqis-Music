@@ -1,13 +1,13 @@
 {
   "project_info": {
-    "project_number": "887842405081",
-    "project_id": "echo-aab3b",
-    "storage_bucket": "echo-aab3b.firebasestorage.app"
+    "project_number": "541405601539",
+    "project_id": "empmetria",
+    "storage_bucket": "empmetria.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:887842405081:android:2be388a7f6a02d941a5cc8",
+        "mobilesdk_app_id": "1:541405601539:android:50b19bd08e717a3ffcd336",
         "android_client_info": {
           "package_name": "echo.music.iad1tya"
         }
@@ -15,7 +15,7 @@
       "oauth_client": [],
       "api_key": [
         {
-          "current_key": "AIzaSyCvXEL8c5TOPmYUo33ghC7Cf64qYUGWfZg"
+          "current_key": "AIzaSyAlBOV1U4BB12YXmhf4mMMuGZDXZYWr1xA"
         }
       ],
       "services": {
@@ -26,15 +26,15 @@
     },
     {
       "client_info": {
-        "mobilesdk_app_id": "1:887842405081:android:2be388a7f6a02d941a5cc8",
+        "mobilesdk_app_id": "1:541405601539:android:00b21aa2c186da06fcd336",
         "android_client_info": {
-          "package_name": "echo.music.iad1tya.cyou"
+          "package_name": "in.axenora.empmetria.mobile"
         }
       },
       "oauth_client": [],
       "api_key": [
         {
-          "current_key": "AIzaSyCvXEL8c5TOPmYUo33ghC7Cf64qYUGWfZg"
+          "current_key": "AIzaSyAlBOV1U4BB12YXmhf4mMMuGZDXZYWr1xA"
         }
       ],
       "services": {

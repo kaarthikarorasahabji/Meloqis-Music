@@ -98,6 +98,7 @@ class MainActivity : AppCompatActivity() {
 
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
+        echo.music.iad1tya.ui.component.FestivalEngine.checkToday(this, intent.getStringExtra("festival_id"))
         Logger.d("MainActivity", "onNewIntent: $intent")
         viewModel.setIntent(
             GenericIntent(
@@ -111,6 +112,7 @@ class MainActivity : AppCompatActivity() {
     @ExperimentalFoundationApi
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        intent?.getStringExtra("festival_id")?.let { echo.music.iad1tya.ui.component.FestivalEngine.checkToday(this, it) }
 
         // Load Koin modules FIRST before any viewModel access (getString triggers lazy init)
         loadKoinModules(

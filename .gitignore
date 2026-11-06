@@ -41,3 +41,10 @@ gradle/wrapper/gradle-wrapper.jar
 .wrangler/
 release_stage/
 /Meloqis-Music-*-dev-*.apk
+
+# Private upload signing material and generated launch packages
+/release-private/
+/launch-package/
+*.jks
+*.keystore
+/meloqis-admin/

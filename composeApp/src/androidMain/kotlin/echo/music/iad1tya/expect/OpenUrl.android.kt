@@ -38,6 +38,10 @@ actual fun shareUrl(
 }
 
 actual fun downloadAndInstallApk(url: String) {
+    if (echo.music.iad1tya.BuildKonfig.playStore == 1) {
+        openUrl("https://play.google.com/store/apps/details?id=echo.music.iad1tya")
+        return
+    }
     val activity: AppCompatActivity = getKoin().get()
     val appContext = activity.applicationContext
     val downloadManager =

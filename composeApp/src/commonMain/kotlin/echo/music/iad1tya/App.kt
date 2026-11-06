@@ -135,6 +135,7 @@ import kotlin.time.ExperimentalTime
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalTime::class, ExperimentalFoundationApi::class)
 @Composable
 fun App(viewModel: SharedViewModel = koinInject()) {
+    echo.music.iad1tya.ui.component.FestivalWishes()
     val windowSize = currentWindowAdaptiveInfo().windowSizeClass
     val navController = rememberNavController()
 
@@ -420,7 +421,13 @@ if (data.scheme == "wordbyword" && data.host == "lastfm-auth") {
                 else -> easedSongColor
             }
         CompositionLocalProvider(LocalNowPlayingColor provides songColor) {
+        androidx.compose.runtime.SideEffect {
+            echo.music.iad1tya.ui.component.AirScroll.playerOpen.value = isShowNowPlaylistScreen
+        }
         Scaffold(
+            floatingActionButton = {
+                echo.music.iad1tya.ui.component.AirControls()
+            },
             bottomBar = {
                 if (!isTablet) {
                     AnimatedVisibility(

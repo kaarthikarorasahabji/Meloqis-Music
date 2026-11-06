@@ -991,6 +991,10 @@ class SharedViewModel(
     val updateResponse: StateFlow<UpdateData?> = _updateResponse
 
     fun checkForUpdate() {
+        if (echo.music.iad1tya.BuildKonfig.playStore == 1) {
+            echo.music.iad1tya.expect.openUrl("https://play.google.com/store/apps/details?id=echo.music.iad1tya")
+            return
+        }
         viewModelScope.launch {
             _isCheckingUpdate.value = true
             val updateChannel = dataStoreManager.updateChannel.first()
@@ -1725,9 +1729,12 @@ class SharedViewModel(
     }
 
     fun playNext(listTrack: ArrayList<Track>) {
-        val track = listTrack.firstOrNull() ?: return
+        if (listTrack.isEmpty()) return
+        val tracks = listTrack.toList()
         performQueueAction {
-            mediaPlayerHandler.playNext(track)
+            // Each insertion targets the slot after the current song.
+            // Insert backwards so a whole album retains its original order.
+            tracks.asReversed().forEach { mediaPlayerHandler.playNext(it) }
             makeToast(getString(Res.string.play_next))
         }
     }

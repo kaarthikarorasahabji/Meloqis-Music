@@ -1,4 +1,5 @@
 package echo.music.iad1tya.ui.component
+import echo.music.iad1tya.ui.icon.PlayArrow
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.Crossfade
@@ -2754,6 +2755,7 @@ fun PlaylistBottomSheet(
     onEditTitle: (newTitle: String) -> Unit = {},
     onSaveToLocal: () -> Unit,
     onAddToQueue: (() -> Unit)? = null,
+    onPlayNext: (() -> Unit)? = null,
     localPlaylistRepository: LocalPlaylistRepository = koinInject(),
 ) {
     val coroutineScope = rememberCoroutineScope()
@@ -2857,6 +2859,12 @@ fun PlaylistBottomSheet(
                     shape = RoundedCornerShape(50),
                 ) {}
                 Spacer(modifier = Modifier.height(5.dp))
+                if (onPlayNext != null) {
+                    ActionButton(icon = echoIcons.PlayArrow, text = Res.string.play_next) {
+                        onPlayNext()
+                        hideModalBottomSheet()
+                    }
+                }
                 if (onAddToQueue != null) {
                     ActionButton(
                         icon = echoIcons.QueueMusic,

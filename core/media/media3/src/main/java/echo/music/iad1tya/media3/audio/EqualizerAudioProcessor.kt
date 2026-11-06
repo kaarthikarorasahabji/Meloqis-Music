@@ -72,6 +72,25 @@ data class EqualizerCurve(
 class EqualizerAudioProcessor(
     private val curve: () -> EqualizerCurve,
 ) : BaseAudioProcessor() {
+    private val spectrum = echo.music.iad1tya.domain.mediaservice.player.SpectrumAnalyzer()
+    private var lastSpectrum = 0L
+    private fun publishSpectrum(buffer: ByteBuffer) {
+        val bus = echo.music.iad1tya.domain.mediaservice.player.AudioSpectrum
+        if (!bus.enabled || channelCount <= 0 || sampleRate <= 0) return
+        val now = android.os.SystemClock.elapsedRealtime()
+        if (now - lastSpectrum < 50) return
+        val pcm = buffer.asReadOnlyBuffer().order(ByteOrder.nativeOrder())
+        while (pcm.remaining() >= channelCount * 2) {
+            var sample = 0.0
+            repeat(channelCount) { sample += pcm.short / 32768.0 }
+            val bands = spectrum.push(sample / channelCount, sampleRate)
+            if (bands != null) {
+                bus.publish(bands, now)
+                lastSpectrum = now
+                break
+            }
+        }
+    }
     private var sampleRate = 0
     private var channelCount = 0
 
@@ -139,6 +158,7 @@ class EqualizerAudioProcessor(
             // to the previous one in the chain, so the two are never the same object.
             output.put(inputBuffer)
             output.flip()
+            publishSpectrum(output)
             return
         }
 
@@ -160,6 +180,7 @@ class EqualizerAudioProcessor(
         }
 
         output.flip()
+        publishSpectrum(output)
     }
 
     /** Rebuild the coefficients if — and only if — the supplied curve is a different object. */

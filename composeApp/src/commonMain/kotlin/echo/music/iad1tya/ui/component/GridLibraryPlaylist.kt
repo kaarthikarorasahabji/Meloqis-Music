@@ -77,6 +77,7 @@ internal inline fun <reified T> GridLibraryPlaylist(
 ) {
     Logger.w("GridLibraryPlaylist", "Generic Type: ${T::class.simpleName}")
     val state = rememberLazyGridState()
+    AirScrollEffect(state)
     val isScrollingUp by state.isScrollingUp()
 
     LaunchedEffect(state) {

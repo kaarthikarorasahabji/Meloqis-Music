@@ -1462,6 +1462,7 @@ fun NowPlayingScreenContent(
                         }
                     },
                     actions = {
+                        echo.music.iad1tya.ui.component.AirStopButton()
                         IconButton(onClick = {
                             showSheet = true
                         }) {

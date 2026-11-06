@@ -122,13 +122,9 @@ kotlin {
     }
 }
 
-// PipePipe brings com.google.protobuf:protobuf-java (full) while Brave brings
-// com.google.protobuf:protobuf-javalite. Both occupy the com.google.protobuf.* namespace and
-// trigger DEX duplicate-class failures. Drop the full variant globally so Brave's javalite wins.
-// nanojson force is in the root build.gradle.kts so it propagates to the final APK classpath.
-configurations.all {
-    exclude(group = "com.google.protobuf", module = "protobuf-java")
-}
+// The root build substitutes protobuf-javalite with protobuf-java so PipePipe,
+// Brave and MediaPipe share one compatible runtime without duplicate classes.
+// nanojson alignment is also centralized there for the final APK classpath.
 
 tasks.withType<CompileArtProfileTask> {
     enabled = false

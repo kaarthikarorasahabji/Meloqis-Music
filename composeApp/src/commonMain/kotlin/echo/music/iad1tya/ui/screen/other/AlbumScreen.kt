@@ -984,8 +984,11 @@ fun AlbumScreen(
                         playlistName = uiState.title,
                         isYourYouTubePlaylist = false,
                         onSaveToLocal = {},
+                        onPlayNext = {
+                            sharedViewModel.playNext(ArrayList(uiState.listTrack))
+                        },
                         onAddToQueue = {
-                            sharedViewModel.playNext(
+                            sharedViewModel.addListToQueue(
                                 uiState.listTrack.toCollection(arrayListOf()),
                             )
                         },

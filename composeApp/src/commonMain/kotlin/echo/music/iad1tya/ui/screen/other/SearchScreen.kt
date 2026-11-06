@@ -118,6 +118,7 @@ import echo.music.iad1tya.ui.component.SongFullWidthItems
 import echo.music.iad1tya.ui.icon.ArrowOutward
 import echo.music.iad1tya.ui.icon.Close
 import echo.music.iad1tya.ui.icon.History
+import echo.music.iad1tya.ui.icon.MoreVert
 import echo.music.iad1tya.ui.icon.Search
 import echo.music.iad1tya.ui.icon.echoIcons
 import echo.music.iad1tya.ui.navigation.destination.home.MoodDestination
@@ -197,6 +198,12 @@ fun SearchScreen(
     val historyState = rememberLazyListState()
     val moodGridState = rememberLazyGridState()
     val resultsState = rememberLazyListState()
+    when (searchUIType) {
+        SearchUIType.EMPTY -> echo.music.iad1tya.ui.component.AirScrollEffect(moodGridState)
+        SearchUIType.SEARCH_HISTORY -> echo.music.iad1tya.ui.component.AirScrollEffect(historyState)
+        SearchUIType.SEARCH_SUGGESTIONS -> echo.music.iad1tya.ui.component.AirScrollEffect(suggestionsState)
+        SearchUIType.SEARCH_RESULTS -> echo.music.iad1tya.ui.component.AirScrollEffect(resultsState)
+    }
     var searchBarHeightPx by remember { mutableIntStateOf(0) }
     val searchBarHeight = with(LocalDensity.current) { searchBarHeightPx.toDp() }
     val isContentAtTop by remember {
@@ -325,6 +332,11 @@ fun SearchScreen(
                         items(searchScreenState.suggestYTItems) { item ->
                             SuggestItemRow(
                                 searchResult = item,
+                                onMoreClick = { result ->
+                                    val track = (result as? SongsResult)?.toTrack()
+                                        ?: (result as? VideosResult)?.toTrack()
+                                    track?.let { onMoreClick(it.toSongEntity()) }
+                                },
                                 onItemClick = { item ->
                                     when (item) {
                                         is SongsResult, is VideosResult -> {
@@ -1014,13 +1026,15 @@ fun SearchScreen(
 fun SuggestItemRow(
     searchResult: SearchResultType,
     onItemClick: (SearchResultType) -> Unit,
+    onMoreClick: ((SearchResultType) -> Unit)? = null,
 ) {
     Row(
         modifier =
             Modifier
                 .fillMaxWidth()
+                .clip(RoundedCornerShape(16.dp))
                 .clickable { onItemClick(searchResult) }
-                .padding(vertical = 8.dp, horizontal = 16.dp),
+                .padding(vertical = 10.dp, horizontal = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         val url =
@@ -1138,6 +1152,11 @@ fun SuggestItemRow(
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )
+            }
+        }
+        if (onMoreClick != null && (searchResult is SongsResult || searchResult is VideosResult)) {
+            IconButton(onClick = { onMoreClick(searchResult) }) {
+                Icon(echoIcons.MoreVert, contentDescription = "Song options", tint = MaterialTheme.colorScheme.onSurface)
             }
         }
     }

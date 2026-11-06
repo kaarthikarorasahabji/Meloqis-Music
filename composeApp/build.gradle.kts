@@ -71,6 +71,7 @@ kotlin {
             implementation(libs.commons.io)
         }
         androidMain.dependencies {
+            implementation("com.google.mediapipe:tasks-vision:0.10.35")
             api(project.dependencies.platform(libs.koin.bom))
             api(libs.koin.android)
             implementation(libs.koin.androidx.compose)
@@ -184,6 +185,7 @@ buildkonfig {
                 .toInt()
         buildConfigField(STRING, "versionName", versionName)
         buildConfigField(INT, "versionCode", "$versionCode")
+        buildConfigField(INT, "playStore", if (providers.gradleProperty("playStore").orNull == "true") "1" else "0")
 
         try {
             val properties = Properties()

@@ -1,0 +1,10 @@
+{
+  "schemaVersion": 1,
+  "timezone": "Asia/Kolkata",
+  "time": "04:00",
+  "campaigns": [
+    {"id":"diwali-2026","date":"2026-11-08","title":"Happy Diwali","message":"May your home glow with happiness, your heart with hope, and your days with beautiful music. With love, Meloqis."},
+    {"id":"vishwakarma-2026","date":"2026-11-09","title":"Happy Vishwakarma Day","message":"Celebrating the hands that create and the dreams that inspire. May your work bring joy, prosperity and new beginnings."},
+    {"id":"bhai-dooj-2026","date":"2026-11-10","title":"Happy Bhai Dooj","message":"To shared songs, childhood memories and a bond that keeps growing. Wishing you and your family love and happiness."}
+  ]
+}

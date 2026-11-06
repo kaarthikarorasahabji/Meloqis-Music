@@ -97,6 +97,11 @@ android {
         }
     }
 
+    // The Play distribution must not request permission to install APK updates.
+    if (providers.gradleProperty("playStore").orNull == "true") {
+        sourceSets.getByName("release").manifest.srcFile("src/play/AndroidManifest.xml")
+    }
+
     bundle {
         language {
             enableSplit = false
@@ -116,7 +121,9 @@ android {
             )
             splits {
                 abi {
-                    isEnable = true
+                    // Play creates device APKs from the bundle; local APK splits
+                    // otherwise leave multiple resource archives for bundleRelease.
+                    isEnable = providers.gradleProperty("playStore").orNull != "true"
                     reset()
                     isUniversalApk = true
                     include(*abis)
@@ -205,6 +212,7 @@ dependencies {
     implementation(platform("com.google.firebase:firebase-bom:33.1.2"))
     implementation("com.google.firebase:firebase-crashlytics-ktx")
     implementation("com.google.firebase:firebase-analytics-ktx")
+    implementation("com.google.firebase:firebase-messaging")
 
     implementation(projects.crashlytics)
 }

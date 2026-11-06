@@ -61,15 +61,7 @@ fun MeloqisSplashOverlay(onFinished: () -> Unit) {
             Modifier
                 .fillMaxSize()
                 .graphicsLayer { alpha = overlayAlpha.value }
-                .background(
-                    Brush.linearGradient(
-                        listOf(
-                            Color(0xFF101525),
-                            Color(0xFF24213D),
-                            Color(0xFF123C3A),
-                        ),
-                    ),
-                ),
+                .background(Color(0xFF101315)),
         contentAlignment = Alignment.Center,
     ) {
         Column(
@@ -99,9 +91,10 @@ fun MeloqisSplashOverlay(onFinished: () -> Unit) {
             )
             Spacer(Modifier.height(6.dp))
             Text(
-                text = "feel every beat",
+                text = "YOUR LISTENING STUDIO",
                 color = Color.White.copy(alpha = 0.85f),
-                fontSize = 14.sp,
+                fontSize = 11.sp,
+                letterSpacing = 2.sp,
                 textAlign = TextAlign.Center,
                 modifier = Modifier.graphicsLayer { alpha = contentAlpha.value },
             )

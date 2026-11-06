@@ -27,6 +27,7 @@ import echo.music.iad1tya.ui.icon.TrendingUp
 import echo.music.iad1tya.ui.navigation.destination.library.LibraryDynamicPlaylistDestination
 import echo.music.iad1tya.ui.screen.library.LibraryDynamicPlaylistType
 import echo.music.iad1tya.ui.theme.typo
+import echo.music.iad1tya.ui.theme.LocalNowPlayingColor
 import org.jetbrains.compose.resources.StringResource
 import org.jetbrains.compose.resources.stringResource
 import echomusic.composeapp.generated.resources.Res
@@ -108,15 +109,15 @@ fun LibraryTilingItem(
             Modifier.fillMaxWidth().clickable {
                 onClick.invoke()
             },
-        shape = RoundedCornerShape(8.dp),
-        elevation = CardDefaults.elevatedCardElevation(),
+        shape = RoundedCornerShape(20.dp),
+        elevation = CardDefaults.elevatedCardElevation(defaultElevation = 0.dp),
         colors =
             CardDefaults.elevatedCardColors().copy(
-                containerColor = state.containerColor,
+                containerColor = androidx.compose.material3.MaterialTheme.colorScheme.surfaceContainer,
             ),
     ) {
         Row(
-            Modifier.fillMaxWidth(),
+            Modifier.fillMaxWidth().padding(vertical = 16.dp, horizontal = 4.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Icon(
@@ -126,12 +127,12 @@ fun LibraryTilingItem(
                     Modifier
                         .size(50.dp)
                         .padding(10.dp),
-                tint = state.iconColor,
+                tint = LocalNowPlayingColor.current ?: androidx.compose.material3.MaterialTheme.colorScheme.primary,
             )
             Text(
                 title,
                 style = typo().titleSmall,
-                color = Color.Black,
+                color = androidx.compose.material3.MaterialTheme.colorScheme.onSurface,
             )
         }
     }
