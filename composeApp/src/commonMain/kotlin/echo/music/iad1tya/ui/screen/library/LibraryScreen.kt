@@ -179,7 +179,6 @@ fun LibraryScreen(
         when (filter) {
             LibraryChipType.YOUR_LIBRARY -> {
                 val state = rememberLazyListState()
-                echo.music.iad1tya.ui.component.AirScrollEffect(state)
                 val isScrollingUp by state.isScrollingUp()
                 LaunchedEffect(state) {
                     snapshotFlow { state.firstVisibleItemIndex }

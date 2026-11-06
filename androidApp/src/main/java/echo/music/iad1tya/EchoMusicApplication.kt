@@ -49,6 +49,14 @@ class EchoMusicApplication :
 
     override fun onCreate() {
         super.onCreate()
+        // Remove only the obsolete gesture model/cache left by previous versions.
+        applicationScope.launch(Dispatchers.IO) {
+            runCatching {
+                java.io.File(noBackupFilesDir, "meloqis-hand-v1.task").delete()
+                cacheDir.listFiles { _, name -> name.startsWith("meloqis-hand-") && name.endsWith(".download") }
+                    ?.forEach { if (it.isFile) it.delete() }
+            }
+        }
         AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_YES)
         configCrashlytics(this, "")
         configLastfm(BuildKonfig.lastfmApiKey, BuildKonfig.lastfmSecret)

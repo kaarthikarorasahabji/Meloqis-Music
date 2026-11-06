@@ -153,10 +153,9 @@ fun LibraryDynamicPlaylistScreen(
         Logger.w("LibraryDynamicPlaylistScreen", "Check tempTopAlbums: $tempTopAlbums")
     }
 
-    val airScrollState = androidx.compose.foundation.lazy.rememberLazyListState()
-    echo.music.iad1tya.ui.component.AirScrollEffect(airScrollState)
+    val listScrollState = androidx.compose.foundation.lazy.rememberLazyListState()
     LazyColumn(
-        state = airScrollState,
+        state = listScrollState,
         modifier = Modifier.hazeSource(hazeState),
         contentPadding = innerPadding,
     ) {

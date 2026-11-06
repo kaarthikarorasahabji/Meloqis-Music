@@ -3,7 +3,7 @@
 
   <h1>Meloqis Music</h1>
 
-  <p><b>Your listening studio — an Android music player with artwork-driven colour, synced lyrics, offline playback, and optional camera swipe controls.</b></p>
+  <p><b>Your listening studio — an Android music player with artwork-driven colour, synced lyrics, offline playback, and colorful Music Lights.</b></p>
   <p>
     <a href="https://github.com/kaarthikarorasahabji/Meloqis-Music/releases/latest">Download</a> •
     <a href="https://axenoraai.in">Axenora AI</a> •
@@ -25,7 +25,6 @@
 
 * **Living colour** — the whole interface re-tints itself in real time from the album art of whatever's playing.
 * Listening Studio design with a turntable feature, rounded navigation dock and animated startup.
-* Optional [Air Controls (beta)](docs/air-controls.md): camera swipes for next/previous tracks, scrolling or music volume. Off by default; processed locally.
 * High-quality audio streaming (up to 256kbps for supported accounts).
 * Browse charts, podcasts, moods, and genres.
 * Comprehensive search functionality across the music catalog.

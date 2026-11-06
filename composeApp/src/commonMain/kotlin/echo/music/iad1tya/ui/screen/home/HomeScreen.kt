@@ -237,7 +237,6 @@ fun HomeScreen(
 ) {
     val coroutineScope = rememberCoroutineScope()
     val scrollState = rememberLazyListState()
-    echo.music.iad1tya.ui.component.AirScrollEffect(scrollState)
     val isScrollingUp by scrollState.isScrollingUp()
     val accountInfo by viewModel.accountInfo.collectAsStateWithLifecycle()
     val homeData by viewModel.homeItemList.collectAsStateWithLifecycle()

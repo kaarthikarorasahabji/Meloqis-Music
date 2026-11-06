@@ -14,7 +14,6 @@ Make your music feel at home with Meloqis Music. Explore an artwork-inspired pla
 - Playlists, favorites and queue controls.
 - Local music playback and offline access for content you are authorized to download.
 - Equalizer, sleep timer, crossfade and gapless playback.
-- Optional Air Controls: use front-camera hand gestures to control playback. Camera processing stays on your device; the feature is off until you enable it.
 - Optional connections to supported music, scrobbling and lyric services.
 
 Availability of streaming, lyrics and connected features depends on the service, region, account and applicable permissions. Use only content you own or are authorized to access. Meloqis Music is an independent open-source project.

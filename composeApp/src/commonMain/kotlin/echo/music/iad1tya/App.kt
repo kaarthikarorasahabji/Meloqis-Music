@@ -421,13 +421,7 @@ if (data.scheme == "wordbyword" && data.host == "lastfm-auth") {
                 else -> easedSongColor
             }
         CompositionLocalProvider(LocalNowPlayingColor provides songColor) {
-        androidx.compose.runtime.SideEffect {
-            echo.music.iad1tya.ui.component.AirScroll.playerOpen.value = isShowNowPlaylistScreen
-        }
         Scaffold(
-            floatingActionButton = {
-                echo.music.iad1tya.ui.component.AirControls()
-            },
             bottomBar = {
                 if (!isTablet) {
                     AnimatedVisibility(

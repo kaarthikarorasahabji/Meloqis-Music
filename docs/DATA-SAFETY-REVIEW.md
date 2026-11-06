@@ -10,7 +10,6 @@ This is a source-based inventory for the owner to review, not a completed Play C
 | Local library | Playlists, listening history, cached/downloaded audio, preferences | Local storage; review backups, exports and any optional synchronization |
 | Optional Last.fm / Discord | Connected-account identifiers/tokens and listening activity | Provider scrobbling or presence, when enabled |
 | Optional AI translation/recommendations | Related text, prompts, selected endpoint and provider credentials | User-selected AI provider |
-| Air Controls | Front camera frames and hand landmarks | Processed locally; camera permission and optional background foreground service; model downloaded from Google |
 | Support requests | Email address and any content supplied by user | Developer's Gmail support inbox |
 
 Before completing the form:
@@ -20,7 +19,7 @@ Before completing the form:
 3. Verify all network endpoints and transport behavior before claiming every transfer is encrypted. The inherited network configuration permits cleartext and optional custom AI endpoints are user-configurable.
 4. Confirm no separate Meloqis account creation flow exists in the final build. Third-party sign-in is not the same as a developer-managed account. Revisit account-deletion requirements if account creation is added.
 5. Confirm retention and deletion operations for the actual Firebase project, connected accounts and support mailbox. Do not promise deletion of diagnostic records that cannot be associated with a user.
-6. Provide foreground service explanations and demonstration videos for camera gestures, media playback and user-requested downloads as requested in Play Console. Camera use must be visible and optional.
+6. Provide foreground service explanations and demonstration videos for floating Music Lights, media playback and user-requested downloads as requested in Play Console. The optional floating display must be user-started and easy to stop.
 7. Review audience and content rating against the actual catalog; do not select a children's audience merely because the app plays music.
 
 Public pages are prepared for:

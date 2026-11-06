@@ -249,7 +249,6 @@ fun LocalPlaylistScreen(
     }
 
     val lazyState = rememberLazyListState()
-    echo.music.iad1tya.ui.component.AirScrollEffect(lazyState)
     val firstItemVisible by remember {
         derivedStateOf {
             lazyState.firstVisibleItemIndex == 0

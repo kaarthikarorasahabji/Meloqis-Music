@@ -198,12 +198,6 @@ fun SearchScreen(
     val historyState = rememberLazyListState()
     val moodGridState = rememberLazyGridState()
     val resultsState = rememberLazyListState()
-    when (searchUIType) {
-        SearchUIType.EMPTY -> echo.music.iad1tya.ui.component.AirScrollEffect(moodGridState)
-        SearchUIType.SEARCH_HISTORY -> echo.music.iad1tya.ui.component.AirScrollEffect(historyState)
-        SearchUIType.SEARCH_SUGGESTIONS -> echo.music.iad1tya.ui.component.AirScrollEffect(suggestionsState)
-        SearchUIType.SEARCH_RESULTS -> echo.music.iad1tya.ui.component.AirScrollEffect(resultsState)
-    }
     var searchBarHeightPx by remember { mutableIntStateOf(0) }
     val searchBarHeight = with(LocalDensity.current) { searchBarHeightPx.toDp() }
     val isContentAtTop by remember {

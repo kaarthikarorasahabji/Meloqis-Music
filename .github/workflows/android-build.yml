@@ -51,6 +51,13 @@ jobs:
           printf '%s\n' "$cert_output"
           # Existing v1.5.0 installs trust this certificate; reject an incompatible update key.
           grep -Fq 'certificate SHA-256 digest: 24be20817821f8c532c6f7289d358d0460b9862c5e5ef627802ed92498aa904b' <<< "$cert_output"
+      - name: Verify camera controls are absent
+        run: |
+          aapt="$(find "$ANDROID_HOME/build-tools" -name aapt -type f | sort -V | tail -n 1)"
+          test -n "$aapt"
+          "$aapt" dump permissions androidApp/build/outputs/apk/release/androidApp-universal-release.apk > "$RUNNER_TEMP/permissions.txt"
+          if grep -Eq "android.permission.(CAMERA|FOREGROUND_SERVICE_CAMERA)" "$RUNNER_TEMP/permissions.txt"; then exit 1; fi
+          if unzip -l androidApp/build/outputs/apk/release/androidApp-universal-release.apk | grep -qi 'libmediapipe'; then exit 1; fi
       - name: Upload release APK artifacts
         uses: actions/upload-artifact@v4
         with:

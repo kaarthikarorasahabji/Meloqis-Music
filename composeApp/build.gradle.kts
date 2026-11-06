@@ -71,7 +71,6 @@ kotlin {
             implementation(libs.commons.io)
         }
         androidMain.dependencies {
-            implementation("com.google.mediapipe:tasks-vision:0.10.35")
             api(project.dependencies.platform(libs.koin.bom))
             api(libs.koin.android)
             implementation(libs.koin.androidx.compose)

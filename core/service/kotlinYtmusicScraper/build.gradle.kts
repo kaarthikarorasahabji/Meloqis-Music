@@ -122,9 +122,10 @@ kotlin {
     }
 }
 
-// The root build substitutes protobuf-javalite with protobuf-java so PipePipe,
-// Brave and MediaPipe share one compatible runtime without duplicate classes.
-// nanojson alignment is also centralized there for the final APK classpath.
+// The extractors must share one protobuf runtime. Prefer the smaller lite runtime.
+configurations.all {
+    exclude(group = "com.google.protobuf", module = "protobuf-java")
+}
 
 tasks.withType<CompileArtProfileTask> {
     enabled = false

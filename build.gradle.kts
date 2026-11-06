@@ -52,14 +52,6 @@ subprojects {
     configurations.all {
         resolutionStrategy {
             force("com.github.TeamNewPipe:nanojson:c7a6c1c08d16b6d5ecded34758e6415e07be2166")
-            dependencySubstitution {
-                // MediaPipe's graph options require Any.Builder.build(): Any, which
-                // the lite artifact does not provide. The full runtime also serves
-                // the extractors' lite-generated messages; keep one runtime per APK.
-                substitute(module("com.google.protobuf:protobuf-javalite"))
-                    .using(module("com.google.protobuf:protobuf-java:4.35.1"))
-                    .because("MediaPipe graph options require the full protobuf Any API")
-            }
         }
     }
 }
