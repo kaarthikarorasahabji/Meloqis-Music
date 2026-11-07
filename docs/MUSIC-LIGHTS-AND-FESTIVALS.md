@@ -1,10 +1,10 @@
-# Music Lights and festival wishes — 1.7.1
+# Music Lights and festival wishes — 1.8.0
 
-Music Lights lives in Equalizer → Music Lights. It supports Bars, Wave, Orbit and Dots; Bottom, Top, Left, Right, Frame and Center; Aurora, Sunset, Ocean and Rainbow palettes; light size, response, brightness and a clock.
+Music Lights now has its own **Settings → Edge lighting** destination, separate from Equalizer. See [Edge lighting guide](EDGE-LIGHTING.md) for presets, rounded edge effects, seven palettes, fit controls, clock faces, the Android screensaver and the in-app walkthrough.
 
 The analyzer taps a read-only view of the decoded PCM buffer in the existing equalizer pipeline. It never advances or changes the player buffer. Analysis runs only while a visible display requests it and publishes up to 20 real FFT frames per second. Rendering interpolates those frames. There is no simulated music, microphone permission, audio recording, upload or system-wide audio capture. Cast playback does not supply local PCM and therefore does not drive the lights.
 
-The immersive display is an Activity that keeps the screen awake, shifts content slightly and exits after 30 minutes. The optional overlay is non-interactive and below Android's obscuring-opacity threshold. It starts only from the foreground, needs display-over-other-apps permission, exposes a Stop action, and stops on screen-off, task removal, 60 seconds of audio inactivity or 30 minutes. This is not the phone manufacturer's low-power hardware AOD. The special-use foreground service must be declared and reviewed for Play distribution.
+The user-opened clock display keeps the screen awake, shifts clock content and exits at the chosen 15–120 minute limit or on screen-off. The optional touch-through overlay stops on screen-off, task removal, session expiry, permission revocation and selected battery-saver limits. With ambient glow disabled it also stops after 60 seconds of audio inactivity. Android screensaver integration is available where supported, with user selection in system settings, a dim black background and a 30% brightness cap. It does not replace a manufacturer’s low-power hardware AOD. The floating special-use foreground service still requires Play review.
 
 Festival notifications are opt-in. Firebase project `empmetria` has a separate Meloqis Android registration for `echo.music.iad1tya`. Only opted-in Meloqis installations subscribe to `meloqis-festivals-v1`; Trackzen subscriptions are separate. Private Firebase credentials stay in the owner-private Meloqis Studio server runtime and are never bundled in Android or source archives.
 

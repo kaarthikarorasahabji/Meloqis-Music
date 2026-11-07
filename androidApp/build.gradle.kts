@@ -77,7 +77,9 @@ android {
                     "bg",
                 )
         }
-        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        testInstrumentationRunner = if (providers.gradleProperty("edgeRenderProbe").isPresent) {
+            "echo.music.iad1tya.test.EdgeLightingRenderProbe"
+        } else "androidx.test.runner.AndroidJUnitRunner"
 
         ndk {
             abiFilters.add("x86_64")

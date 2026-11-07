@@ -1136,6 +1136,9 @@ fun SettingScreen(
             } // end if currentSection
         }
         if (getPlatform() == Platform.Android) {
+            item(key = "edge-lighting") {
+                echo.music.iad1tya.ui.component.EdgeLightingControls()
+            }
             item(key = "audio") {
             ExpandableSection(title = stringResource(Res.string.audio), icon = echoIcons.VolumeUp,
                 currentSection = currentSection,

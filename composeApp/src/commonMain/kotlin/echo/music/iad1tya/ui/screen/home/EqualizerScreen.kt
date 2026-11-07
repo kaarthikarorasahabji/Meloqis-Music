@@ -69,7 +69,6 @@ fun EqualizerScreen(
                 .fillMaxSize()
                 .padding(paddingValues)
         ) {
-            echo.music.iad1tya.ui.component.MusicLightsControls()
             androidx.compose.animation.AnimatedVisibility(
                 visible = equalizerEnabled,
                 enter = androidx.compose.animation.expandVertically(),
