@@ -191,7 +191,7 @@ fun MiniPlayer(
         targetValue =
             if (useGlassSurface) {
                 if (isDarkTheme) Color.White else Color.Black
-            } else if (background.value.luminance() > 0.45f) {
+            } else if (background.value.luminance() > 0.179f) {
                 Color.Black
             } else {
                 Color.White
