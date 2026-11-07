@@ -581,6 +581,12 @@ fun HomeScreen(
                                             subtitle = "A little discovery. A lot of you.",
                                         )
                                     }
+                                    if (index == 0) {
+                                        echo.music.iad1tya.ui.component.ListeningDesk(
+                                            onSearch = { navController.navigate(echo.music.iad1tya.ui.navigation.destination.search.SearchDestination) { launchSingleTop = true } },
+                                            onLibrary = { navController.navigate(echo.music.iad1tya.ui.navigation.destination.library.LibraryDestination) { launchSingleTop = true } },
+                                        )
+                                    }
                                     if (index == 0 && heroItems.isNotEmpty()) {
                                         ListeningRoom(
                                             items = heroItems,

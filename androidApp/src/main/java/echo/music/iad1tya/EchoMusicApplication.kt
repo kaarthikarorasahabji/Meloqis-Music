@@ -81,6 +81,7 @@ class EchoMusicApplication :
             else messaging.unsubscribeFromTopic(echo.music.iad1tya.ui.component.FestivalEngine.TOPIC)
         }
         echo.music.iad1tya.ui.component.FestivalEngine.initialize(this)
+        echo.music.iad1tya.update.AppUpdateGate.install(this)
 
         // Initialize and start AutoBackupScheduler
         autoBackupScheduler = AutoBackupScheduler(this, dataStoreManager)

@@ -81,6 +81,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.StrokeCap
@@ -179,6 +180,10 @@ fun MiniPlayer(
     // the Android card below.
     val useGlassSurface = isLiquidGlassEnabled == DataStoreManager.TRUE || getPlatform() == Platform.Desktop
 
+    val background =
+        remember {
+            Animatable(Color.DarkGray)
+        }
     val isDarkTheme = LocalIsDarkTheme.current
     val textColor by animateColorAsState(
         // With liquid glass the surface follows the theme (light = frosted white → black text);
@@ -186,7 +191,7 @@ fun MiniPlayer(
         targetValue =
             if (useGlassSurface) {
                 if (isDarkTheme) Color.White else Color.Black
-            } else if (luminanceAnimation.value > 0.6f) {
+            } else if (background.value.luminance() > 0.45f) {
                 Color.Black
             } else {
                 Color.White
@@ -254,10 +259,6 @@ fun MiniPlayer(
 
     // Palette state
     val paletteState = rememberPaletteState()
-    val background =
-        remember {
-            Animatable(Color.DarkGray)
-        }
     // Prefer the app-wide song colour (single source of truth for the recolour) so the mini-player
     // matches the Home header exactly; fall back to the local palette when it isn't available yet.
     val sharedSongColor = rememberUpdatedState(LocalNowPlayingColor.current)
@@ -451,10 +452,10 @@ fun MiniPlayer(
                                 },
                                 modifier =
                                     Modifier
-                                        .size(44.dp)
+                                        .size(48.dp)
                                         .align(Alignment.CenterVertically)
                                         .clip(
-                                            if (isLiquidGlassEnabled == DataStoreManager.TRUE) CircleShape else RoundedCornerShape(8.dp),
+                                            if (isLiquidGlassEnabled == DataStoreManager.TRUE) CircleShape else RoundedCornerShape(12.dp),
                                         ),
                             )
                             Spacer(modifier = Modifier.width(10.dp))

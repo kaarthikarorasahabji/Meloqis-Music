@@ -37,9 +37,9 @@ import java.time.*
 import java.util.concurrent.TimeUnit
 import kotlin.math.*
 
-data class FestivalCampaign(val id: String, val date: LocalDate, val title: String, val message: String) {
-    val scheduledAt: Long get() = date.atTime(4, 0).atZone(ZoneId.of("Asia/Kolkata")).toInstant().toEpochMilli()
-    val expiresAt: Long get() = date.plusDays(1).atStartOfDay(ZoneId.of("Asia/Kolkata")).toInstant().toEpochMilli()
+data class FestivalCampaign(val id: String, val date: LocalDate, val title: String, val message: String, val time: LocalTime = LocalTime.of(4, 0)) {
+    val scheduledAt: Long get() = date.atTime(time).atZone(ZoneId.of("Asia/Kolkata")).toInstant().toEpochMilli()
+    val expiresAt: Long get() = maxOf(date.plusDays(1).atStartOfDay(ZoneId.of("Asia/Kolkata")).toInstant().toEpochMilli(), scheduledAt + 3_600_000)
 }
 
 /** Dated campaigns are explicit, never repeated on the same Gregorian date next year. */
@@ -90,7 +90,9 @@ object FestivalEngine {
             val id = item.getString("id"); val title = item.getString("title"); val message = item.getString("message")
             val date = LocalDate.parse(item.getString("date"))
             require(id.matches(Regex("[a-z0-9-]{1,64}")) && title.length in 1..80 && message.length in 1..300 && date.year in 2026..2035)
-            FestivalCampaign(id, date, title, message)
+            val timeText = item.optString("time", "04:00")
+            require(timeText.matches(Regex("(?:[01]\\d|2[0-3]):[0-5]\\d")))
+            FestivalCampaign(id, date, title, message, LocalTime.parse(timeText))
         }.also { require(it.map { campaign -> campaign.id }.distinct().size == it.size) }
     }
     fun campaigns(context: Context): List<FestivalCampaign> = runCatching {
@@ -133,7 +135,7 @@ object FestivalEngine {
                 require(parsed.id == id)
                 val all = campaigns(context).filterNot { it.id == id } + parsed
                 val json = JSONObject().put("schemaVersion", 1).put("campaigns", JSONArray().apply {
-                    all.takeLast(100).forEach { put(JSONObject().put("id", it.id).put("date", it.date.toString()).put("title", it.title).put("message", it.message)) }
+                    all.takeLast(100).forEach { put(JSONObject().put("id", it.id).put("date", it.date.toString()).put("time", it.time.toString()).put("title", it.title).put("message", it.message)) }
                 }).toString()
                 prefs(context).edit().putString("feed", json).putBoolean("received-$id", true).apply()
             }
@@ -164,7 +166,7 @@ actual fun FestivalWishes() {
     }
     if (invite) AlertDialog(onDismissRequest = { preferences.edit().putBoolean("invited", true).apply(); invite = false },
         title = { Text("A little celebration from Meloqis") },
-        text = { Text("Receive festival wishes and a colorful greeting when you open the app. Wishes are scheduled for 4:00 AM India time. Optional. You can manage notification channels in your phone's app notification settings.") },
+        text = { Text("Receive festival wishes and a colorful greeting when you open the app. Wishes arrive at the delivery time chosen by Meloqis. Optional. You can manage notification channels in your phone's app notification settings.") },
         confirmButton = { TextButton(onClick = {
             preferences.edit().putBoolean("invited", true).apply(); invite = false
             if (Build.VERSION.SDK_INT >= 33) permission.launch(Manifest.permission.POST_NOTIFICATIONS) else FestivalEngine.setEnabled(context, true)

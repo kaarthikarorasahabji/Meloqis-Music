@@ -79,6 +79,10 @@ android {
         }
         testInstrumentationRunner = if (providers.gradleProperty("edgeRenderProbe").isPresent) {
             "echo.music.iad1tya.test.EdgeLightingRenderProbe"
+        } else if (providers.gradleProperty("requiredUpdateProbe").isPresent) {
+            "echo.music.iad1tya.test.RequiredUpdateProbe"
+        } else if (providers.gradleProperty("notificationProbe").isPresent) {
+            "echo.music.iad1tya.test.NotificationPushProbe"
         } else "androidx.test.runner.AndroidJUnitRunner"
 
         ndk {

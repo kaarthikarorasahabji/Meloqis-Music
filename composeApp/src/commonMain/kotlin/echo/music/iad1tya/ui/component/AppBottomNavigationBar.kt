@@ -62,6 +62,11 @@ fun AppBottomNavigationBar(
             },
         )
     }
+    LaunchedEffect(currentBackStackEntry) {
+        bottomNavScreens.firstOrNull { screen ->
+            currentBackStackEntry?.destination?.hierarchy?.any { it.hasRoute(screen.destination::class) } == true
+        }?.let { selectedIndex = it.ordinal }
+    }
     // Tracking can be turned off while Analytics is the selected tab, and that tab then disappears
     // from the list. Fall back to Home so nothing is left highlighted.
     LaunchedEffect(showAnalyticsTab) {
@@ -161,6 +166,11 @@ fun AppNavigationRail(
                 else -> BottomNavScreen.Home.ordinal // Default to Home if not recognized
             },
         )
+    }
+    LaunchedEffect(currentBackStackEntry) {
+        bottomNavScreens.firstOrNull { screen ->
+            currentBackStackEntry?.destination?.hierarchy?.any { it.hasRoute(screen.destination::class) } == true
+        }?.let { selectedIndex = it.ordinal }
     }
     // Tracking can be turned off while Analytics is the selected tab, and that tab then disappears
     // from the list. Fall back to Home so nothing is left highlighted.

@@ -86,7 +86,7 @@ fun ListeningRoom(
                 Text(
                     text = "ON THE TURNTABLE",
                     color = accentColor,
-                    fontSize = 10.sp,
+                    fontSize = 11.sp,
                     letterSpacing = 1.5.sp,
                     fontWeight = FontWeight.Bold,
                 )
@@ -162,7 +162,7 @@ fun ListeningRoom(
                         Text(
                             text = if (playingHere) "IN YOUR ROTATION" else "FROM YOUR MIXES",
                             color = accentColor,
-                            fontSize = 9.sp,
+                            fontSize = 11.sp,
                             letterSpacing = 1.1.sp,
                             fontWeight = FontWeight.Bold,
                             maxLines = 1,
@@ -210,7 +210,7 @@ fun ListeningRoom(
                             Text(
                                 text = if (playingHere) "NOW PLAYING" else "TUNE IN",
                                 color = MaterialTheme.colorScheme.onSurface,
-                                fontSize = 9.sp,
+                                fontSize = 11.sp,
                                 letterSpacing = 0.8.sp,
                                 fontWeight = FontWeight.SemiBold,
                                 modifier = Modifier.padding(start = 7.dp),

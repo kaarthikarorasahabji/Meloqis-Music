@@ -43,10 +43,14 @@ actual fun downloadAndInstallApk(url: String) {
         return
     }
     val activity: AppCompatActivity = getKoin().get()
+    startUpdateDownload(activity, url)
+}
+
+fun startUpdateDownload(activity: android.app.Activity, url: String) {
     val appContext = activity.applicationContext
     val downloadManager =
         appContext.getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager
-    val fileName = "Meloqis-Music-update.apk"
+    val fileName = "Meloqis-Music-update-${System.currentTimeMillis()}.apk"
 
     // App-specific external files dir — no storage permission required.
     val request =

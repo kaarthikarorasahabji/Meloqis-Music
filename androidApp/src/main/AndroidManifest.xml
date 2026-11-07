@@ -64,6 +64,7 @@
         tools:replace="android:name"
         tools:targetApi="tiramisu">
 
+        <activity android:name="echo.music.iad1tya.update.MandatoryUpdateActivity" android:exported="false" android:launchMode="singleTop" />
         <activity android:name="echo.music.iad1tya.ui.component.MusicLightsActivity" android:exported="false" />
         <activity android:name="echo.music.iad1tya.ui.component.MusicLightsSettingsActivity" android:exported="false" />
         <service android:name="echo.music.iad1tya.ui.component.MusicLightsDreamService"

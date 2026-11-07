@@ -682,7 +682,7 @@ if (data.scheme == "wordbyword" && data.host == "lastfm-auth") {
                     )
                 }
 
-                if (shouldShowUpdateDialog) {
+                if (shouldShowUpdateDialog && getPlatform() != Platform.Android) {
                     val response = updateData ?: return@Scaffold
                     AlertDialog(
                         properties =
