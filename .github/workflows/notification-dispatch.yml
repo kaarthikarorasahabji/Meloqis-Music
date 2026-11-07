@@ -1,7 +1,5 @@
-name: Notification delivery check
+name: Notification delivery manual backup
 on:
-  schedule:
-    - cron: '*/5 * * * *'
   workflow_dispatch:
 permissions:
   contents: read
