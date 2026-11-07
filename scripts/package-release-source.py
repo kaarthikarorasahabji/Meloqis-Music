@@ -1,4 +1,4 @@
-"""Package the current release sources, including local changes, without local secrets."""
+"""Package tracked release sources, including local edits, without local secrets."""
 from pathlib import Path
 import subprocess
 import zipfile
@@ -6,7 +6,7 @@ import zipfile
 root = Path(__file__).resolve().parent.parent
 allowed_roots = {'androidApp', 'composeApp', 'core', 'cast', 'crashlytics', 'lastfm', 'gradle', 'config', 'docs', 'scripts', 'website', 'assets', 'icons', '.github'}
 allowed_files = {'build.gradle.kts', 'settings.gradle.kts', 'gradle.properties', 'gradlew', 'gradlew.bat', 'LICENSE', 'README.md', 'CONTRIBUTING.md', 'PERFORMANCE.md', '.gitignore'}
-names = subprocess.check_output(['git', 'ls-files', '-z', '--cached', '--others', '--exclude-standard'], cwd=root).decode('utf-8').split('\0')
+names = subprocess.check_output(['git', 'ls-files', '-z', '--cached'], cwd=root).decode('utf-8').split('\0')
 names.append('gradle/wrapper/gradle-wrapper.jar')
 destination = root / 'launch-package/hosting/meloqis/source/Meloqis-Music-source.zip'
 destination.parent.mkdir(parents=True, exist_ok=True)
