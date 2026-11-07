@@ -144,31 +144,6 @@ object FestivalEngine {
 }
 
 @Composable
-actual fun FestivalSettings() {
-    val context = LocalContext.current
-    val enabled by FestivalEngine.enabled.collectAsStateWithLifecycle()
-    val permission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
-        if (granted) FestivalEngine.setEnabled(context, true)
-    }
-    Card(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp)) {
-        Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Text("Little celebrations", style = MaterialTheme.typography.titleLarge)
-            Text("Festival wishes, made a little more musical.", style = MaterialTheme.typography.bodyMedium)
-            Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
-                Text("Festival notifications", Modifier.weight(1f))
-                Switch(enabled, { on ->
-                    if (on && Build.VERSION.SDK_INT >= 33 && ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED)
-                        permission.launch(Manifest.permission.POST_NOTIFICATIONS)
-                    else FestivalEngine.setEnabled(context, on)
-                })
-            }
-            Text("Scheduled for 4:00 AM India time on each festival date. Android may delay delivery while a device is asleep or offline. You can turn these off anytime.", style = MaterialTheme.typography.bodySmall)
-            TextButton(onClick = { FestivalEngine.dialog.value = FestivalCampaign("preview", LocalDate.now(), "Happy Diwali", "A little light, a little love, and a beautiful soundtrack. Wishing you a joyful celebration. With love, Meloqis.") }) { Text("Preview animated wish") }
-        }
-    }
-}
-
-@Composable
 actual fun FestivalWishes() {
     val context = LocalContext.current
     val lifecycle = LocalLifecycleOwner.current.lifecycle
@@ -189,7 +164,7 @@ actual fun FestivalWishes() {
     }
     if (invite) AlertDialog(onDismissRequest = { preferences.edit().putBoolean("invited", true).apply(); invite = false },
         title = { Text("A little celebration from Meloqis") },
-        text = { Text("Receive festival wishes and a colorful greeting when you open the app. Wishes are scheduled for 4:00 AM India time. Optional, and easy to turn off in Settings.") },
+        text = { Text("Receive festival wishes and a colorful greeting when you open the app. Wishes are scheduled for 4:00 AM India time. Optional. You can manage notification channels in your phone’s app notification settings.") },
         confirmButton = { TextButton(onClick = {
             preferences.edit().putBoolean("invited", true).apply(); invite = false
             if (Build.VERSION.SDK_INT >= 33) permission.launch(Manifest.permission.POST_NOTIFICATIONS) else FestivalEngine.setEnabled(context, true)

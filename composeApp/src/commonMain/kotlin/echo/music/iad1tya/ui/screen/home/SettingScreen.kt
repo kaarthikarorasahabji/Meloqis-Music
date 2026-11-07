@@ -2212,7 +2212,6 @@ fun SettingScreen(
             }
         }
         item(key = "about_us") {
-            echo.music.iad1tya.ui.component.FestivalSettings()
             ExpandableSection(title = stringResource(Res.string.about_us), icon = echoIcons.Info,
                 currentSection = currentSection,
                 onSectionClick = { currentSection = it }

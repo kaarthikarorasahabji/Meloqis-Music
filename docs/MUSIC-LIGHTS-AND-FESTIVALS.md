@@ -13,3 +13,5 @@ Studio sends data-only messages. The Android receiver validates dated greeting t
 The initial wishes use the dates requested by the owner: 8 November 2026 (Diwali), 9 November (Vishwakarma Day), and 10 November (Bhai Dooj), at 04:00 Asia/Kolkata. Studio's daily task checks due messages. Automation startup, Firebase transport, connectivity, force-stop and Android power saving can delay or prevent receipt; Firebase acceptance is not proof of delivery on every device.
 
 Release builds for existing users must keep the existing APK signing identity. GitHub CI verifies its SHA-256 certificate before the device-specific APKs are published. The separate Play upload key created for the first Play bundle must not replace the existing sideload update key.
+
+The app Settings panel contains no festival section. Consent is requested through the optional first-launch invitation; Android app notification settings control delivery afterward.
