@@ -25,7 +25,7 @@ object AppUpdateGate : Application.ActivityLifecycleCallbacks {
     private val prefs get() = app.getSharedPreferences("required_updates", 0)
     val installed: String get() = app.packageManager.getPackageInfo(app.packageName, 0).versionName ?: "0.0.0"
     val minimum: String get() = prefs.getString("minimum", "") ?: ""
-    fun required(): Boolean = prefs.getBoolean("required", false) && (compareReleaseVersions(installed, minimum)?.let { it < 0 } == true)
+    fun required(): Boolean = prefs.getBoolean("required", false) && (compareReleaseVersions(installed.substringBefore('-'), minimum)?.let { it < 0 } == true)
     fun install(application: Application) { app = application; app.registerActivityLifecycleCallbacks(this) }
 
     fun refresh(force: Boolean = false, done: (() -> Unit)? = null) {

@@ -22,15 +22,14 @@ public final class NotificationPushProbe extends Instrumentation {
     @Override public void onStart() {
         Bundle result=new Bundle();
         try {
+            waitForIdleSync();
             Context c=getTargetContext();
             SharedPreferences prefs=c.getSharedPreferences("festival_wishes",0);
-            File backup=new File(c.getFilesDir(),"notification-probe-backup.xml");
-            File source=new File(c.getApplicationInfo().dataDir,"shared_prefs/festival_wishes.xml");
+            File backup=new File(c.getFilesDir(),"notification-probe-backup.json");
             String phase=args.getString("phase","verify"),id=args.getString("campaign","delivery-test");
             if(phase.equals("prepare")) {
                 if(backup.exists())throw new IllegalStateException("Clean up the previous fixture first");
-                prefs.edit().putBoolean("invited",prefs.getBoolean("invited",false)).commit();
-                Files.copy(source.toPath(),backup.toPath());
+                Files.write(backup.toPath(),new org.json.JSONObject(prefs.getAll()).toString().getBytes(StandardCharsets.UTF_8));
                 prefs.edit().putBoolean("enabled",true).commit();
                 FestivalEngine.INSTANCE.getEnabled().setValue(true);
                 String token=Tasks.await(FirebaseMessaging.getInstance().getToken(),90,TimeUnit.SECONDS);
@@ -38,14 +37,19 @@ public final class NotificationPushProbe extends Instrumentation {
                 result.putString("stream","PUSH_PROBE_READY: private device token saved\n");
             } else if(phase.equals("cleanup")) {
                 ((NotificationManager)c.getSystemService(Context.NOTIFICATION_SERVICE)).cancel("festival",id.hashCode());
+                Tasks.await(FirebaseMessaging.getInstance().unsubscribeFromTopic(FestivalEngine.TOPIC),30,TimeUnit.SECONDS);
                 if(backup.exists()) {
-                    // The process exits after this phase; replace the original private preferences file.
-                    Files.copy(backup.toPath(),source.toPath(),java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+                    org.json.JSONObject values=new org.json.JSONObject(new String(Files.readAllBytes(backup.toPath()),StandardCharsets.UTF_8));
+                    SharedPreferences.Editor editor=prefs.edit().clear();
+                    java.util.Iterator<String> keys=values.keys();
+                    while(keys.hasNext()){String key=keys.next();Object value=values.get(key);if(value instanceof Boolean)editor.putBoolean(key,(Boolean)value);else if(value instanceof String)editor.putString(key,(String)value);else throw new IllegalStateException("Unsupported fixture preference type");}
+                    editor.commit();
                     backup.delete();
-                }
+                } else prefs.edit().putBoolean("enabled",false).remove("received-"+id).remove("sent-"+id).remove("seen-"+id).commit();
                 new File(c.getFilesDir(),"notification-probe-token.txt").delete();
                 result.putString("stream","PUSH_PROBE_CLEANED: test notification and token file removed\n");
             } else {
+                Bundle waiting = new Bundle(); waiting.putString("stream", "PUSH_PROBE_WAITING\n"); sendStatus(0, waiting);
                 long end=System.currentTimeMillis()+60000; boolean received=false,visible=false;
                 while(System.currentTimeMillis()<end) {
                     received=prefs.getBoolean("received-"+id,false);
