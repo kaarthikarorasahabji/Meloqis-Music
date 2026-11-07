@@ -24,13 +24,19 @@ jobs:
           RELEASE_TAG: ${{ github.event.release.tag_name || inputs.tag }}
         run: |
           set -euo pipefail
+          # Release packaging may already provide every stable alias.
+          aliases=$(gh release view "$RELEASE_TAG" --json assets --jq '[.assets[] | select(.size > 0) | .name | select(. == "Meloqis-Music-latest.apk" or . == "Meloqis-Music-latest-arm64.apk" or . == "Meloqis-Music-latest-armeabi-v7a.apk" or . == "Meloqis-Music-latest-x86_64.apk")] | unique | length')
+          if [ "$aliases" = "4" ]; then
+            echo 'Verified release packaging already supplied all stable downloads.'
+            exit 0
+          fi
           count=$(gh release view "$RELEASE_TAG" --json assets --jq '[.assets[] | select(.name | endswith("-universal.apk"))] | length')
           test "$count" = "1"
           gh release download "$RELEASE_TAG" --pattern '*-universal.apk' --dir apk
           cp apk/*-universal.apk Meloqis-Music-latest.apk
           gh release download "$RELEASE_TAG" --pattern '*-arm64-v8a.apk' --dir apk
-          gh release download "$RELEASE_TAG" --pattern '*-armeabi-v7a.apk' --dir apk
-          gh release download "$RELEASE_TAG" --pattern '*-x86_64.apk' --dir apk
+          gh release download "$RELEASE_TAG" --pattern "Meloqis-Music-${RELEASE_TAG#v}-armeabi-v7a.apk" --dir apk
+          gh release download "$RELEASE_TAG" --pattern "Meloqis-Music-${RELEASE_TAG#v}-x86_64.apk" --dir apk
           cp apk/*-arm64-v8a.apk Meloqis-Music-latest-arm64.apk
           cp apk/*-armeabi-v7a.apk Meloqis-Music-latest-armeabi-v7a.apk
           cp apk/*-x86_64.apk Meloqis-Music-latest-x86_64.apk
