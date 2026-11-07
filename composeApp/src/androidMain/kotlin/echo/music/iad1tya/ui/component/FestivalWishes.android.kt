@@ -164,7 +164,7 @@ actual fun FestivalWishes() {
     }
     if (invite) AlertDialog(onDismissRequest = { preferences.edit().putBoolean("invited", true).apply(); invite = false },
         title = { Text("A little celebration from Meloqis") },
-        text = { Text("Receive festival wishes and a colorful greeting when you open the app. Wishes are scheduled for 4:00 AM India time. Optional. You can manage notification channels in your phone’s app notification settings.") },
+        text = { Text("Receive festival wishes and a colorful greeting when you open the app. Wishes are scheduled for 4:00 AM India time. Optional. You can manage notification channels in your phone's app notification settings.") },
         confirmButton = { TextButton(onClick = {
             preferences.edit().putBoolean("invited", true).apply(); invite = false
             if (Build.VERSION.SDK_INT >= 33) permission.launch(Manifest.permission.POST_NOTIFICATIONS) else FestivalEngine.setEnabled(context, true)

@@ -1,4 +1,4 @@
-# Music Lights and festival wishes — 1.7.0
+# Music Lights and festival wishes — 1.7.1
 
 Music Lights lives in Equalizer → Music Lights. It supports Bars, Wave, Orbit and Dots; Bottom, Top, Left, Right, Frame and Center; Aurora, Sunset, Ocean and Rainbow palettes; light size, response, brightness and a clock.
 

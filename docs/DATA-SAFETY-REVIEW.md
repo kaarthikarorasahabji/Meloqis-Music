@@ -8,6 +8,8 @@ This is a source-based inventory for the owner to review, not a completed Play C
 | Firebase Crashlytics | Crash logs, diagnostics, device/app metadata, installation identifiers | Firebase; review whether exception messages include additional user data |
 | Search, playback, artwork, lyrics | Searches, content identifiers, request metadata and IP address; connected-account information where used | Music and lyrics providers contacted directly |
 | Local library | Playlists, listening history, cached/downloaded audio, preferences | Local storage; review backups, exports and any optional synchronization |
+| Optional notifications | Firebase installation/registration identifiers and topic subscription; greeting receipt is stored locally | Firebase Cloud Messaging in the owner-controlled `empmetria` project; opt-in, with Android notification controls |
+| Music Lights | Decoded playback samples for local spectrum analysis; display preferences | On-device only; no microphone, recording or upload; optional overlay permission |
 | Optional Last.fm / Discord | Connected-account identifiers/tokens and listening activity | Provider scrobbling or presence, when enabled |
 | Optional AI translation/recommendations | Related text, prompts, selected endpoint and provider credentials | User-selected AI provider |
 | Support requests | Email address and any content supplied by user | Developer's Gmail support inbox |

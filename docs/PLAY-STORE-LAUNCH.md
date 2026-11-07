@@ -30,7 +30,7 @@ The Play build removes `REQUEST_INSTALL_PACKAGES` and advertising ID permission,
 
 1. Run the hosting packaging script.
 2. Extract `Meloqis-hosting.zip` into the existing website's public root. Keep the containing `meloqis` folder. On a framework site, copy it into that site's public/static directory, or route `/meloqis/` to the static files. Do not overwrite your site's homepage.
-3. Deploy the existing site through its hosting provider with HTTPS. No Node process, database or custom music backend is included or required by this repository's Android app. Music services, lyrics, Firebase and optional integrations remain external dependencies.
+3. Deploy the existing site through its hosting provider with HTTPS. These public pages need only static hosting. The separate owner-private Meloqis Studio handles push campaigns with its deployed server and database; music providers, lyrics, Firebase and optional integrations remain external dependencies.
 4. Verify these pages return HTTP 200 without login, geographical restrictions or download prompts:
    - `https://axenoraai.in/meloqis/`
    - `https://axenoraai.in/meloqis/privacy.html`
