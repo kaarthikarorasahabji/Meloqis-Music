@@ -35,7 +35,7 @@ config = json.loads((out / 'bundle-config.json').read_text(encoding='utf-8-sig')
 report['bundleNativeAlignment'] = config.get('optimizations', {}).get('uncompressNativeLibraries', {}).get('alignment')
 if report['bundleNativeAlignment'] != 'PAGE_ALIGNMENT_16K':
     errors.append('Bundle does not request 16 KB native library alignment')
-for forbidden in ['android.permission.REQUEST_INSTALL_PACKAGES', 'com.google.android.gms.permission.AD_ID', 'android.permission.CAMERA', 'android.permission.FOREGROUND_SERVICE_CAMERA', 'android.permission.RECORD_AUDIO']:
+for forbidden in ['android.permission.REQUEST_INSTALL_PACKAGES', 'com.google.android.gms.permission.AD_ID', 'android.permission.CAMERA', 'android.permission.FOREGROUND_SERVICE_CAMERA', 'android.permission.RECORD_AUDIO', 'android.permission.SYSTEM_ALERT_WINDOW', 'android.permission.FOREGROUND_SERVICE_SPECIAL_USE']:
     if forbidden in permissions:
         errors.append('Forbidden Play distribution permission: ' + forbidden)
 application = manifest.find('application')

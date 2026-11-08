@@ -82,6 +82,7 @@ class EchoMusicApplication :
         }
         echo.music.iad1tya.ui.component.FestivalEngine.initialize(this)
         echo.music.iad1tya.update.AppUpdateGate.install(this)
+        echo.music.iad1tya.ui.component.InAppEdgeLighting.install(this)
 
         // Initialize and start AutoBackupScheduler
         autoBackupScheduler = AutoBackupScheduler(this, dataStoreManager)

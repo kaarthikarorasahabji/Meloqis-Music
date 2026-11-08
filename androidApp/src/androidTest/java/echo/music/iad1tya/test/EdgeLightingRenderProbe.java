@@ -25,7 +25,7 @@ public final class EdgeLightingRenderProbe extends Instrumentation {
             final Throwable[] error = new Throwable[1];
             runOnMainSync(() -> { try { verify(); } catch (Throwable t) { error[0] = t; } });
             if (error[0] != null) throw new RuntimeException(error[0]);
-            result.putString("stream", "EDGE_RENDER_OK: 42 effect/placement combinations, 4 clocks, quiet overlay and notch fit passed\n");
+            result.putString("stream", "EDGE_RENDER_OK: 35 effect/placement combinations, centre migration, disabled/quiet rendering and notch fit passed\n");
             finish(Activity.RESULT_OK, result);
         } catch (Throwable t) {
             result.putString("stream", "EDGE_RENDER_FAILED: " + t + "\n");
@@ -41,34 +41,36 @@ public final class EdgeLightingRenderProbe extends Instrumentation {
         JSONObject report = new JSONObject();
         int combinations = 0;
         try {
-            for (String mode : new String[]{"Ribbon", "Comet", "Pulse", "Bars", "Wave", "Orbit", "Dots"}) {
-                for (String position : new String[]{"Frame", "Top", "Bottom", "Left", "Right", "Center"}) {
-                    prefs.edit().clear().putString("mode", mode).putString("position", position)
-                        .putBoolean("clock", false).putBoolean("battery", false).putBoolean("details", false).commit();
-                    Bitmap bitmap = render(context, true, false);
-                    if (visiblePixels(bitmap) < 100) throw new AssertionError("Empty effect: " + mode + "/" + position);
-                    if (position.equals("Frame")) save(bitmap, new File(directory, "frame-" + mode.toLowerCase(java.util.Locale.ROOT) + ".png"));
-                    bitmap.recycle(); combinations++;
+            prefs.edit().remove("enabled").commit();
+            if (!echo.music.iad1tya.ui.component.LightsPreferences.INSTANCE.read(prefs).getEnabled()) throw new AssertionError("New installs must default on");
+            for (String mode : new String[]{"Flow", "Comet", "Breath", "Twin trails", "Bars", "Wave", "Sparkles"}) {
+                for (String position : new String[]{"Frame", "Top", "Bottom", "Left", "Right"}) {
+                    prefs.edit().clear().putString("mode",mode).putString("position",position).commit();
+                    Bitmap bitmap=render(context,true,false);
+                    if(visiblePixels(bitmap)<100) throw new AssertionError("Empty effect: "+mode+"/"+position);
+                    if(interiorPixels(bitmap)>0) throw new AssertionError("Effect entered the centre: "+mode+"/"+position);
+                    if(position.equals("Frame"))save(bitmap,new File(directory,"frame-"+mode.toLowerCase(java.util.Locale.ROOT).replace(' ','-')+".png"));
+                    bitmap.recycle();combinations++;
                 }
             }
-            for (String clock : new String[]{"Digital", "Stacked", "Analog", "Minimal"}) {
-                prefs.edit().clear().putString("clock_style", clock).putString("mode", "Ribbon").putString("position", "Frame")
-                    .putBoolean("clock", true).putBoolean("battery", true).putBoolean("details", true).commit();
-                Bitmap bitmap = render(context, true, false);
-                if (visiblePixels(bitmap) < 1000) throw new AssertionError("Empty clock: " + clock);
-                save(bitmap, new File(directory, "clock-" + clock.toLowerCase(java.util.Locale.ROOT) + ".png")); bitmap.recycle();
-            }
+            prefs.edit().clear().putString("position","Center").putString("mode","Orbit").commit();
+            echo.music.iad1tya.ui.component.LightsSettings legacy=echo.music.iad1tya.ui.component.LightsPreferences.INSTANCE.read(prefs);
+            if(!legacy.getPosition().equals("Frame")||!legacy.getMode().equals("Twin trails"))throw new AssertionError("Legacy centre setting did not migrate");
+            prefs.edit().clear().putBoolean("enabled",false).commit();
+            Bitmap disabled=render(context,false,true);
+            if(visiblePixels(disabled)!=0)throw new AssertionError("Disabled in-app lights still rendered");
+            disabled.recycle();
             // A real quiet overlay must not invent music when ambient mode is off.
             prefs.edit().clear().putBoolean("ambient", false).commit();
             Bitmap quiet = render(context, false, true);
             if (visiblePixels(quiet) != 0) throw new AssertionError("Silent overlay invented visible audio");
             quiet.recycle();
-            prefs.edit().clear().putString("mode", "Ribbon").putString("position", "Frame")
+            prefs.edit().clear().putString("mode", "Flow").putString("position", "Frame")
                 .putFloat("notch", 160f).putFloat("radius", 80f).putFloat("thickness", 12f).putFloat("inset", 40f).commit();
             Bitmap notch = render(context, true, false);
             if (visiblePixels(notch) < 100) throw new AssertionError("Notch/corner controls removed all light");
             save(notch, new File(directory, "notch-fit.png")); notch.recycle();
-            report.put("passed", true).put("effectPlacementCombinations", combinations).put("clockStyles", 4)
+            report.put("passed", true).put("effectPlacementCombinations", combinations).put("centreRemoved", true).put("disabled", true)
                 .put("quietOverlay", true).put("notchFit", true).put("width", 1080).put("height", 2400);
             try (FileOutputStream out = new FileOutputStream(new File(directory, "report.json"))) {
                 out.write(report.toString(2).getBytes(StandardCharsets.UTF_8));
@@ -88,12 +90,18 @@ public final class EdgeLightingRenderProbe extends Instrumentation {
         }
     }
     private Bitmap render(Context context, boolean demo, boolean overlay) {
-        MusicLightsView view = new MusicLightsView(context, !overlay, overlay, true);
+        MusicLightsView view = new MusicLightsView(context, true, !overlay);
         view.setDemo(demo);
         view.measure(View.MeasureSpec.makeMeasureSpec(1080, View.MeasureSpec.EXACTLY), View.MeasureSpec.makeMeasureSpec(2400, View.MeasureSpec.EXACTLY));
         view.layout(0, 0, 1080, 2400);
         Bitmap bitmap = Bitmap.createBitmap(1080, 2400, Bitmap.Config.ARGB_8888);
         view.draw(new Canvas(bitmap)); view.stop(); return bitmap;
+    }
+    private int interiorPixels(Bitmap bitmap) {
+        int count=0;
+        for(int y=170;y<bitmap.getHeight()-170;y+=4)for(int x=170;x<bitmap.getWidth()-170;x+=4)
+            if((bitmap.getPixel(x,y)>>>24)>10)count++;
+        return count;
     }
     private int visiblePixels(Bitmap bitmap) {
         int count = 0;

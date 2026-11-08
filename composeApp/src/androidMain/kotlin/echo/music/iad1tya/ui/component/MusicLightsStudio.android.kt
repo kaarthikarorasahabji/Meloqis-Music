@@ -1,9 +1,6 @@
 package echo.music.iad1tya.ui.component
 
 import android.content.Intent
-import android.provider.Settings
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.*
@@ -20,8 +17,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
-import androidx.core.content.ContextCompat
-import androidx.core.net.toUri
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import echo.music.iad1tya.domain.mediaservice.player.AudioSpectrum
 import kotlinx.coroutines.delay
@@ -31,157 +26,129 @@ import kotlin.math.roundToInt
 @Composable
 actual fun EdgeLightingControls() {
     val context = LocalContext.current
-    Card(onClick = { context.startActivity(Intent(context, MusicLightsSettingsActivity::class.java)) }, modifier = Modifier.fillMaxWidth().padding(16.dp),
-        colors = CardDefaults.cardColors(containerColor = Color(0xFF171326)), shape = RoundedCornerShape(26.dp)) {
-        Column(Modifier.background(Brush.linearGradient(listOf(Color(0xFF242039), Color(0xFF101A26)))).padding(24.dp), verticalArrangement = Arrangement.spacedBy(9.dp)) {
-            Text("MELOQIS EDGE STUDIO", color = Color(0xFFBCACFA), style = MaterialTheme.typography.labelMedium)
-            Text("Edge lighting", color = Color.White, style = MaterialTheme.typography.headlineSmall)
-            Text("Edge effects, music visualizers & your own clock display.", color = Color(0xFFC7C1D5))
-            Text("Create your glow  →", color = Color(0xFF8FE8D5), style = MaterialTheme.typography.labelLarge)
+    Card(onClick = { context.startActivity(Intent(context, MusicLightsSettingsActivity::class.java)) }, modifier=Modifier.fillMaxWidth().padding(16.dp),
+        colors=CardDefaults.cardColors(containerColor=Color(0xFF171326)), shape=RoundedCornerShape(26.dp)) {
+        Column(Modifier.background(Brush.linearGradient(listOf(Color(0xFF242039),Color(0xFF101A26)))).padding(24.dp), verticalArrangement=Arrangement.spacedBy(9.dp)) {
+            Text("YOUR IN-APP GLOW",color=Color(0xFFBCACFA),style=MaterialTheme.typography.labelMedium)
+            Text("Edge lighting",color=Color.White,style=MaterialTheme.typography.headlineSmall)
+            Text("Colourful borders while you explore Meloqis.",color=Color(0xFFC7C1D5))
+            Text("Make it yours  →",color=Color(0xFF8FE8D5),style=MaterialTheme.typography.labelLarge)
         }
     }
 }
 
 @Composable
 internal fun MusicLightsStudio(onClose: () -> Unit) {
-    val context = LocalContext.current
-    val prefs = remember { LightsPreferences.prefs(context) }
+    val context=LocalContext.current
+    val prefs=remember { LightsPreferences.prefs(context) }
     var settings by remember { mutableStateOf(LightsPreferences.read(prefs)) }
     var tab by remember { mutableIntStateOf(0) }
     var demo by remember { mutableStateOf(true) }
-    var error by remember { mutableStateOf<String?>(null) }
-    var guide by remember { mutableStateOf(!prefs.getBoolean("guide_seen_v2", false)) }
-    val overlayRunning by MusicLightsOverlayState.running.collectAsStateWithLifecycle()
+    var guide by remember { mutableStateOf(!prefs.getBoolean("guide_seen_in_app_v3",false)) }
+    val running by InAppEdgeLighting.running.collectAsStateWithLifecycle()
     var hasAudio by remember { mutableStateOf(false) }
     LaunchedEffect(Unit) {
-        while (isActive) {
-            val frame = AudioSpectrum.frames.value
-            hasAudio = frame.capturedAt > 0 && android.os.SystemClock.elapsedRealtime() - frame.capturedAt < 500
+        while(isActive) {
+            val frame=AudioSpectrum.frames.value
+            hasAudio=frame.capturedAt>0 && android.os.SystemClock.elapsedRealtime()-frame.capturedAt<500
             delay(500)
         }
     }
-    fun update(value: LightsSettings) { settings = value; LightsPreferences.save(prefs, value) }
-    fun startOverlay() {
-        if (settings.powerSaver && context.getSystemService(android.os.PowerManager::class.java).isPowerSaveMode) {
-            error = "Battery saver is on. Turn it off, or change the battery-saver limit in Behavior."
-            return
-        }
-        try { ContextCompat.startForegroundService(context, Intent(context, MusicLightsOverlayService::class.java)); error = null }
-        catch (_: Exception) { error = "Couldn't start the floating display. Keep Meloqis open and try again." }
-    }
-    val permission = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) {
-        if (Settings.canDrawOverlays(context)) startOverlay()
-        else error = "Floating lights need display-over-other-apps permission. The clock display works without it."
-    }
-    Surface(Modifier.fillMaxSize(), color = Color(0xFF0C0D14), contentColor = Color(0xFFECE8F7)) {
+    fun update(value: LightsSettings) { settings=value; LightsPreferences.save(prefs,value) }
+    Surface(Modifier.fillMaxSize(),color=Color(0xFF0C0D14),contentColor=Color(0xFFECE8F7)) {
         Column(Modifier.safeDrawingPadding()) {
-            Row(Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 10.dp), verticalAlignment = Alignment.CenterVertically) {
+            Row(Modifier.fillMaxWidth().padding(horizontal=20.dp,vertical=10.dp),verticalAlignment=Alignment.CenterVertically) {
                 Column(Modifier.weight(1f)) {
-                    Text("MUSIC LIGHTS", color = Color(0xFFBCACFA), style = MaterialTheme.typography.labelSmall)
-                    Text("Edge lighting", style = MaterialTheme.typography.headlineSmall)
+                    Text("MELOQIS EDGE STUDIO",color=Color(0xFFBCACFA),style=MaterialTheme.typography.labelSmall)
+                    Text("A little glow. All yours.",style=MaterialTheme.typography.titleLarge)
                 }
-                TextButton(onClick = { guide = true }) { Text("Guide", color = Color(0xFF8FE8D5)) }
-                TextButton(onClick = onClose) { Text("Done", color = Color(0xFFBCACFA)) }
+                TextButton(onClick={guide=true}) { Text("Guide",color=Color(0xFF8FE8D5)) }
+                TextButton(onClick=onClose) { Text("Done",color=Color(0xFFBCACFA)) }
             }
-            Column(Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(horizontal = 20.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
-                Box(Modifier.fillMaxWidth().height(260.dp), contentAlignment = Alignment.Center) {
-                    AndroidView(factory = { MusicLightsView(it, immersive = true, preview = true) },
-                        update = { it.demo = demo; it.invalidate() },
-                        modifier = Modifier.width(168.dp).fillMaxHeight().clip(RoundedCornerShape(26.dp)))
-                }
-                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                    Text(if (hasAudio) "●  LIVE MELOQIS AUDIO" else if (demo) "●  DEMO PREVIEW" else "○  WAITING FOR MUSIC",
-                        color = if (hasAudio) Color(0xFF8FE8D5) else Color(0xFFBCACFA), style = MaterialTheme.typography.labelSmall, modifier = Modifier.weight(1f))
-                    Text("Demo", style = MaterialTheme.typography.bodySmall)
-                    Switch(demo, { demo = it })
-                }
-                Text("Demo only animates this preview. Real displays respond to Meloqis playback; ambient mode keeps a gentle glow between songs.", color = Color(0xFFA9A3B9), style = MaterialTheme.typography.bodySmall)
-                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                    listOf("Design", "Fit", "Clock", "Behavior").forEachIndexed { index, name ->
-                        FilterChip(tab == index, { tab = index }, label = { Text(name) })
+            Column(Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(horizontal=20.dp),verticalArrangement=Arrangement.spacedBy(14.dp)) {
+                Card(colors=CardDefaults.cardColors(containerColor=Color(0xFF191A29)),shape=RoundedCornerShape(22.dp)) {
+                    Column(Modifier.padding(18.dp),verticalArrangement=Arrangement.spacedBy(6.dp)) {
+                        Row(verticalAlignment=Alignment.CenterVertically) {
+                            Column(Modifier.weight(1f)) {
+                                Text("Edge lighting",style=MaterialTheme.typography.titleMedium)
+                                Text(if(settings.enabled && running) "On in Meloqis" else if(settings.enabled) "Ready when Meloqis is open" else "Off",color=Color(0xFF8FE8D5),style=MaterialTheme.typography.bodySmall)
+                            }
+                            Switch(settings.enabled,{update(settings.copy(enabled=it))})
+                        }
+                        Text("Starts automatically inside the app. Stops when you leave Meloqis. Your choice is remembered.",color=Color(0xFFC7C1D5),style=MaterialTheme.typography.bodySmall)
                     }
                 }
-                when (tab) {
+                Box(Modifier.fillMaxWidth().height(236.dp),contentAlignment=Alignment.Center) {
+                    AndroidView(factory={MusicLightsView(it,transparent=false,preview=true)},update={it.demo=demo;it.invalidate()},
+                        modifier=Modifier.width(134.dp).fillMaxHeight().clip(RoundedCornerShape(24.dp)))
+                }
+                Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.CenterVertically) {
+                    Text(if(!settings.enabled) "PREVIEW • LIGHTING OFF" else if(hasAudio) "LIVE MUSIC RESPONSE" else if(demo) "STYLE PREVIEW" else "WAITING FOR MUSIC",color=Color(0xFF8FE8D5),style=MaterialTheme.typography.labelSmall,modifier=Modifier.weight(1f))
+                    Text("Demo",style=MaterialTheme.typography.bodySmall);Switch(demo,{demo=it})
+                }
+                Text("Demo animates this preview only. In the app, your music drives the response; gentle idle motion is optional.",color=Color(0xFFA9A3B9),style=MaterialTheme.typography.bodySmall)
+                Row(horizontalArrangement=Arrangement.spacedBy(8.dp)) {
+                    listOf("Design","Placement","Behavior").forEachIndexed { index,name -> FilterChip(tab==index,{tab=index},label={Text(name)}) }
+                }
+                when(tab) {
                     0 -> {
-                        StudioSection("Start with a mood")
-                        StudioChoices(LightsPreferences.presets, "", 2) { update(LightsPreferences.preset(it, settings)) }
-                        StudioSection("Effect")
-                        StudioChoices(LightsPreferences.modes, settings.mode, 3) {
-                            update(settings.copy(mode = it, position = if (it == "Orbit") "Center" else settings.position))
-                        }
+                        StudioSection("One tap, a whole mood")
+                        StudioChoices(LightsPreferences.presets,"",2) { update(LightsPreferences.preset(it,settings)) }
+                        StudioSection("Your effect")
+                        StudioChoices(LightsPreferences.modes,settings.mode,2) { update(settings.copy(mode=it)) }
+                        Text(when(settings.mode) {
+                            "Comet" -> "A soft trail travels around the border."
+                            "Twin trails" -> "Two luminous trails follow opposite sides of the edge."
+                            "Breath" -> "A calm border that fades in and out, with a little lift from your music."
+                            "Bars" -> "Small spectrum bars stay close to the edges."
+                            "Wave" -> "A flowing spectrum traces the border."
+                            "Sparkles" -> "Fine points of colour shimmer along the edges."
+                            else -> "A smooth colour ribbon follows your screen."
+                        },style=MaterialTheme.typography.bodySmall,color=Color(0xFFC7C1D5))
                         StudioSection("Colour story")
-                        StudioPalettes(settings) { update(settings.copy(palette = it)) }
-                        if (settings.palette == "Album art") Text("Colours follow the current cover. Aurora is used when artwork is unavailable.", style = MaterialTheme.typography.bodySmall)
-                        if (settings.palette == "Custom") {
-                            StudioSlider("First hue", settings.hue, 0f..360f, "${settings.hue.roundToInt()}°") { update(settings.copy(hue = it)) }
-                            StudioSlider("Second hue", settings.secondHue, 0f..360f, "${settings.secondHue.roundToInt()}°") { update(settings.copy(secondHue = it)) }
+                        StudioPalettes(settings) { update(settings.copy(palette=it)) }
+                        if(settings.palette=="Album art") Text("Colours follow the current cover, with Aurora as a fallback.",style=MaterialTheme.typography.bodySmall)
+                        if(settings.palette=="Custom") {
+                            StudioSlider("First hue",settings.hue,0f..360f,"${settings.hue.roundToInt()}°") { update(settings.copy(hue=it)) }
+                            StudioSlider("Second hue",settings.secondHue,0f..360f,"${settings.secondHue.roundToInt()}°") { update(settings.copy(secondHue=it)) }
                         }
-                        StudioSlider("Light width", settings.thickness, 1f..12f, "${settings.thickness.roundToInt()} dp") { update(settings.copy(thickness = it)) }
-                        StudioSlider("Soft glow", settings.glow, 0f..1f) { update(settings.copy(glow = it)) }
-                        StudioSlider("Motion speed", settings.speed, .2f..2f, "${(settings.speed * 100).roundToInt()}%") { update(settings.copy(speed = it)) }
-                        StudioSlider("Audio response", settings.sensitivity, .5f..2f) { update(settings.copy(sensitivity = it)) }
-                        StudioSlider("Spectrum reach", settings.size, .1f.. .8f) { update(settings.copy(size = it)) }
-                        StudioSwitch("Mirror the spectrum", settings.mirror) { update(settings.copy(mirror = it)) }
+                        StudioSlider("Light width",settings.thickness,1f..6f,"${settings.thickness.roundToInt()} dp") { update(settings.copy(thickness=it)) }
+                        StudioSlider("Soft glow",settings.glow,0f..1f) { update(settings.copy(glow=it)) }
+                        StudioSlider("Light intensity",settings.brightness,.1f..1f) { update(settings.copy(brightness=it)) }
+                        StudioSlider("Motion speed",settings.speed,.2f..2f,"${(settings.speed*100).roundToInt()}%") { update(settings.copy(speed=it)) }
+                        StudioSlider("Audio response",settings.sensitivity,.5f..2f) { update(settings.copy(sensitivity=it)) }
+                        StudioSlider("Spectrum reach",settings.size,.1f.. .5f) { update(settings.copy(size=it)) }
                     }
                     1 -> {
-                        StudioSection("Where the light lives")
-                        StudioChoices(LightsPreferences.positions, settings.position, 3) { update(settings.copy(position = it)) }
-                        StudioSlider("Corner radius", settings.radius, 0f..80f, "${settings.radius.roundToInt()} dp") { update(settings.copy(radius = it)) }
-                        StudioSlider("Distance from edge", settings.inset, 2f..40f, "${settings.inset.roundToInt()} dp") { update(settings.copy(inset = it)) }
-                        StudioSlider("Camera / notch gap", settings.notch, 0f..180f, if (settings.notch < 1) "Auto" else "${settings.notch.roundToInt()} dp") { update(settings.copy(notch = it)) }
-                        Text("The preview follows your settings. Check the immersive display to fine-tune the fit on your own screen.", style = MaterialTheme.typography.bodySmall)
-                    }
-                    2 -> {
-                        StudioSwitch("Show clock", settings.clock) { update(settings.copy(clock = it)) }
-                        if (settings.clock) {
-                            StudioChoices(LightsPreferences.clocks, settings.clockStyle, 2) { update(settings.copy(clockStyle = it)) }
-                            StudioSlider("Clock position", settings.clockY, .25f.. .7f) { update(settings.copy(clockY = it)) }
-                        }
-                        StudioSwitch("Show battery", settings.battery) { update(settings.copy(battery = it)) }
-                        StudioSwitch("Show song details", settings.details) { update(settings.copy(details = it)) }
-                        StudioSlider("Display brightness", settings.brightness, .08f..1f) { update(settings.copy(brightness = it)) }
-                        OutlinedButton(onClick = {
-                            try { context.startActivity(Intent(Settings.ACTION_DREAM_SETTINGS)) }
-                            catch (_: Exception) { error = "This phone doesn't expose Android screensaver settings. Use Open clock display instead." }
-                        }, modifier = Modifier.fillMaxWidth()) { Text("Set up Android screensaver") }
-                        Text("Select Meloqis Music Lights in your phone's screensaver settings. Android decides when it runs, usually while charging or docked. Screensaver brightness is limited to 30%. This is a screen-on screensaver, not a replacement for the phone's low-power hardware AOD. Tap the screensaver to exit.", style = MaterialTheme.typography.bodySmall)
+                        StudioSection("Keep it on the edges")
+                        StudioChoices(LightsPreferences.positions,settings.position,2) { update(settings.copy(position=it)) }
+                        StudioSlider("Corner radius",settings.radius,0f..48f,"${settings.radius.roundToInt()} dp") { update(settings.copy(radius=it)) }
+                        StudioSlider("Distance from edge",settings.inset,2f..20f,"${settings.inset.roundToInt()} dp") { update(settings.copy(inset=it)) }
+                        StudioSlider("Notch gap",settings.notch,0f..180f,if(settings.notch<1) "Auto" else "${settings.notch.roundToInt()} dp") { update(settings.copy(notch=it)) }
+                        Text("Lights follow Meloqis content and leave your controls touchable. Spectrum effects stay close to the border.",style=MaterialTheme.typography.bodySmall,color=Color(0xFFC7C1D5))
                     }
                     else -> {
-                        StudioSwitch("Ambient glow between songs", settings.ambient) { update(settings.copy(ambient = it)) }
-                        StudioSwitch("Stop floating lights in battery saver", settings.powerSaver) { update(settings.copy(powerSaver = it)) }
-                        StudioSection("Floating / clock session")
-                        StudioChoices(listOf("15 min", "30 min", "60 min", "120 min"), "${settings.sessionMinutes} min", 2) { update(settings.copy(sessionMinutes = it.substringBefore(' ').toInt())) }
-                        Text("Floating lights are touch-through and stop when the screen turns off, when you close Meloqis from Recents, or when the session ends. With ambient glow off, they also stop after a minute without Meloqis audio.", style = MaterialTheme.typography.bodySmall)
-                        Text("Clock displays use a black background and shifting content. Lower brightness and shorter sessions reduce battery use and static-pixel exposure; they cannot guarantee protection against OLED burn-in.", style = MaterialTheme.typography.bodySmall)
-                        Text("Audio source: Meloqis playback on this device. Other players and Cast audio aren't captured. No microphone or notification-reading access is needed.", style = MaterialTheme.typography.bodySmall)
+                        StudioSwitch("Animate borders",settings.motion) { update(settings.copy(motion=it)) }
+                        StudioSwitch("Gentle glow between songs",settings.ambient) { update(settings.copy(ambient=it)) }
+                        StudioSwitch("Mirror the spectrum",settings.mirror) { update(settings.copy(mirror=it)) }
+                        StudioSwitch("Reduce motion in battery saver",settings.powerSaver) { update(settings.copy(powerSaver=it)) }
+                        Text("Device animation preferences are respected. Lighting pauses when Meloqis is in the background and never keeps your screen awake.",style=MaterialTheme.typography.bodySmall,color=Color(0xFFC7C1D5))
+                        Text("Music response uses Meloqis playback on this device. Turn Demo off to check the real response.",style=MaterialTheme.typography.bodySmall,color=Color(0xFFC7C1D5))
                     }
                 }
-                error?.let { Text(it, color = Color(0xFFFFB4AB)) }
-                Spacer(Modifier.height(12.dp))
-            }
-            Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                Button(onClick = { context.startActivity(Intent(context, MusicLightsActivity::class.java)) }, modifier = Modifier.fillMaxWidth()) { Text("Open clock display") }
-                OutlinedButton(onClick = {
-                    if (overlayRunning) context.stopService(Intent(context, MusicLightsOverlayService::class.java))
-                    else if (Settings.canDrawOverlays(context)) startOverlay()
-                    else permission.launch(Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, "package:${context.packageName}".toUri()))
-                }, modifier = Modifier.fillMaxWidth()) { Text(if (overlayRunning) "Stop floating lights" else "Show lights over other apps") }
+                Spacer(Modifier.height(20.dp))
             }
         }
     }
-    if (guide) AlertDialog(
-        onDismissRequest = { guide = false; prefs.edit().putBoolean("guide_seen_v2", true).apply() },
-        title = { Text("Make the edges yours") },
-        text = { Column(verticalArrangement = Arrangement.spacedBy(14.dp), modifier = Modifier.verticalScroll(rememberScrollState())) {
-            Text("1. Choose a look\nStart with a preset, then pick an effect and colours. Demo animates only the preview; play a song in Meloqis to see the real response.")
-            Text("2. Fit your screen\nUse Fit to place the lights and adjust corners, edge distance and the camera gap.")
-            Text("3. Take it with you\nShow lights over other apps asks Android for overlay permission. The overlay passes touches through. Stop it here or from its notification.")
-            Text("4. Build a clock display\nChoose a clock in Clock, then open the display. For charging or docked use, tap Set up Android screensaver and select Meloqis Music Lights. Availability depends on your phone.")
-            Text("Screen off closes floating lights. The screensaver is a screen-on display, not a hardware AOD replacement. Keep brightness low and choose a session limit in Behavior.")
-            Text("Find this guide anytime at the top. Edge lighting has its own Settings menu; Equalizer stays for sound adjustments.")
-        } },
-        confirmButton = { TextButton(onClick = { guide = false; prefs.edit().putBoolean("guide_seen_v2", true).apply() }) { Text("Let's create") } },
-    )
+    fun closeGuide() { guide=false;prefs.edit().putBoolean("guide_seen_in_app_v3",true).apply() }
+    if(guide) AlertDialog(onDismissRequest={closeGuide()},title={Text("Your glow, inside Meloqis")},text={
+        Column(Modifier.verticalScroll(rememberScrollState()),verticalArrangement=Arrangement.spacedBy(12.dp)) {
+            Text("1. Already on\nEdge lighting starts automatically when you use Meloqis. The switch above turns it off, and remembers your choice.")
+            Text("2. Choose a mood\nPick an effect and a colour story, or start with a preset. Demo lets you try the look before playing music.")
+            Text("3. Find your edges\nUse Frame, Top, Bottom, Left or Right. Adjust the width, corners and glow until it feels right.")
+            Text("4. Make it comfortable\nUse a quiet glow or music response, and turn animation off if you prefer. Lighting stops when you leave the app.")
+        }
+    },confirmButton={TextButton(onClick={closeGuide()}) {Text("Got it")}})
 }
 
 @Composable private fun StudioSection(text: String) { Text(text, color = Color(0xFFD4C7FF), style = MaterialTheme.typography.titleSmall) }

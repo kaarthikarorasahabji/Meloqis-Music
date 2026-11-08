@@ -79,6 +79,8 @@ android {
         }
         testInstrumentationRunner = if (providers.gradleProperty("edgeRenderProbe").isPresent) {
             "echo.music.iad1tya.test.EdgeLightingRenderProbe"
+        } else if (providers.gradleProperty("inAppLightingProbe").isPresent) {
+            "echo.music.iad1tya.test.InAppLightingProbe"
         } else if (providers.gradleProperty("requiredUpdateProbe").isPresent) {
             "echo.music.iad1tya.test.RequiredUpdateProbe"
         } else if (providers.gradleProperty("notificationProbe").isPresent) {

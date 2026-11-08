@@ -31,7 +31,7 @@ fun ListeningDesk(onSearch: () -> Unit, onLibrary: () -> Unit) {
             ) {
                 Text("LIGHT, IN YOUR RHYTHM", color = colors.primary, fontSize = 11.sp, letterSpacing = 1.4.sp, fontWeight = FontWeight.Bold)
                 Text("Give your music an edge.", style = MaterialTheme.typography.titleLarge, color = colors.onSurface)
-                Text("Explore edge lighting, colors & clock displays", style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant)
+                Text("Make your in-app edges glow in your colours", style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant)
                 Text("Open your lighting studio  →", style = MaterialTheme.typography.labelLarge, color = colors.primary, modifier = Modifier.padding(top = 5.dp))
             }
         }

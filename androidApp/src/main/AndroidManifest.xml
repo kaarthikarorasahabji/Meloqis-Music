@@ -3,8 +3,6 @@
     xmlns:tools="http://schemas.android.com/tools">
 
     <uses-permission android:name="android.permission.INTERNET" />
-    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
-    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="com.google.android.gms.permission.AD_ID" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
@@ -65,20 +63,7 @@
         tools:targetApi="tiramisu">
 
         <activity android:name="echo.music.iad1tya.update.MandatoryUpdateActivity" android:exported="false" android:launchMode="singleTop" />
-        <activity android:name="echo.music.iad1tya.ui.component.MusicLightsActivity" android:exported="false" />
         <activity android:name="echo.music.iad1tya.ui.component.MusicLightsSettingsActivity" android:exported="false" />
-        <service android:name="echo.music.iad1tya.ui.component.MusicLightsDreamService"
-            android:exported="true" android:label="@string/music_lights_screensaver"
-            android:icon="@mipmap/ic_launcher" android:permission="android.permission.BIND_DREAM_SERVICE">
-            <intent-filter>
-                <action android:name="android.service.dreams.DreamService" />
-                <category android:name="android.intent.category.DEFAULT" />
-            </intent-filter>
-            <meta-data android:name="android.service.dream" android:resource="@xml/music_lights_dream" />
-        </service>
-        <service android:name="echo.music.iad1tya.ui.component.MusicLightsOverlayService" android:exported="false" android:foregroundServiceType="specialUse">
-            <property android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE" android:value="User-started, non-interactive floating edge lighting. Stops on screen off, session expiry or user stop; optional audio inactivity and battery-saver limits." />
-        </service>
         <service android:name="echo.music.iad1tya.festival.FestivalMessagingService" android:exported="false">
             <intent-filter><action android:name="com.google.firebase.MESSAGING_EVENT" /></intent-filter>
         </service>
