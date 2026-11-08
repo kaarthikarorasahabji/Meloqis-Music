@@ -10,20 +10,26 @@ import android.view.View
 import android.view.ViewGroup
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import java.lang.ref.WeakReference
+import java.util.Collections
 import java.util.WeakHashMap
 
 /** A non-interactive ViewGroupOverlay belongs to an Activity, never to WindowManager. */
 object InAppEdgeLighting : Application.ActivityLifecycleCallbacks {
     private data class Layer(val root: ViewGroup, val view: MusicLightsView, val layout: View.OnLayoutChangeListener)
     private val layers = WeakHashMap<Activity, Layer>()
-    private var current = WeakReference<Activity>(null)
+    private val resumed: MutableSet<Activity> = Collections.newSetFromMap(WeakHashMap<Activity, Boolean>())
     private val state = MutableStateFlow(false)
     val running = state.asStateFlow()
     private lateinit var preferences: SharedPreferences
     private val changes = SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
-        if (key == "enabled") current.get()?.let { activity ->
-            activity.runOnUiThread { detach(activity); attach(activity) }
+        if (key == "enabled") {
+            val sync = Runnable {
+                val activities = resumed.toList()
+                activities.forEach { detach(it) }
+                activities.forEach { attach(it) }
+            }
+            if (Looper.myLooper() == Looper.getMainLooper()) sync.run()
+            else android.os.Handler(Looper.getMainLooper()).post(sync)
         }
     }
     fun install(application: Application) {
@@ -59,11 +65,11 @@ object InAppEdgeLighting : Application.ActivityLifecycleCallbacks {
         }
         state.value = layers.isNotEmpty()
     }
-    override fun onActivityResumed(activity: Activity) { current = WeakReference(activity); attach(activity) }
-    override fun onActivityPaused(activity: Activity) { detach(activity); if (current.get() === activity) current.clear() }
-    override fun onActivityDestroyed(activity: Activity) { detach(activity); if (current.get() === activity) current.clear() }
+    override fun onActivityResumed(activity: Activity) { resumed.add(activity); attach(activity) }
+    override fun onActivityPaused(activity: Activity) { resumed.remove(activity); detach(activity) }
+    override fun onActivityDestroyed(activity: Activity) { resumed.remove(activity); detach(activity) }
     override fun onActivityCreated(activity: Activity, state: Bundle?) {}
     override fun onActivityStarted(activity: Activity) {}
-    override fun onActivityStopped(activity: Activity) { detach(activity) }
+    override fun onActivityStopped(activity: Activity) { resumed.remove(activity); detach(activity) }
     override fun onActivitySaveInstanceState(activity: Activity, state: Bundle) {}
 }
