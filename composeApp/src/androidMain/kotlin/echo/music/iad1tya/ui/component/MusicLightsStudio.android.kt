@@ -14,6 +14,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
@@ -73,7 +75,7 @@ internal fun MusicLightsStudio(onClose: () -> Unit) {
                                 Text("Edge lighting",style=MaterialTheme.typography.titleMedium)
                                 Text(if(settings.enabled && running) "On in Meloqis" else if(settings.enabled) "Ready when Meloqis is open" else "Off",color=Color(0xFF8FE8D5),style=MaterialTheme.typography.bodySmall)
                             }
-                            Switch(settings.enabled,{update(settings.copy(enabled=it))})
+                            Switch(settings.enabled,{update(settings.copy(enabled=it))},modifier=Modifier.semantics { contentDescription="Edge lighting" })
                         }
                         Text("Starts automatically inside the app. Stops when you leave Meloqis. Your choice is remembered.",color=Color(0xFFC7C1D5),style=MaterialTheme.typography.bodySmall)
                     }
@@ -84,11 +86,11 @@ internal fun MusicLightsStudio(onClose: () -> Unit) {
                 }
                 Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.CenterVertically) {
                     Text(if(!settings.enabled) "PREVIEW • LIGHTING OFF" else if(hasAudio) "LIVE MUSIC RESPONSE" else if(demo) "STYLE PREVIEW" else "WAITING FOR MUSIC",color=Color(0xFF8FE8D5),style=MaterialTheme.typography.labelSmall,modifier=Modifier.weight(1f))
-                    Text("Demo",style=MaterialTheme.typography.bodySmall);Switch(demo,{demo=it})
+                    Text("Demo",style=MaterialTheme.typography.bodySmall);Switch(demo,{demo=it},modifier=Modifier.semantics { contentDescription="Demo preview" })
                 }
                 Text("Demo animates this preview only. In the app, your music drives the response; gentle idle motion is optional.",color=Color(0xFFA9A3B9),style=MaterialTheme.typography.bodySmall)
                 Row(horizontalArrangement=Arrangement.spacedBy(8.dp)) {
-                    listOf("Design","Placement","Behavior").forEachIndexed { index,name -> FilterChip(tab==index,{tab=index},label={Text(name)}) }
+                    listOf("Design","Placement","Behavior").forEachIndexed { index,name -> FilterChip(tab==index,{tab=index},label={Text(name)},modifier=Modifier.weight(1f)) }
                 }
                 when(tab) {
                     0 -> {
@@ -190,5 +192,5 @@ internal fun MusicLightsStudio(onClose: () -> Unit) {
     }
 }
 @Composable private fun StudioSwitch(label: String, enabled: Boolean, change: (Boolean) -> Unit) {
-    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) { Text(label, Modifier.weight(1f)); Switch(enabled, change) }
+    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) { Text(label, Modifier.weight(1f)); Switch(enabled, change, modifier = Modifier.semantics { contentDescription = label }) }
 }
