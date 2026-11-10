@@ -69,12 +69,20 @@ fun ListeningRoom(
     items: List<HeroCarouselItem>,
     modifier: Modifier = Modifier,
     accentColor: Color = MaterialTheme.colorScheme.primary,
+    onPrepare: suspend (String) -> Unit = {},
 ) {
     if (items.isEmpty()) return
 
     val pagerState = rememberPagerState(pageCount = { items.size })
     val surface = MaterialTheme.colorScheme.surfaceContainerHigh
     val lifecycleState by LocalLifecycleOwner.current.lifecycle.currentStateAsState()
+    androidx.compose.runtime.LaunchedEffect(pagerState.settledPage, items.map { it.id }, lifecycleState) {
+        if (lifecycleState.isAtLeast(Lifecycle.State.RESUMED)) {
+            kotlinx.coroutines.delay(750)
+            items.getOrNull(pagerState.settledPage)?.id?.let { onPrepare(it) }
+        }
+    }
+
 
     Column(modifier) {
         Row(

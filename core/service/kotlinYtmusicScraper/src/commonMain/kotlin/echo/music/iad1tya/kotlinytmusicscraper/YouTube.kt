@@ -90,6 +90,8 @@ import io.ktor.http.URLBuilder
 import io.ktor.http.parseQueryString
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.channelFlow
@@ -128,6 +130,24 @@ private const val TAG = "YouTubeScraper"
 
 class YouTube {
     private val ytMusic = Ytmusic()
+    private val directAudioLock = Mutex()
+    private val directAudioFailures = linkedMapOf<String, Long>()
+
+    @OptIn(ExperimentalTime::class)
+    suspend fun invalidateDirectAudio(videoId: String) {
+        directAudioLock.withLock {
+            if (directAudioFailures.size >= 32) directAudioFailures.remove(directAudioFailures.keys.first())
+            directAudioFailures[videoId] = Clock.System.now().toEpochMilliseconds() + 300_000L
+        }
+    }
+
+    @OptIn(ExperimentalTime::class)
+    private suspend fun canUseDirectAudio(videoId: String): Boolean = directAudioLock.withLock {
+        val until = directAudioFailures[videoId] ?: return@withLock true
+        if (until > Clock.System.now().toEpochMilliseconds()) false
+        else { directAudioFailures.remove(videoId); true }
+    }
+
 
     private val tidalTokenMutex = Mutex()
     private var tidalAccessToken: String? = null
@@ -1287,8 +1307,10 @@ class YouTube {
         videoId: String,
         playlistId: String? = null,
         noLogIn: Boolean = false,
+        audioOnly: Boolean = false,
     ): Result<Triple<String?, PlayerResponse, MediaType>> =
         runCatching {
+          coroutineScope {
             val cpn =
                 (1..16)
                     .map {
@@ -1300,6 +1322,9 @@ class YouTube {
                         ]
                     }.joinToString("")
 
+            val directRequest = if (audioOnly && canUseDirectAudio(videoId)) {
+                async(Dispatchers.IO) { ytMusic.getDirectAudioFormats(videoId, cpn) }
+            } else null
             var decodedSigResponse: PlayerResponse? = null
             val tempRes =
                 ytMusic
@@ -1372,7 +1397,22 @@ class YouTube {
                         )
                     }
 
-            val response = newPipePlayer(videoId, tempRes)
+            val directAudio = if (audioOnly && tempRes.playabilityStatus.status == "OK") {
+                directRequest?.await().orEmpty()
+            } else emptyList()
+            Logger.d(TAG, "Direct audio candidates: ${directAudio.size}")
+            // Let the actual selected media GET validate the stream, rather than serial HEAD preflights.
+            // invalidateFormat marks a failed direct route so the existing retry uses the full fallback.
+            val directResponse = directAudio.takeIf { it.isNotEmpty() }?.let {
+                Logger.d(TAG, "Direct audio response ready")
+                tempRes.copy(streamingData = tempRes.streamingData?.copy(
+                    formats = emptyList(),
+                    adaptiveFormats = tempRes.streamingData.adaptiveFormats.mapNotNull { format ->
+                        directAudio.find { candidate -> candidate.first == format.itag }?.let { candidate -> format.copy(url = candidate.second) }
+                    },
+                ))
+            }
+            val response = directResponse ?: newPipePlayer(videoId, tempRes)
             if (response != null) {
                 decodedSigResponse = response
                 Logger.d(TAG, "YouTube Player found URL")
@@ -1387,7 +1427,7 @@ class YouTube {
                     ?.firstOrNull()
             val thumbnails =
                 if (firstThumb?.height == firstThumb?.width && firstThumb != null) MediaType.Song else MediaType.Video
-            return@runCatching Triple(
+            return@coroutineScope Triple(
                 cpn,
                 decodedSigResponse.copy(
                     videoDetails = decodedSigResponse.videoDetails?.copy(),
@@ -1395,6 +1435,7 @@ class YouTube {
                 ),
                 thumbnails,
             )
+          }
         }
 
     suspend fun updateWatchTime(

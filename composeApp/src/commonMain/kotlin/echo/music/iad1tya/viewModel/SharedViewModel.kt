@@ -123,6 +123,24 @@ class SharedViewModel(
     private val lyricsCanvasRepository: LyricsCanvasRepository,
     private val cacheRepository: CacheRepository,
 ) : BaseViewModel() {
+    private val audioPreparationLock = kotlinx.coroutines.sync.Mutex()
+
+    suspend fun prepareAudio(videoId: String) {
+        if (videoId.isBlank() || (controllerState.value.isPlaying && timeline.value.loading)) return
+        audioPreparationLock.lock()
+        try {
+            if ((controllerState.value.isPlaying && timeline.value.loading) || dataStoreManager.dataSaver.first() == DataStoreManager.TRUE) return
+            val url = streamRepository.getStream(dataStoreManager, videoId, isDownloading = false, isVideo = false).first()
+            if (!url.isNullOrEmpty() && dataStoreManager.dataSaver.first() != DataStoreManager.TRUE) {
+                val format = streamRepository.getNewFormat(videoId).first()
+                cacheRepository.prepareAudio(videoId, url, format?.contentLength)
+                Logger.d("PlaybackPreparation", "Ready $videoId")
+            }
+        } catch (cancelled: kotlinx.coroutines.CancellationException) { throw cancelled }
+        catch (_: Exception) { Logger.d("PlaybackPreparation", "Optional preparation unavailable") }
+        finally { audioPreparationLock.unlock() }
+    }
+
     var isFirstLiked: Boolean = false
     var isFirstMiniplayer: Boolean = false
     var isFirstSuggestions: Boolean = false

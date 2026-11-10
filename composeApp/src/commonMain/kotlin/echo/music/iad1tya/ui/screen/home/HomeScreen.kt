@@ -590,6 +590,7 @@ fun HomeScreen(
                                     if (index == 0 && heroItems.isNotEmpty()) {
                                         ListeningRoom(
                                             items = heroItems,
+                                            onPrepare = { sharedViewModel.prepareAudio(it) },
                                             accentColor = nowPlayingColor ?: MaterialTheme.colorScheme.primary,
                                             modifier =
                                                 Modifier

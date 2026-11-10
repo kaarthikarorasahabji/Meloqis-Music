@@ -2,6 +2,7 @@ package echo.music.iad1tya.media3.repository
 
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.datasource.cache.SimpleCache
+import kotlinx.coroutines.ensureActive
 import echo.music.iad1tya.common.Config
 import echo.music.iad1tya.domain.repository.CacheRepository
 
@@ -10,7 +11,16 @@ internal class CacheRepositoryImpl(
     private val playerCache: SimpleCache,
     private val downloadCache: SimpleCache,
     private val canvasCache: SimpleCache,
+    private val audioSourceFactory: androidx.media3.datasource.DataSource.Factory,
 ) : CacheRepository {
+    override suspend fun prepareAudio(videoId: String, url: String, length: Long?) {
+        kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+            echo.music.iad1tya.media3.di.PlaybackStreaming.prime(audioSourceFactory, videoId, url, length) {
+                ensureActive()
+            }
+        }
+    }
+
     override suspend fun getCacheSize(cacheName: String): Long =
         when (cacheName) {
             Config.PLAYER_CACHE -> {

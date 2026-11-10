@@ -77,6 +77,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.currentStateAsState
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import coil3.compose.AsyncImage
@@ -182,6 +183,24 @@ fun SearchScreen(
     val focusRequester = remember { FocusRequester() }
 
     var isFocused by rememberSaveable { mutableStateOf(false) }
+    val prepareLifecycle by androidx.lifecycle.compose.LocalLifecycleOwner.current.lifecycle.currentStateAsState()
+    val prepareId = when (searchUIType) {
+        SearchUIType.SEARCH_SUGGESTIONS -> searchScreenState.suggestYTItems.firstNotNullOfOrNull {
+            (it as? SongsResult)?.videoId ?: (it as? VideosResult)?.videoId
+        }
+        SearchUIType.SEARCH_RESULTS -> if (searchScreenState.searchType == SearchType.ALL || searchScreenState.searchType == SearchType.SONGS) {
+            searchScreenState.searchSongsResult.firstOrNull()?.videoId
+                ?: searchScreenState.searchAllResult.filterIsInstance<SongsResult>().firstOrNull()?.videoId
+        } else null
+        else -> null
+    }
+    LaunchedEffect(prepareId, searchText, searchUIType, prepareLifecycle) {
+        if (prepareId != null && searchText.length >= 3 && prepareLifecycle.isAtLeast(androidx.lifecycle.Lifecycle.State.STARTED)) {
+            kotlinx.coroutines.delay(750)
+            sharedViewModel.prepareAudio(prepareId)
+        }
+    }
+
 
     // The bar floats OVER the content (a Box, not a Column) so there is something behind it to
     // blur — same arrangement HomeScreen uses. Each branch owns a scroll state, hoisted here so

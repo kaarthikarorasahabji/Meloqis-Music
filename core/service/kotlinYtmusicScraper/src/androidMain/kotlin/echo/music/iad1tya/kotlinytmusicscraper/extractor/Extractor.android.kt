@@ -30,6 +30,18 @@ actual class Extractor {
         ServiceList.YouTube.tokens = cookie ?: ""
     }
 
+    actual fun directAudioStreams(videoId: String, cpn: String): List<Pair<Int, String>> = runCatching {
+        // Fetch only the successful client's player response, without watch-page/optional metadata extraction.
+        val service = BraveServiceList.YouTube
+        val response = org.schabi.newpipe.extractor.services.youtube.YoutubeStreamHelper.getVisionOsPlayerResponse(
+            service.contentCountry, service.localization, videoId, cpn,
+        )
+        response.getObject("streamingData").getArray("adaptiveFormats")
+            .filterIsInstance<com.grack.nanojson.JsonObject>()
+            .filter { it.getString("mimeType", "").startsWith("audio/") }
+            .mapNotNull { format -> format.getString("url")?.takeIf { it.startsWith("https://") }?.let { format.getInt("itag") to it } }
+    }.onFailure { Logger.d(TAG, "Direct audio unavailable; using extractor fallback") }.getOrDefault(emptyList())
+
     actual fun newPipePlayer(videoId: String): List<Pair<Int, String>> {
         try {
             val streamInfo =

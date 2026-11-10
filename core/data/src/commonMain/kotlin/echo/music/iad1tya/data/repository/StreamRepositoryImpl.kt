@@ -30,6 +30,7 @@ import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.lastOrNull
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
@@ -42,6 +43,7 @@ internal class StreamRepositoryImpl(
     private val metadataScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private val metadataLock = Mutex()
     private val metadataPending = mutableSetOf<String>()
+    private val streamRequests = echo.music.iad1tya.data.concurrency.InFlightRequests<String, String?>(metadataScope)
 
     private fun enrichMetadata(videoId: String, title: String, author: String, duration: Int) {
         metadataScope.launch {
@@ -115,6 +117,24 @@ internal class StreamRepositoryImpl(
         isDownloading: Boolean,
         isVideo: Boolean,
         muxed: Boolean,
+    ): Flow<String?> = flow {
+        val quality = if (isDownloading) dataStoreManager.downloadQuality.first() else dataStoreManager.quality.first()
+        val key = "$videoId|$isDownloading|$isVideo|$muxed|$quality"
+        emit(streamRequests.get(key) {
+            // A foreground request can arrive just after the preparation job committed its format.
+            val cached = if (!isDownloading && !isVideo && !muxed) localDataSource.getNewFormat(videoId) else null
+            val requestedItag = QUALITY.itags.getOrNull(QUALITY.items.indexOf(quality))
+            if (cached?.audioUrl != null && cached.expiredTime > now() && cached.itag == requestedItag) cached.audioUrl
+            else resolveStream(dataStoreManager, videoId, isDownloading, isVideo, muxed).lastOrNull()
+        })
+    }.flowOn(Dispatchers.IO)
+
+    private fun resolveStream(
+        dataStoreManager: DataStoreManager,
+        videoId: String,
+        isDownloading: Boolean,
+        isVideo: Boolean,
+        muxed: Boolean,
     ): Flow<String?> =
         flow {
             val itag =
@@ -140,7 +160,7 @@ internal class StreamRepositoryImpl(
                 }
             // 134, 136, 137
             youTube
-                .player(videoId, noLogIn = muxed)
+                .player(videoId, noLogIn = muxed, audioOnly = !isVideo && !muxed)
                 .onSuccess { data ->
                     val response = data.second
                     if (data.third == MediaType.Song) {
@@ -366,6 +386,7 @@ internal class StreamRepositoryImpl(
 
     override suspend fun invalidateFormat(videoId: String) {
         withContext(Dispatchers.IO) {
+            youTube.invalidateDirectAudio(videoId)
             localDataSource.getNewFormat(videoId)?.let { format ->
                 Logger.d("Stream", "Invalidating cached format for $videoId")
                 localDataSource.updateNewFormat(

@@ -15,5 +15,7 @@ expect class Extractor() {
         track: SongItem,
     ): DownloadProgress
 
+    fun directAudioStreams(videoId: String, cpn: String): List<Pair<Int, String>>
+
     fun newPipePlayer(videoId: String): List<Pair<Int, String>>
 }

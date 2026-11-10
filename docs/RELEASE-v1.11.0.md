@@ -3,6 +3,9 @@ Meloqis Music 1.11.0 — Quieter screens, quicker playback
 - Removed the large Edge lighting cards from Home and Settings. Lighting is a normal Settings option, with customization and the remembered on/off switch.
 - Lighting requires an unlocked, interactive screen and a focused Meloqis activity. Losing focus, locking the phone or leaving the app removes the decorative layer; a charging wake cannot start it by itself.
 - Audio no longer waits for optional BPM/key metadata or an extra URL-check request before opening the stream. Expired URL recovery remains enabled.
+- Audio resolution uses a direct player response alongside music metadata, with the full extractor retained as a fallback. Failed direct routes use the fallback on retry.
+- Home picks and the top playable search suggestion can prepare a small audio header/index while visible. Preparation is disabled in Data Saver and capped at 128 KiB; unsupported range servers only prepare the header. In-flight lookups are shared so a tap does not duplicate preparation.
+- Removed repeated Android mini-player pixel readback that was stalling rendering and failing on hardware artwork bitmaps.
 - Playback starts with a short buffer while incoming audio fills the playback cache. Reduced excessive read-ahead and delayed next-track preloading until the selected track has buffered.
 - Removed full-file range parameters so the media player controls bounded streaming requests. Offline Download remains available separately.
 

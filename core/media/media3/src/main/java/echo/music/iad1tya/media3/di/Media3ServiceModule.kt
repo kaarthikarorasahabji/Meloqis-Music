@@ -227,6 +227,7 @@ private val mediaServiceModule =
                 playerCache = get(named(PLAYER_CACHE)),
                 downloadCache = get(named(DOWNLOAD_CACHE)),
                 canvasCache = get(named(CANVAS_CACHE)),
+                audioSourceFactory = provideCacheDataSource(get(named(DOWNLOAD_CACHE)), get(named(PLAYER_CACHE)), androidContext(), get<DataStoreManager>().playbackProxy()),
             )
         }
     }
@@ -376,6 +377,13 @@ private fun provideExtractorFactory(): ExtractorsFactory =
         )
     }
 
+private fun DataStoreManager.playbackProxy(): Proxy? = getJVMProxy()?.let {
+    Proxy(when (it.type) {
+        DataStoreManager.ProxyType.PROXY_TYPE_HTTP -> Proxy.Type.HTTP
+        DataStoreManager.ProxyType.PROXY_TYPE_SOCKS -> Proxy.Type.SOCKS
+    }, java.net.InetSocketAddress(it.host, it.port))
+}
+
 @UnstableApi
 private fun provideMediaSourceFactory(
     context: Context,
@@ -391,15 +399,7 @@ private fun provideMediaSourceFactory(
                 downloadCache,
                 playerCache,
                 context,
-                dataStoreManager.getJVMProxy()?.let {
-                    Proxy(
-                        when (it.type) {
-                            DataStoreManager.ProxyType.PROXY_TYPE_HTTP -> Proxy.Type.HTTP
-                            DataStoreManager.ProxyType.PROXY_TYPE_SOCKS -> Proxy.Type.SOCKS
-                        },
-                        java.net.InetSocketAddress(it.host, it.port),
-                    )
-                },
+                dataStoreManager.playbackProxy(),
             ),
             downloadCache,
             playerCache,

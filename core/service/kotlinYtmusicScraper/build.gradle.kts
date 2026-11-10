@@ -98,6 +98,7 @@ kotlin {
 
                 implementation(libs.pipepipe.extractor)
                 implementation(libs.brave.extractor)
+                implementation("com.github.TeamNewPipe:nanojson:c7a6c1c08d16b6d5ecded34758e6415e07be2166")
                 implementation(libs.okhttp3.okhttp)
             }
         }
@@ -116,6 +117,7 @@ kotlin {
             dependencies {
                 implementation(libs.pipepipe.extractor)
                 implementation(libs.brave.extractor)
+                implementation("com.github.TeamNewPipe:nanojson:c7a6c1c08d16b6d5ecded34758e6415e07be2166")
                 implementation(libs.okhttp3.okhttp)
             }
         }

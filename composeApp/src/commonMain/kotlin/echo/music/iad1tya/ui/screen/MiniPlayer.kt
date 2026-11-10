@@ -201,6 +201,11 @@ fun MiniPlayer(
     )
 
     LaunchedEffect(layer, useGlassSurface) {
+        // Avoid GPU readback stalls and hardware-bitmap failures on Android.
+        if (getPlatform() != Platform.Desktop) {
+            luminanceAnimation.snapTo(0.5f)
+            return@LaunchedEffect
+        }
         val buffer = IntArray(25)
         while (isActive && useGlassSurface) {
             try {

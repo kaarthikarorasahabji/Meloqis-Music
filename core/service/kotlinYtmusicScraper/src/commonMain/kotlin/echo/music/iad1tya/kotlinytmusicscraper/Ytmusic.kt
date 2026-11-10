@@ -251,6 +251,8 @@ class Ytmusic {
             "SAPISIDHASH ${currentTime}_$sapisidHash"
         }
 
+    fun getDirectAudioFormats(videoId: String, cpn: String) = extractor.directAudioStreams(videoId, cpn)
+
     fun getNewPipePlayer(videoId: String): List<Pair<Int, String>> = extractor.newPipePlayer(videoId)
 
     fun mergeAudioVideoDownload(filePath: String): DownloadProgress = extractor.mergeAudioVideoDownload(filePath)
