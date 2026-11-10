@@ -96,10 +96,10 @@ kotlin {
                 implementation(libs.ffmpeg.kit.audio)
                 implementation(libs.gson)
 
-                implementation(libs.pipepipe.extractor) {
+                implementation(libs.pipepipe.extractor.get().toString()) {
                     exclude(group = "com.google.protobuf", module = "protobuf-java")
                 }
-                implementation(libs.brave.extractor) {
+                implementation(libs.brave.extractor.get().toString()) {
                     exclude(group = "com.google.protobuf", module = "protobuf-java")
                 }
                 implementation("com.github.TeamNewPipe:nanojson:c7a6c1c08d16b6d5ecded34758e6415e07be2166")
@@ -119,10 +119,10 @@ kotlin {
 
         jvmMain {
             dependencies {
-                implementation(libs.pipepipe.extractor) {
+                implementation(libs.pipepipe.extractor.get().toString()) {
                     exclude(group = "com.google.protobuf", module = "protobuf-java")
                 }
-                implementation(libs.brave.extractor) {
+                implementation(libs.brave.extractor.get().toString()) {
                     exclude(group = "com.google.protobuf", module = "protobuf-java")
                 }
                 implementation("com.github.TeamNewPipe:nanojson:c7a6c1c08d16b6d5ecded34758e6415e07be2166")
