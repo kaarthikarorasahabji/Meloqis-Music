@@ -19,6 +19,14 @@ import echo.music.iad1tya.kotlinytmusicscraper.YouTube
 import echo.music.iad1tya.kotlinytmusicscraper.models.MediaType
 import echo.music.iad1tya.kotlinytmusicscraper.models.response.PlayerResponse
 import echo.music.iad1tya.logger.Logger
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeoutOrNull
+import kotlinx.coroutines.ensureActive
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
 import kotlinx.coroutines.flow.Flow
@@ -31,12 +39,34 @@ internal class StreamRepositoryImpl(
     private val localDataSource: LocalDataSource,
     private val youTube: YouTube,
 ) : StreamRepository {
+    private val metadataScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    private val metadataLock = Mutex()
+    private val metadataPending = mutableSetOf<String>()
+
+    private fun enrichMetadata(videoId: String, title: String, author: String, duration: Int) {
+        metadataScope.launch {
+            if (!metadataLock.withLock { metadataPending.add(videoId) }) return@launch
+            try {
+                val original = localDataSource.getNewFormat(videoId) ?: return@launch
+                val query = "$title $author".replace(Regex("[()]"), " ").replace('.', ' ').trim()
+                val metadata = withTimeoutOrNull(3_000) { youTube.searchTidalMetadata(query, duration).getOrNull() } ?: return@launch
+                ensureActive()
+                val current = localDataSource.getNewFormat(videoId) ?: return@launch
+                if (current.audioUrl == original.audioUrl && current.expiredTime == original.expiredTime) {
+                    localDataSource.updateNewFormat(current.copy(bpm=metadata.bpm,musicKey=metadata.musicKey,keyScale=metadata.keyScale))
+                }
+            } catch (cancelled: CancellationException) { throw cancelled }
+            catch (e: Exception) { Logger.w("Stream", "Optional audio metadata unavailable: ${e.message}") }
+            finally { metadataLock.withLock { metadataPending.remove(videoId) } }
+        }
+    }
+
     override suspend fun insertNewFormat(newFormat: NewFormatEntity) =
         withContext(Dispatchers.IO) {
             localDataSource.insertNewFormat(newFormat)
         }
 
-    override fun getNewFormat(videoId: String): Flow<NewFormatEntity?> = flow { emit(localDataSource.getNewFormat(videoId)) }.flowOn(Dispatchers.Main)
+    override fun getNewFormat(videoId: String): Flow<NewFormatEntity?> = flow { emit(localDataSource.getNewFormat(videoId)) }.flowOn(Dispatchers.IO)
 
     override suspend fun getFormatFlow(videoId: String) = localDataSource.getNewFormatAsFlow(videoId)
 
@@ -173,37 +203,6 @@ internal class StreamRepositoryImpl(
                     Logger.d("Stream", "expireInSeconds ${response.streamingData?.expiresInSeconds}")
                     Logger.w("Stream", "expired at ${now().plusSeconds(response.streamingData?.expiresInSeconds?.toLong() ?: 0L)}")
                     val durationSecond = response.videoDetails?.lengthSeconds?.toIntOrNull()
-                    // AutoMix metadata from Tidal official API
-                    var tidalBpm: Int? = null
-                    var tidalMusicKey: String? = null
-                    var tidalKeyScale: String? = null
-                    if (!isVideo && durationSecond != null && data.third == MediaType.Song) {
-                        val title = response.videoDetails?.title ?: ""
-                        val author = response.videoDetails?.author ?: ""
-                        val q =
-                            "$title $author"
-                                .replace(
-                                    Regex("\\((feat\\.|ft.|cùng với|con|mukana|com|avec|合作音乐人: ) "),
-                                    " ",
-                                ).replace(
-                                    Regex("( và | & | и | e | und |, |和| dan)"),
-                                    " ",
-                                ).replace("  ", " ")
-                                .replace(Regex("([()])"), "")
-                                .replace(".", " ")
-                                .replace("  ", " ")
-                        Logger.d("Stream", "Search Tidal metadata for: $q")
-                        youTube
-                            .searchTidalMetadata(q, durationSecond)
-                            .onSuccess { metadata ->
-                                Logger.w("Stream", "Tidal metadata: $metadata")
-                                tidalBpm = metadata.bpm
-                                tidalMusicKey = metadata.musicKey
-                                tidalKeyScale = metadata.keyScale
-                            }.onFailure {
-                                Logger.e("Stream", "Tidal metadata error: ${it.message}", it)
-                            }
-                    }
                     insertNewFormat(
                         NewFormatEntity(
                             videoId = if (VIDEO_QUALITY.itags.contains(format?.itag)) "${MERGING_DATA_TYPE.VIDEO}$videoId" else videoId,
@@ -248,22 +247,19 @@ internal class StreamRepositoryImpl(
                             expiredTime = now().plusSeconds(response.streamingData?.expiresInSeconds?.toLong() ?: 0L),
                             audioUrl = if (muxed) response.streamingData?.hlsManifestUrl else format?.url,
                             videoUrl = if (muxed) response.streamingData?.hlsManifestUrl else videoFormat?.url,
-                            bpm = tidalBpm,
-                            musicKey = tidalMusicKey,
-                            keyScale = tidalKeyScale,
                         ),
                     )
+                    // Never wait for optional BPM/key lookups before opening the media stream.
+                    if (!isVideo && !isDownloading && durationSecond != null && data.third == MediaType.Song) {
+                        enrichMetadata(videoId,response.videoDetails?.title.orEmpty(),response.videoDetails?.author.orEmpty(),durationSecond)
+                    }
                     if (data.first != null) {
                         emit(
                             if (muxed) {
                                 response.streamingData?.hlsManifestUrl
                             } else {
                                 format?.url?.let { url ->
-                                    if (youTube.isManifestUrl(url)) {
-                                        url.plus("&cpn=${data.first}")
-                                    } else {
-                                        url.plus("&cpn=${data.first}&range=0-${format.contentLength ?: 10000000}")
-                                    }
+                                    url.plus("&cpn=${data.first}")
                                 }
                             },
                         )
@@ -272,13 +268,7 @@ internal class StreamRepositoryImpl(
                             if (muxed) {
                                 response.streamingData?.hlsManifestUrl
                             } else {
-                                format?.url?.let { url ->
-                                    if (youTube.isManifestUrl(url)) {
-                                        url
-                                    } else {
-                                        url.plus("&range=0-${format.contentLength ?: 10000000}")
-                                    }
-                                }
+                                format?.url
                             },
                         )
                     }

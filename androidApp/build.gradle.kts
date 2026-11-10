@@ -77,7 +77,9 @@ android {
                     "bg",
                 )
         }
-        testInstrumentationRunner = if (providers.gradleProperty("edgeRenderProbe").isPresent) {
+        testInstrumentationRunner = if (providers.gradleProperty("streamingProbe").isPresent) {
+            "echo.music.iad1tya.test.StreamingPlaybackProbe"
+        } else if (providers.gradleProperty("edgeRenderProbe").isPresent) {
             "echo.music.iad1tya.test.EdgeLightingRenderProbe"
         } else if (providers.gradleProperty("inAppLightingProbe").isPresent) {
             "echo.music.iad1tya.test.InAppLightingProbe"
@@ -196,6 +198,8 @@ tasks.matching { it.name == "uploadCrashlyticsMappingFilePerformance" }.configur
 }
 
 dependencies {
+    androidTestImplementation(libs.media3.exoplayer)
+
     coreLibraryDesugaring(libs.desugaring)
     val debugImplementation = "debugImplementation"
     debugImplementation(libs.ui.tooling)

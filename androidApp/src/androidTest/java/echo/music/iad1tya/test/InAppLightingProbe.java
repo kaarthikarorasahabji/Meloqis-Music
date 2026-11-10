@@ -35,9 +35,13 @@ public final class InAppLightingProbe extends Instrumentation {
             if(LightsPreferences.INSTANCE.read(prefs).getEnabled())throw new AssertionError("Off choice did not persist");
             runOnMainSync(()->prefs.edit().putBoolean("enabled",true).commit());waitState(true);
             final Activity screen=activity;
+            final android.app.AlertDialog[] dialog=new android.app.AlertDialog[1];
+            runOnMainSync(()->{dialog[0]=new android.app.AlertDialog.Builder(screen).setMessage("Focus lifecycle check").create();dialog[0].show();});
+            waitState(false);
+            runOnMainSync(()->dialog[0].dismiss());waitState(true);
             runOnMainSync(()->screen.moveTaskToBack(true));waitState(false);
             passed=true;
-            result.putString("stream","IN_APP_LIGHTS_OK: default on, persistent off, re-enable, background stop, no system overlay window\n");
+            result.putString("stream","IN_APP_LIGHTS_OK: default on, persistent off, re-enable, focus loss/recovery, background stop, no system overlay window\n");
         } catch(Throwable t) { result.putString("stream","IN_APP_LIGHTS_FAILED: "+t+"\n"); }
         finally {
             if(activity!=null){final Activity screen=activity;runOnMainSync(screen::finishAffinity);waitForIdleSync();}

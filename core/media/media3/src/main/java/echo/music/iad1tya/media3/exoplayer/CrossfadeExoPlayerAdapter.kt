@@ -576,18 +576,8 @@ internal class CrossfadeExoPlayerAdapter(
             ExoPlayer
                 .Builder(context)
                 .setAudioAttributes(audioAttributes, false)
-                .setLoadControl(
-                    DefaultLoadControl
-                        .Builder()
-                        .setBufferDurationsMs(
-                            // Data Saver shrinks the read-ahead 4x -> 1x so less audio is fetched
-                            // beyond what is played. Bitrate is untouched, so quality is unchanged.
-                            DefaultLoadControl.DEFAULT_MIN_BUFFER_MS * (if (dataSaverActive) 1 else 4),
-                            DefaultLoadControl.DEFAULT_MAX_BUFFER_MS * (if (dataSaverActive) 1 else 4),
-                            0,
-                            0,
-                        ).build(),
-                ).setWakeMode(C.WAKE_MODE_NETWORK)
+                .setLoadControl(echo.music.iad1tya.media3.di.PlaybackStreaming.loadControl(dataSaverActive))
+                .setWakeMode(C.WAKE_MODE_NETWORK)
                 .setHandleAudioBecomingNoisy(true)
                 .setSeekForwardIncrementMs(5000)
                 .setSeekBackIncrementMs(5000)
@@ -1669,6 +1659,7 @@ internal class CrossfadeExoPlayerAdapter(
                             // Reset retry counter on successful playback
                             retryCount = 0
                             retryVideoId = null
+                            triggerPrecachingInternal()
                         }
 
                         Player.STATE_BUFFERING -> {
@@ -2873,13 +2864,19 @@ internal class CrossfadeExoPlayerAdapter(
      * and calls prepare(), which triggers URL resolution and buffering via MediaSourceFactory.
      */
     private fun triggerPrecachingInternal() {
-        if (!precacheEnabled || playlist.isEmpty() || isCastActive) return
+        if (!precacheEnabled || playlist.isEmpty() || isCastActive || currentPlayer?.playbackState != Player.STATE_READY) return
 
         cancelPrecaching()
         Logger.d(TAG, "Trigger precache")
         precacheJob =
             coroutineScope.launch {
                 try {
+                    // Give the selected song a head start before sharing bandwidth with the queue.
+                    delay(1_500)
+                    while (isActive && (currentPlayer?.playbackState != Player.STATE_READY ||
+                            (currentPlayer?.totalBufferedDuration ?: 0L) < 3_000L)) {
+                        delay(500)
+                    }
                     val indicesToPrecache = mutableListOf<Int>()
 
                     val index = localCurrentMediaItemIndex

@@ -303,13 +303,10 @@ private fun provideResolvingDataSourceFactory(
                     if (videoUrl != null && it.expiredTime > now()) {
                         Logger.d("Stream", videoUrl)
                         Logger.w("Stream", "Video from format")
-                        val is403Url = streamRepository.is403Url(videoUrl).firstOrNull() != false
-                        Logger.d("Stream", "is 403 $is403Url")
-                        if (!is403Url) {
-                            dataSpecReturn = dataSpec.withUri(videoUrl.toUri()).subrange(dataSpec.uriPositionOffset, chunkLength)
-                            resolved = true
-                            return@runBlocking
-                        }
+                        // The media request validates the URL; actual 403/410 errors use the existing recovery path.
+                        dataSpecReturn = dataSpec.withUri(videoUrl.toUri()).subrange(dataSpec.uriPositionOffset, chunkLength)
+                        resolved = true
+                        return@runBlocking
                     }
                 }
                 streamRepository
@@ -331,13 +328,10 @@ private fun provideResolvingDataSourceFactory(
                     if (audioUrl != null && it.expiredTime > now()) {
                         Logger.d("Stream", audioUrl)
                         Logger.w("Stream", "Audio from format")
-                        val is403Url = streamRepository.is403Url(audioUrl).firstOrNull() != false
-                        Logger.d("Stream", "is 403 $is403Url")
-                        if (!is403Url) {
-                            dataSpecReturn = dataSpec.withUri(audioUrl.toUri()).subrange(dataSpec.uriPositionOffset, chunkLength)
-                            resolved = true
-                            return@runBlocking
-                        }
+                        // The media request validates the URL; actual 403/410 errors use the existing recovery path.
+                        dataSpecReturn = dataSpec.withUri(audioUrl.toUri()).subrange(dataSpec.uriPositionOffset, chunkLength)
+                        resolved = true
+                        return@runBlocking
                     }
                 }
                 streamRepository
@@ -471,48 +465,19 @@ private fun provideCacheDataSource(
     context: Context,
     proxy: Proxy? = null,
 ): CacheDataSource.Factory =
-    CacheDataSource
-        .Factory()
-        .setCache(downloadCache)
-        .setUpstreamDataSourceFactory(
-            CacheDataSource
-                .Factory()
-                .setCache(playerCache)
-                .setUpstreamDataSourceFactory(
-                    DefaultDataSource
-                        .Factory(
-                            context,
-                            OkHttpDataSource.Factory(
-                                OkHttpClient
-                                    .Builder()
-                                    .connectTimeout(30.seconds)
-                                    .readTimeout(30.seconds)
-                                    .proxy(
-                                        proxy,
-                                    ).addInterceptor(
-                                        HttpLoggingInterceptor()
-                                            .apply {
-                                                level = HttpLoggingInterceptor.Level.HEADERS
-                                            },
-                                    ).build(),
-                            ),
-                        ),
-                ),
-        ).setCacheWriteDataSinkFactory(null)
-        .setFlags(CacheDataSource.FLAG_IGNORE_CACHE_ON_ERROR)
+    PlaybackStreaming.cacheFactory(
+        downloadCache,
+        playerCache,
+        DefaultDataSource.Factory(
+            context,
+            OkHttpDataSource.Factory(
+                OkHttpClient.Builder().connectTimeout(30.seconds).readTimeout(30.seconds).proxy(proxy).build(),
+            ),
+        ),
+    )
 
 @UnstableApi
-private fun provideLoadControl(): LoadControl =
-    DefaultLoadControl
-        .Builder()
-        .setBufferDurationsMs(
-            DEFAULT_MIN_BUFFER_MS * 4,
-            DEFAULT_MAX_BUFFER_MS * 4,
-            // bufferForPlaybackMs=
-            0,
-            // bufferForPlaybackAfterRebufferMs=
-            0,
-        ).build()
+private fun provideLoadControl(): LoadControl = PlaybackStreaming.loadControl()
 
 @UnstableApi
 private fun provideAudioAttributes(): AudioAttributes =

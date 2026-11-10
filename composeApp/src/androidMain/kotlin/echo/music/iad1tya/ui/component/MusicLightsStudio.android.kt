@@ -28,15 +28,11 @@ import kotlin.math.roundToInt
 @Composable
 actual fun EdgeLightingControls() {
     val context = LocalContext.current
-    Card(onClick = { context.startActivity(Intent(context, MusicLightsSettingsActivity::class.java)) }, modifier=Modifier.fillMaxWidth().padding(16.dp),
-        colors=CardDefaults.cardColors(containerColor=Color(0xFF171326)), shape=RoundedCornerShape(26.dp)) {
-        Column(Modifier.background(Brush.linearGradient(listOf(Color(0xFF242039),Color(0xFF101A26)))).padding(24.dp), verticalArrangement=Arrangement.spacedBy(9.dp)) {
-            Text("YOUR IN-APP GLOW",color=Color(0xFFBCACFA),style=MaterialTheme.typography.labelMedium)
-            Text("Edge lighting",color=Color.White,style=MaterialTheme.typography.headlineSmall)
-            Text("Colourful borders while you explore Meloqis.",color=Color(0xFFC7C1D5))
-            Text("Make it yours  →",color=Color(0xFF8FE8D5),style=MaterialTheme.typography.labelLarge)
-        }
-    }
+    SettingItem(
+        title="Edge lighting",
+        subtitle="Customize or turn off in-app lighting",
+        onClick={context.startActivity(Intent(context,MusicLightsSettingsActivity::class.java))},
+    )
 }
 
 @Composable
@@ -61,8 +57,7 @@ internal fun MusicLightsStudio(onClose: () -> Unit) {
         Column(Modifier.safeDrawingPadding()) {
             Row(Modifier.fillMaxWidth().padding(horizontal=20.dp,vertical=10.dp),verticalAlignment=Alignment.CenterVertically) {
                 Column(Modifier.weight(1f)) {
-                    Text("MELOQIS EDGE STUDIO",color=Color(0xFFBCACFA),style=MaterialTheme.typography.labelSmall)
-                    Text("A little glow. All yours.",style=MaterialTheme.typography.titleLarge)
+                    Text("Edge lighting",style=MaterialTheme.typography.titleLarge)
                 }
                 TextButton(onClick={guide=true}) { Text("Guide",color=Color(0xFF8FE8D5)) }
                 TextButton(onClick=onClose) { Text("Done",color=Color(0xFFBCACFA)) }
