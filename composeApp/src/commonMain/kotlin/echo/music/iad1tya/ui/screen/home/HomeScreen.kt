@@ -64,6 +64,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -91,6 +92,7 @@ import coil3.request.crossfade
 import echo.music.iad1tya.common.CHART_SUPPORTED_COUNTRY
 import echo.music.iad1tya.common.Config
 import echo.music.iad1tya.domain.data.model.browse.album.Track
+import echo.music.iad1tya.domain.data.entities.SongEntity
 import echo.music.iad1tya.domain.data.model.home.HomeItem
 import echo.music.iad1tya.domain.manager.DataStoreManager
 import echo.music.iad1tya.domain.data.model.home.chart.Chart
@@ -106,6 +108,10 @@ import echo.music.iad1tya.logger.Logger
 import echo.music.iad1tya.ui.component.rememberHolderPainter
 import echo.music.iad1tya.extension.isScrollingUp
 import echo.music.iad1tya.ui.component.CenterLoadingBox
+import echo.music.iad1tya.ui.component.ChoosePlaybackMoodDialog
+import echo.music.iad1tya.ui.component.CreateHomePlaylistDialog
+import echo.music.iad1tya.ui.component.PlaybackMoodRow
+import echo.music.iad1tya.ui.component.accent
 import echo.music.iad1tya.ui.component.Chip
 import echo.music.iad1tya.ui.component.DropdownButton
 import echo.music.iad1tya.ui.component.EndOfPage
@@ -121,6 +127,7 @@ import echo.music.iad1tya.ui.component.RippleIconButton
 import echo.music.iad1tya.ui.component.ShareSavedLyricsDialog
 import echo.music.iad1tya.ui.icon.History
 import echo.music.iad1tya.ui.icon.Notifications
+import echo.music.iad1tya.ui.icon.PlaylistAdd
 import echo.music.iad1tya.ui.icon.Settings
 import echo.music.iad1tya.ui.icon.echoIcons
 import echo.music.iad1tya.ui.icon.Menu
@@ -135,29 +142,21 @@ import echo.music.iad1tya.ui.navigation.destination.login.LoginDestination
 import echo.music.iad1tya.ui.theme.LocalNowPlayingColor
 import echo.music.iad1tya.ui.theme.typo
 import echo.music.iad1tya.viewModel.HomeViewModel
+import echo.music.iad1tya.viewModel.PlaybackMood
 import echo.music.iad1tya.ui.component.HomeListeningHistory
 import echo.music.iad1tya.ui.component.SongFullWidthItems
 import androidx.compose.material3.OutlinedButton
 import echo.music.iad1tya.ui.navigation.destination.search.SearchDestination
-import echo.music.iad1tya.viewModel.HomeViewModel.Companion.HOME_PARAMS_COMMUTE
-import echo.music.iad1tya.viewModel.HomeViewModel.Companion.HOME_PARAMS_ENERGIZE
-import echo.music.iad1tya.viewModel.HomeViewModel.Companion.HOME_PARAMS_FEEL_GOOD
-import echo.music.iad1tya.viewModel.HomeViewModel.Companion.HOME_PARAMS_FOCUS
 import echo.music.iad1tya.viewModel.HomeViewModel.Companion.HOME_PARAMS_MIX_FOR_YOU
-import echo.music.iad1tya.viewModel.HomeViewModel.Companion.HOME_PARAMS_PARTY
-import echo.music.iad1tya.viewModel.HomeViewModel.Companion.HOME_PARAMS_RELAX
-import echo.music.iad1tya.viewModel.HomeViewModel.Companion.HOME_PARAMS_ROMANCE
-import echo.music.iad1tya.viewModel.HomeViewModel.Companion.HOME_PARAMS_SAD
-import echo.music.iad1tya.viewModel.HomeViewModel.Companion.HOME_PARAMS_SLEEP
 import echo.music.iad1tya.viewModel.LibraryViewModel
 import echo.music.iad1tya.ui.component.GridLibraryPlaylist
 import echomusic.composeapp.generated.resources.mix_for_you
 import echomusic.composeapp.generated.resources.no_mixes_found
-import echo.music.iad1tya.viewModel.HomeViewModel.Companion.HOME_PARAMS_WORKOUT
 import echo.music.iad1tya.viewModel.ListState
 import echo.music.iad1tya.viewModel.SharedViewModel
 import dev.chrisbanes.haze.materials.HazeMaterials
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.flowOf
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.koinInject
@@ -230,6 +229,16 @@ fun HomeScreen(
     val openAppTime by sharedViewModel.openAppTime.collectAsStateWithLifecycle()
     val shareLyricsPermissions by sharedViewModel.shareSavedLyrics.collectAsStateWithLifecycle()
     val nowPlayingTrack by sharedViewModel.nowPlayingState.collectAsStateWithLifecycle()
+    val currentTrackId = nowPlayingTrack?.mediaItem?.mediaId?.takeIf(String::isNotBlank)
+    val playbackMood = key(currentTrackId) {
+        val mood by remember(currentTrackId) {
+            currentTrackId?.let(viewModel::observePlaybackMood) ?: flowOf(null)
+        }.collectAsStateWithLifecycle(initialValue = null)
+        mood
+    }
+    var showMoodPicker by remember(currentTrackId) { mutableStateOf(false) }
+    var showPlaylistDialog by rememberSaveable { mutableStateOf(false) }
+    var playlistSeed by remember { mutableStateOf<SongEntity?>(null) }
     val localHistory by viewModel.recentlyPlayed.collectAsStateWithLifecycle()
     val youtubeHistory by viewModel.youtubeListeningHistory.collectAsStateWithLifecycle()
     val explicitEnabled by viewModel.explicitContentEnabled.collectAsStateWithLifecycle(DataStoreManager.TRUE)
@@ -239,6 +248,7 @@ fun HomeScreen(
     fun playTracks(tracks: List<Track>, name: String) {
         val playable = allowedTracks(tracks)
         val first = playable.firstOrNull() ?: return
+        viewModel.rememberPlaybackMood(playable, params.takeUnless { loading })
         viewModel.setQueueData(QueueData.Data(
             listTracks = playable,
             firstPlayedTrack = first,
@@ -350,7 +360,25 @@ fun HomeScreen(
 
 
 
-    val headerTint = nowPlayingColor ?: MaterialTheme.colorScheme.primary
+    if (showMoodPicker && currentTrackId != null) {
+        ChoosePlaybackMoodDialog(
+            activeMood = playbackMood,
+            onDismiss = { showMoodPicker = false },
+            onSelect = { mood ->
+                viewModel.setPlaybackMood(currentTrackId, mood)
+                showMoodPicker = false
+            },
+        )
+    }
+    if (showPlaylistDialog) {
+        CreateHomePlaylistDialog(
+            currentSong = playlistSeed,
+            onDismiss = { showPlaylistDialog = false },
+            onCreate = libraryViewModel::createPlaylist,
+        )
+    }
+
+    val headerTint = playbackMood?.accent ?: nowPlayingColor ?: MaterialTheme.colorScheme.primary
     val headerFadeHeight = with(LocalDensity.current) { 220.dp.toPx() }
     Column(
         Modifier.fillMaxSize().background(
@@ -360,12 +388,26 @@ fun HomeScreen(
             ),
         ),
     ) {
-        HomeTopAppBar(navController = navController, accountInfo = accountInfo)
+        HomeTopAppBar(
+            navController = navController,
+            accountInfo = accountInfo,
+            onCreatePlaylist = {
+                playlistSeed = nowPlayingTrack?.songEntity ?: nowPlayingTrack?.track?.toSongEntity()
+                showPlaylistDialog = true
+            },
+        )
         HomeMoodStrip(
             params = params,
             modifier = Modifier.horizontalScroll(chipRowState),
             onSelect = viewModel::setParams,
         )
+        if (currentTrackId != null) {
+            PlaybackMoodRow(
+                mood = playbackMood,
+                onChoose = { showMoodPicker = true },
+                onBrowse = { viewModel.setParams(it.endpoint) },
+            )
+        }
         PullToRefreshBox(
             modifier = Modifier.weight(1f).fillMaxWidth(),
             state = pullToRefreshState,
@@ -524,6 +566,7 @@ fun HomeScreen(
 private fun HomeTopAppBar(
     navController: NavController,
     accountInfo: Pair<String?, String?>?,
+    onCreatePlaylist: () -> Unit,
 ) {
     TopAppBar(
         expandedHeight = 52.dp,
@@ -538,6 +581,9 @@ private fun HomeTopAppBar(
             }
         },
         actions = {
+            IconButton(onClick = onCreatePlaylist) {
+                Icon(echoIcons.PlaylistAdd, contentDescription = "Create playlist")
+            }
             IconButton(onClick = { navController.navigate(SearchDestination) { launchSingleTop = true } }) {
                 Icon(echoIcons.Search, contentDescription = stringResource(Res.string.search))
             }
@@ -565,20 +611,9 @@ private fun HomeMoodStrip(
     modifier: Modifier,
     onSelect: (String?) -> Unit,
 ) {
-    val moods = listOf(
-        Res.string.all to null,
-        Res.string.workout to HOME_PARAMS_WORKOUT,
-        Res.string.feel_good to HOME_PARAMS_FEEL_GOOD,
-        Res.string.energize to HOME_PARAMS_ENERGIZE,
-        Res.string.relax to HOME_PARAMS_RELAX,
-        Res.string.focus to HOME_PARAMS_FOCUS,
-        Res.string.mix_for_you to HOME_PARAMS_MIX_FOR_YOU,
-        Res.string.sleep to HOME_PARAMS_SLEEP,
-        Res.string.sad to HOME_PARAMS_SAD,
-        Res.string.romance to HOME_PARAMS_ROMANCE,
-        Res.string.party to HOME_PARAMS_PARTY,
-        Res.string.commute to HOME_PARAMS_COMMUTE,
-    )
+    val moods = listOf(Res.string.all to null) +
+        PlaybackMood.entries.map { it.label to it.endpoint } +
+        (Res.string.mix_for_you to HOME_PARAMS_MIX_FOR_YOU)
     Row(
         modifier = modifier.fillMaxWidth().padding(horizontal = 16.dp),
         horizontalArrangement = Arrangement.spacedBy(8.dp),

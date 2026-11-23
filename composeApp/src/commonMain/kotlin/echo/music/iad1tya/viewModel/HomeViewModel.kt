@@ -24,6 +24,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.collectLatest
@@ -58,7 +59,32 @@ class HomeViewModel(
     private val songRepository: SongRepository,
 ) : BaseViewModel() {
     private val historyRefresh = MutableStateFlow(0)
+    private val playbackMoodContext = MutableStateFlow<Pair<PlaybackMood, Set<String>>?>(null)
     val explicitContentEnabled = dataStoreManager.explicitContentEnabled
+
+    internal fun observePlaybackMood(videoId: String): Flow<PlaybackMood?> =
+        combine(dataStoreManager.getString("listening_mood_$videoId"), playbackMoodContext) { savedMood, context ->
+            PlaybackMood.entries.firstOrNull { it.name == savedMood }
+                ?: context?.first?.takeIf { videoId in context.second }
+        }.distinctUntilChanged()
+            .catch { emit(null) }
+
+    internal fun rememberPlaybackMood(tracks: List<Track>, endpoint: String?) {
+        playbackMoodContext.value = PlaybackMood.entries.firstOrNull { it.endpoint == endpoint }
+            ?.let { it to tracks.map(Track::videoId).toSet() }
+    }
+
+    internal fun setPlaybackMood(videoId: String, mood: PlaybackMood?) {
+        viewModelScope.launch {
+            try {
+                dataStoreManager.putString("listening_mood_$videoId", mood?.name.orEmpty())
+            } catch (cancelled: CancellationException) {
+                throw cancelled
+            } catch (error: Exception) {
+                Logger.e("HomeViewModel", "Saving song mood failed: ${error.message}")
+            }
+        }
+    }
 
     @OptIn(ExperimentalCoroutinesApi::class)
     val youtubeListeningHistory = combine(dataStoreManager.cookie, dataStoreManager.pageId, historyRefresh) { cookie, pageId, _ ->

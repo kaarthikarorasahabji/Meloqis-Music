@@ -290,23 +290,29 @@ class LibraryViewModel(
         }
     }
 
-    fun createPlaylist(title: String) {
+    fun createPlaylist(
+        title: String,
+        firstTrack: SongEntity? = null,
+        onComplete: (Boolean) -> Unit = {},
+    ) {
         viewModelScope.launch {
             try {
-                val localPlaylistEntity = LocalPlaylistEntity(title = title)
-                localPlaylistRepository
+                val result = localPlaylistRepository
                     .insertLocalPlaylist(
-                        localPlaylistEntity,
+                        LocalPlaylistEntity(title = title.trim()),
                         getString(Res.string.added_local_playlist),
+                        firstTrack,
                     ).lastOrNull()
-                    ?.let {
-                        log("Created playlist with id: $it")
-                    }
-                getLocalPlaylist()
+                if (result is LocalResource.Success) {
+                    makeToast(getString(Res.string.added_local_playlist))
+                    getLocalPlaylist()
+                }
+                onComplete(result is LocalResource.Success)
             } catch (cancelled: CancellationException) {
                 throw cancelled
             } catch (error: Exception) {
                 Logger.e("LibraryViewModel", "Creating playlist failed: ${error.message}")
+                onComplete(false)
             }
         }
     }

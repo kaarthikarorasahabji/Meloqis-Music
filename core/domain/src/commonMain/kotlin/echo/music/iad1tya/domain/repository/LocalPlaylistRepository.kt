@@ -106,6 +106,7 @@ interface LocalPlaylistRepository {
     fun insertLocalPlaylist(
         localPlaylist: LocalPlaylistEntity,
         successMessage: String,
+        firstTrack: SongEntity? = null,
     ): Flow<LocalResource<String>>
 
     fun deleteLocalPlaylist(

@@ -194,11 +194,21 @@ internal class LocalPlaylistRepositoryImpl(
     override fun insertLocalPlaylist(
         localPlaylist: LocalPlaylistEntity,
         successMessage: String,
+        firstTrack: SongEntity?,
     ): Flow<LocalResource<String>> =
         wrapMessageResource(
             successMessage = successMessage,
         ) {
-            localDataSource.insertLocalPlaylist(localPlaylist)
+            val id = if (firstTrack == null) {
+                localDataSource.insertLocalPlaylist(localPlaylist)
+            } else {
+                if (localDataSource.getSong(firstTrack.videoId) == null) {
+                    localDataSource.insertSong(firstTrack)
+                }
+                val tracks = listOf(firstTrack.videoId)
+                localDataSource.insertLocalPlaylistWithTracks(localPlaylist.copy(tracks = tracks), tracks)
+            }
+            check(id != -1L) { "Unable to create playlist" }
         }
 
     override fun deleteLocalPlaylist(
