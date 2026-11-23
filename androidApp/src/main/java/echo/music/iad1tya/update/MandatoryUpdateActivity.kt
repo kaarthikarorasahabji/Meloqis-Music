@@ -1,6 +1,5 @@
 package echo.music.iad1tya.update
 
-import android.app.Activity
 import android.os.Bundle
 import android.graphics.Color
 import android.graphics.Typeface
@@ -11,14 +10,16 @@ import android.widget.LinearLayout
 import android.widget.TextView
 import android.content.Intent
 import android.net.Uri
+import androidx.activity.ComponentActivity
+import androidx.activity.OnBackPressedCallback
 
 /** An app-only update screen. Android still asks the user to approve installation. */
-class MandatoryUpdateActivity : Activity() {
+class MandatoryUpdateActivity : ComponentActivity() {
     override fun onCreate(state: Bundle?) {
         super.onCreate(state)
-        if (android.os.Build.VERSION.SDK_INT >= 33) onBackInvokedDispatcher.registerOnBackInvokedCallback(
-            android.window.OnBackInvokedDispatcher.PRIORITY_DEFAULT,
-        ) { finishAffinity() }
+        onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
+            override fun handleOnBackPressed() = finishAffinity()
+        })
         window.statusBarColor = Color.rgb(18, 17, 28)
         window.navigationBarColor = Color.rgb(18, 17, 28)
         val density = resources.displayMetrics.density
@@ -58,6 +59,4 @@ class MandatoryUpdateActivity : Activity() {
         setContentView(android.widget.ScrollView(this).apply { isFillViewport = true; addView(root) })
     }
     private fun open(url: String) { runCatching { startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url))) } }
-    @Deprecated("Keep the required update screen visible until installation or exit")
-    override fun onBackPressed() { finishAffinity() }
 }

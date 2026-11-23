@@ -267,7 +267,7 @@
             android:value="8" />
 
         <service
-            android:name="echo.music.iad1tya.media3.carapp.echoMusicCarAppService"
+            android:name="echo.music.iad1tya.media3.carapp.SimpMusicCarAppService"
             android:exported="true"
             tools:ignore="ExportedService">
             <intent-filter>

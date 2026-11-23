@@ -3,6 +3,7 @@ package echo.music.iad1tya.service.backup
 import android.content.ContentValues
 import android.content.Context
 import android.os.Build
+import android.os.Environment
 import android.provider.MediaStore
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
@@ -154,12 +155,15 @@ class AutoBackupWorker(
         val fileName = "echomusic_backup_$timestamp.zip"
 
         return try {
+            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
+                backupFile.copyTo(legacyBackupDirectory().resolve(fileName))
+                Logger.i(TAG, "Backup saved to Downloads/echoMusic/$fileName")
+                return true
+            }
             val contentValues = ContentValues().apply {
                 put(MediaStore.Downloads.DISPLAY_NAME, fileName)
                 put(MediaStore.Downloads.MIME_TYPE, "application/zip")
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                    put(MediaStore.Downloads.RELATIVE_PATH, "Download/echoMusic")
-                }
+                put(MediaStore.Downloads.RELATIVE_PATH, "Download/echoMusic")
             }
 
             val uri = context.contentResolver.insert(
@@ -184,23 +188,22 @@ class AutoBackupWorker(
 
     private fun cleanupOldBackups(maxFiles: Int) {
         try {
+            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
+                legacyBackupDirectory().listFiles().orEmpty()
+                    .filter { it.isFile && it.name.startsWith("echomusic_backup_") && it.extension == "zip" }
+                    .sortedByDescending { it.lastModified() }
+                    .drop(maxFiles)
+                    .forEach { it.delete() }
+                return
+            }
             val projection = arrayOf(
                 MediaStore.Downloads._ID,
                 MediaStore.Downloads.DISPLAY_NAME,
                 MediaStore.Downloads.DATE_ADDED
             )
 
-            val selection = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                "${MediaStore.Downloads.RELATIVE_PATH} = ? AND ${MediaStore.Downloads.DISPLAY_NAME} LIKE ?"
-            } else {
-                "${MediaStore.Downloads.DISPLAY_NAME} LIKE ?"
-            }
-
-            val selectionArgs = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                arrayOf("Download/echoMusic/", "echomusic_backup_%.zip")
-            } else {
-                arrayOf("echomusic_backup_%.zip")
-            }
+            val selection = "${MediaStore.Downloads.RELATIVE_PATH} = ? AND ${MediaStore.Downloads.DISPLAY_NAME} LIKE ?"
+            val selectionArgs = arrayOf("Download/echoMusic/", "echomusic_backup_%.zip")
 
             val sortOrder = "${MediaStore.Downloads.DATE_ADDED} DESC"
 
@@ -241,6 +244,10 @@ class AutoBackupWorker(
             Logger.e(TAG, "Error cleaning up old backups: ${e.message}")
         }
     }
+
+    @Suppress("DEPRECATION")
+    private fun legacyBackupDirectory(): File =
+        Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS).resolve("echoMusic")
 
     companion object {
         private const val TAG = "AutoBackupWorker"
