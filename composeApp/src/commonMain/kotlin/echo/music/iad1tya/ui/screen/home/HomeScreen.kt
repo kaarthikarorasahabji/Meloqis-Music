@@ -111,7 +111,7 @@ import echo.music.iad1tya.ui.component.DropdownButton
 import echo.music.iad1tya.ui.component.EndOfPage
 import echo.music.iad1tya.ui.component.HomeItem
 import echo.music.iad1tya.ui.component.HomeItemContentPlaylist
-import echo.music.iad1tya.ui.component.HomeShimmer
+import echo.music.iad1tya.ui.component.homeLoadingItems
 import echo.music.iad1tya.ui.component.ItemArtistChart
 import echo.music.iad1tya.ui.component.MoodMomentAndGenreHomeItem
 import echo.music.iad1tya.ui.component.OfflineErrorState
@@ -389,7 +389,7 @@ fun HomeScreen(
                 ) {
                     if (params == null) item(key = "home-listening") { listeningShelf() }
                     if (loading && homeData.isEmpty()) {
-                        item(key = "home-loading") { HomeShimmer(isGrid = false) }
+                        homeLoadingItems()
                     }
                     if (homeData.isEmpty() && homeListState == ListState.PAGINATION_EXHAUST) {
                         item(key = "home-offline") {
@@ -440,7 +440,7 @@ fun HomeScreen(
                         }
                     }
                     if (homeListState == ListState.PAGINATION_EXHAUST) {
-                        items(newRelease, key = { it.hashCode() }) { release ->
+                        itemsIndexed(newRelease, key = { index, release -> "new-release:$index:${release.title}" }) { _, release ->
                             Box(modifier = Modifier.padding(horizontal = 15.dp)) {
                                 HomeItem(
                                     navController = navController,
