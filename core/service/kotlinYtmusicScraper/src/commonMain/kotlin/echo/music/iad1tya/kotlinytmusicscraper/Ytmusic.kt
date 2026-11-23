@@ -24,8 +24,6 @@ import echo.music.iad1tya.kotlinytmusicscraper.models.body.PlayerBody
 import echo.music.iad1tya.kotlinytmusicscraper.models.body.SearchBody
 import echo.music.iad1tya.kotlinytmusicscraper.models.response.DownloadProgress
 import echo.music.iad1tya.kotlinytmusicscraper.models.response.RemoteConfig
-import echo.music.iad1tya.kotlinytmusicscraper.utils.parseCookieString
-import echo.music.iad1tya.kotlinytmusicscraper.utils.sha1
 import echo.music.iad1tya.ktorext.curl.CurlLogger
 import echo.music.iad1tya.ktorext.encoding.brotli
 import echo.music.iad1tya.ktorext.getEngine
@@ -125,7 +123,6 @@ class Ytmusic {
     var cookie: String? = null
         set(value) {
             field = value
-            cookieMap = if (value == null) emptyMap() else parseCookieString(value)
             extractor.logIn(value)
         }
 
@@ -136,8 +133,6 @@ class Ytmusic {
     // empty, TIDAL metadata lookups fail silently until the first successful fetch.
     var tidalClientId: String = ""
     var tidalClientSecret: String = ""
-
-    private var cookieMap = emptyMap<String, String>()
 
     var proxy: ProxyConfig? = null
         set(value) {
@@ -209,6 +204,7 @@ class Ytmusic {
         setLogin: Boolean = false,
         isUsingReferer: Boolean = true,
         customCookie: String? = null,
+        requestPageId: String? = pageId,
     ) {
         contentType(ContentType.Application.Json)
         headers {
@@ -216,7 +212,7 @@ class Ytmusic {
             append("X-YouTube-Client-Name", "${client.xClientName ?: 1}")
             append("X-YouTube-Client-Version", client.clientVersion)
             append("X-Goog-Authuser", "0")
-            pageId?.let {
+            requestPageId?.takeIf { it.isNotBlank() }?.let {
                 append("X-Goog-Pageid", it)
             }
             append("x-origin", "https://music.youtube.com")
@@ -227,29 +223,13 @@ class Ytmusic {
                 val cookie = customCookie ?: this@Ytmusic.cookie
                 cookie?.let { cookie ->
                     append("Cookie", cookie)
-                    if ("SAPISID" !in cookieMap || "__Secure-3PAPISID" !in cookieMap) return@let
-                    val currentTime = now().toInstant(TimeZone.currentSystemDefault()).epochSeconds / 1000
-                    val sapisidCookie = cookieMap["SAPISID"] ?: cookieMap["__Secure-3PAPISID"]
-                    val sapisidHash = sha1("$currentTime $sapisidCookie https://music.youtube.com")
-                    Logger.d(TAG, "SAPI SID Hash: SAPISIDHASH ${currentTime}_$sapisidHash")
-                    append("Authorization", "SAPISIDHASH ${currentTime}_$sapisidHash")
+                    youtubeMusicAuthorization(cookie)?.let { append("Authorization", it) }
                 }
             }
         }
         userAgent(client.userAgent)
         parameter("prettyPrint", false)
     }
-
-    @OptIn(ExperimentalTime::class)
-    internal fun getAuthorizationHeader(): String? =
-        cookie?.let { cookie ->
-            if ("SAPISID" !in cookieMap || "__Secure-3PAPISID" !in cookieMap) null
-            val currentTime = now().toInstant(TimeZone.currentSystemDefault()).epochSeconds / 1000
-            val sapisidCookie = cookieMap["SAPISID"] ?: cookieMap["__Secure-3PAPISID"]
-            val sapisidHash = sha1("$currentTime $sapisidCookie https://music.youtube.com")
-            Logger.d(TAG, "SAPI SID Hash: SAPISIDHASH ${currentTime}_$sapisidHash")
-            "SAPISIDHASH ${currentTime}_$sapisidHash"
-        }
 
     fun getDirectAudioFormats(videoId: String, cpn: String) = extractor.directAudioStreams(videoId, cpn)
 
@@ -635,8 +615,16 @@ class Ytmusic {
         continuation: String? = null,
         countryCode: String? = null,
         setLogin: Boolean = false,
+        customCookie: String? = null,
+        requestPageId: String? = pageId,
     ) = httpClient.post("browse") {
-        ytClient(client, if (setLogin) true else cookie != "" && cookie != null, isUsingReferer = false)
+        ytClient(
+            client = client,
+            setLogin = setLogin || !(customCookie ?: cookie).isNullOrBlank(),
+            isUsingReferer = false,
+            customCookie = customCookie,
+            requestPageId = requestPageId,
+        )
 
         if (continuation != null && browseId != null) {
             setBody(

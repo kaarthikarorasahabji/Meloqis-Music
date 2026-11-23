@@ -1,5 +1,6 @@
 package echo.music.iad1tya.domain.repository
 
+import echo.music.iad1tya.domain.data.model.browse.album.Track
 import echo.music.iad1tya.domain.data.model.home.HomeItem
 import echo.music.iad1tya.domain.data.model.home.chart.Chart
 import echo.music.iad1tya.domain.data.model.mood.Mood
@@ -9,6 +10,8 @@ import echo.music.iad1tya.domain.utils.Resource
 import kotlinx.coroutines.flow.Flow
 
 interface HomeRepository {
+    suspend fun getYouTubeListeningHistory(cookie: String, pageId: String?): List<Track>
+
     /**
      * @return Pair of continueParams and HomeItem List
      */

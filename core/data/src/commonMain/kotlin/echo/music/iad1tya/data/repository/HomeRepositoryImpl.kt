@@ -1,6 +1,8 @@
 package echo.music.iad1tya.data.repository
 
+import echo.music.iad1tya.data.mapping.toTrack
 import echo.music.iad1tya.data.parser.parseChart
+import echo.music.iad1tya.domain.data.model.browse.album.Track
 import echo.music.iad1tya.data.parser.parseGenreObject
 import echo.music.iad1tya.data.parser.parseMixedContent
 import echo.music.iad1tya.data.parser.parseMoodsMomentObject
@@ -19,6 +21,7 @@ import echo.music.iad1tya.kotlinytmusicscraper.YouTube
 import echo.music.iad1tya.logger.Logger
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
+import kotlinx.coroutines.withContext
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.serialization.Serializable
@@ -58,6 +61,9 @@ internal class HomeRepositoryImpl(
         Json {
             ignoreUnknownKeys = true
         }
+
+    override suspend fun getYouTubeListeningHistory(cookie: String, pageId: String?): List<Track> =
+        withContext(Dispatchers.IO) { youTube.getListeningHistory(cookie, pageId, limit = 21).map { it.toTrack().copy(isAvailable = true) } }
 
     override fun getHomeData(
         params: String?,

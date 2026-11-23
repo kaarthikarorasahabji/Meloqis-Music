@@ -13,12 +13,14 @@ fun sha1(str: String): String = MessageDigest.getInstance("SHA-1").digest(str.to
 
 fun parseCookieString(cookie: String): Map<String, String> =
     cookie
-        .split("; ")
-        .filter { it.isNotEmpty() }
-        .associate {
-            val (key, value) = it.split("=")
-            key to value
-        }
+        .split(';')
+        .mapNotNull { part ->
+            val separator = part.indexOf('=')
+            if (separator <= 0) return@mapNotNull null
+            val key = part.substring(0, separator).trim()
+            if (key.isEmpty()) return@mapNotNull null
+            key to part.substring(separator + 1).trim()
+        }.toMap()
 
 fun String.parseTime(): Int? {
     try {

@@ -1,6 +1,8 @@
 package echo.music.iad1tya.kotlinytmusicscraper
 
 import com.eygraber.uri.toKmpUri
+import echo.music.iad1tya.kotlinytmusicscraper.pages.listeningHistory
+import io.ktor.http.isSuccess
 import echo.music.iad1tya.kotlinytmusicscraper.YouTube.Companion.DEFAULT_VISITOR_DATA
 import echo.music.iad1tya.kotlinytmusicscraper.extension.toListFormat
 import echo.music.iad1tya.kotlinytmusicscraper.models.AccountInfo
@@ -856,6 +858,19 @@ class YouTube {
      * @param setLogin if true, the function will set the cookie and authentication header
      * @return a [Result]<[BrowseResponse]> object
      */
+    suspend fun getListeningHistory(cookie: String, pageId: String?, limit: Int): List<SongItem> {
+        require(cookie.isNotBlank())
+        val response = ytMusic.browse(
+            client = WEB_REMIX,
+            browseId = "FEmusic_history",
+            setLogin = true,
+            customCookie = cookie,
+            requestPageId = pageId,
+        )
+        check(response.status.isSuccess()) { "YouTube Music history request failed" }
+        return response.body<BrowseResponse>().listeningHistory(limit)
+    }
+
     suspend fun customQuery(
         browseId: String?,
         params: String? = null,

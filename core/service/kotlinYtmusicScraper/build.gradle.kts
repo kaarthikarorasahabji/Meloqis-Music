@@ -21,6 +21,7 @@ kotlin {
         namespace = "echo.music.iad1tya.kotlinytmusicscraper"
         compileSdk = 37
         minSdk = 26
+        withHostTestBuilder {}
     }
 
     // For iOS targets, this is also where you should

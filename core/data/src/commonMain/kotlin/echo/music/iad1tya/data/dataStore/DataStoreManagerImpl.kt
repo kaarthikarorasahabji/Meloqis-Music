@@ -1438,7 +1438,7 @@ internal class DataStoreManagerImpl(
     override val enableLiquidGlass: Flow<String>
         get() =
             settingsDataStore.data.map { preferences ->
-                preferences[LIQUID_GLASS] ?: TRUE
+                preferences[LIQUID_GLASS] ?: FALSE
             }
 
     override suspend fun setEnableLiquidGlass(enable: Boolean) {

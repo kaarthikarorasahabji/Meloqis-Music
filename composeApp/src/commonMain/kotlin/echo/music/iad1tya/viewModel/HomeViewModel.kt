@@ -4,6 +4,7 @@ import androidx.lifecycle.viewModelScope
 import echo.music.iad1tya.common.SELECTED_LANGUAGE
 import echo.music.iad1tya.common.SUPPORTED_LANGUAGE
 import echo.music.iad1tya.domain.data.entities.SongEntity
+import echo.music.iad1tya.domain.data.model.browse.album.Track
 import echo.music.iad1tya.domain.data.model.home.HomeDataCombine
 import echo.music.iad1tya.domain.data.model.home.HomeItem
 import echo.music.iad1tya.domain.data.model.home.chart.Chart
@@ -16,7 +17,9 @@ import echo.music.iad1tya.domain.repository.SongRepository
 import echo.music.iad1tya.domain.utils.Resource
 import echo.music.iad1tya.logger.Logger
 import echo.music.iad1tya.viewModel.base.BaseViewModel
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -28,6 +31,7 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.mapLatest
 import kotlinx.coroutines.flow.catch
@@ -40,12 +44,46 @@ import echomusic.composeapp.generated.resources.new_release
 import echomusic.composeapp.generated.resources.song
 import echomusic.composeapp.generated.resources.view_count
 
+sealed interface YouTubeListeningHistory {
+    data object SignedOut : YouTubeListeningHistory
+    data object Loading : YouTubeListeningHistory
+    data object Unavailable : YouTubeListeningHistory
+    data class Loaded(val tracks: List<Track>) : YouTubeListeningHistory
+}
+
 class HomeViewModel(
     private val dataStoreManager: DataStoreManager,
     private val homeRepository: HomeRepository,
     private val analyticsRepository: AnalyticsRepository,
     private val songRepository: SongRepository,
 ) : BaseViewModel() {
+    private val historyRefresh = MutableStateFlow(0)
+    val explicitContentEnabled = dataStoreManager.explicitContentEnabled
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    val youtubeListeningHistory = combine(dataStoreManager.cookie, dataStoreManager.pageId, historyRefresh) { cookie, pageId, _ ->
+        cookie to pageId
+    }.flatMapLatest { (cookie, pageId) ->
+        if (cookie.isBlank()) return@flatMapLatest flowOf(YouTubeListeningHistory.SignedOut)
+        flow<YouTubeListeningHistory> {
+            emit(YouTubeListeningHistory.Loading)
+            try {
+                val tracks = withTimeoutOrNull(10_000) {
+                    homeRepository.getYouTubeListeningHistory(cookie, pageId.takeIf { it.isNotBlank() })
+                }
+                emit(if (tracks == null) YouTubeListeningHistory.Unavailable else YouTubeListeningHistory.Loaded(tracks))
+            } catch (cancelled: CancellationException) {
+                throw cancelled
+            } catch (_: Exception) {
+                emit(YouTubeListeningHistory.Unavailable)
+            }
+        }
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(replayExpirationMillis = 0), YouTubeListeningHistory.Loading)
+
+    fun refreshYouTubeListeningHistory() {
+        historyRefresh.update { it + 1 }
+    }
+
     @OptIn(ExperimentalCoroutinesApi::class)
     val recentlyPlayed = dataStoreManager.localTrackingEnabled
         .distinctUntilChanged()

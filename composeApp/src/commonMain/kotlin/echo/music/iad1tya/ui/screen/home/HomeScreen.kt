@@ -79,10 +79,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
-import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.lifecycle.compose.currentStateAsState
 import androidx.navigation.NavController
 import coil3.compose.AsyncImage
 import coil3.compose.LocalPlatformContext
@@ -93,6 +90,7 @@ import echo.music.iad1tya.common.CHART_SUPPORTED_COUNTRY
 import echo.music.iad1tya.common.Config
 import echo.music.iad1tya.domain.data.model.browse.album.Track
 import echo.music.iad1tya.domain.data.model.home.HomeItem
+import echo.music.iad1tya.domain.manager.DataStoreManager
 import echo.music.iad1tya.domain.data.model.home.chart.Chart
 import echo.music.iad1tya.domain.data.model.mood.Mood
 import echo.music.iad1tya.domain.extension.now
@@ -117,7 +115,6 @@ import echo.music.iad1tya.ui.component.ItemArtistChart
 import echo.music.iad1tya.ui.component.MoodMomentAndGenreHomeItem
 import echo.music.iad1tya.ui.component.OfflineErrorState
 import echo.music.iad1tya.ui.component.NowPlayingBottomSheet
-import echo.music.iad1tya.ui.component.QuickPicksItem
 import echo.music.iad1tya.ui.component.SupportProjectDialog
 import echo.music.iad1tya.ui.component.ReviewDialog
 import echo.music.iad1tya.ui.component.RippleIconButton
@@ -140,9 +137,9 @@ import echo.music.iad1tya.ui.navigation.destination.login.LoginDestination
 import echo.music.iad1tya.ui.theme.LocalNowPlayingColor
 import echo.music.iad1tya.ui.theme.typo
 import echo.music.iad1tya.viewModel.HomeViewModel
-import echo.music.iad1tya.viewModel.UIEvent
-import echo.music.iad1tya.ui.component.HomeListeningCanvas
-import echo.music.iad1tya.ui.theme.LocalBatterySaver
+import echo.music.iad1tya.ui.component.HomeListeningHistory
+import echo.music.iad1tya.ui.component.SongFullWidthItems
+import androidx.compose.material3.OutlinedButton
 import echo.music.iad1tya.ui.navigation.destination.search.SearchDestination
 import echo.music.iad1tya.viewModel.HomeViewModel.Companion.HOME_PARAMS_COMMUTE
 import echo.music.iad1tya.viewModel.HomeViewModel.Companion.HOME_PARAMS_ENERGIZE
@@ -186,17 +183,14 @@ import echomusic.composeapp.generated.resources.good_evening
 import echomusic.composeapp.generated.resources.good_morning
 import echomusic.composeapp.generated.resources.good_night
 import echomusic.composeapp.generated.resources.let_s_pick_a_playlist_for_you
-import echomusic.composeapp.generated.resources.let_s_start_with_a_radio
 import echomusic.composeapp.generated.resources.log_in_warning
 import echomusic.composeapp.generated.resources.party
-import echomusic.composeapp.generated.resources.quick_picks
 import echomusic.composeapp.generated.resources.relax
 import echomusic.composeapp.generated.resources.romance
 import echomusic.composeapp.generated.resources.sad
 import echomusic.composeapp.generated.resources.sleep
 import echomusic.composeapp.generated.resources.top_artists
 import echomusic.composeapp.generated.resources.warning
-import echomusic.composeapp.generated.resources.welcome_back
 import echomusic.composeapp.generated.resources.what_is_best_choice_today
 import echomusic.composeapp.generated.resources.workout
 import echomusic.composeapp.generated.resources.meloqis_logo
@@ -231,7 +225,6 @@ fun HomeScreen(
         koinViewModel(),
     navController: NavController,
     onOpenNowPlaying: () -> Unit = {},
-    isNowPlayingOpen: Boolean = false,
 ) {
     val coroutineScope = rememberCoroutineScope()
     val scrollState = rememberLazyListState()
@@ -245,9 +238,6 @@ fun HomeScreen(
     val loading by viewModel.loading.collectAsStateWithLifecycle()
     val youTubeMixForYou by libraryViewModel.youTubeMixForYou.collectAsStateWithLifecycle()
 
-    var accountShow by rememberSaveable {
-        mutableStateOf(false)
-    }
     val regionChart by viewModel.regionCodeChart.collectAsStateWithLifecycle()
     val reloadDestination by sharedViewModel.reloadDestination.collectAsStateWithLifecycle()
     val pullToRefreshState = rememberPullToRefreshState()
@@ -263,23 +253,40 @@ fun HomeScreen(
     val shareLyricsPermissions by sharedViewModel.shareSavedLyrics.collectAsStateWithLifecycle()
     val controllerState by sharedViewModel.controllerState.collectAsStateWithLifecycle()
     val nowPlayingTrack by sharedViewModel.nowPlayingState.collectAsStateWithLifecycle()
-    val playerArtwork by sharedViewModel.nowPlayingScreenData.collectAsStateWithLifecycle()
-    val recentlyPlayed by viewModel.recentlyPlayed.collectAsStateWithLifecycle()
-    val dataSaver by sharedViewModel.dataSaver.collectAsStateWithLifecycle()
-    val lifecycle by LocalLifecycleOwner.current.lifecycle.currentStateAsState()
-    val motionAllowed = lifecycle.isAtLeast(Lifecycle.State.RESUMED) && !dataSaver &&
-        !LocalBatterySaver.current && !isNowPlayingOpen && scrollState.firstVisibleItemIndex == 0
+    val localHistory by viewModel.recentlyPlayed.collectAsStateWithLifecycle()
+    val youtubeHistory by viewModel.youtubeListeningHistory.collectAsStateWithLifecycle()
+    val explicitEnabled by viewModel.explicitContentEnabled.collectAsStateWithLifecycle(DataStoreManager.TRUE)
 
-    fun playFromHistory(song: echo.music.iad1tya.domain.data.entities.SongEntity) {
-        val track = song.toTrack()
+    fun allowedTracks(tracks: List<Track>): List<Track> =
+        if (explicitEnabled == DataStoreManager.TRUE) tracks else tracks.filterNot { it.isExplicit }
+    fun playTracks(tracks: List<Track>, name: String) {
+        val playable = allowedTracks(tracks)
+        val first = playable.firstOrNull() ?: return
         viewModel.setQueueData(QueueData.Data(
-            listTracks = listOf(track),
-            firstPlayedTrack = track,
-            playlistId = "RDAMVM${song.videoId}",
-            playlistName = song.title,
-            playlistType = PlaylistType.RADIO,
+            listTracks = playable,
+            firstPlayedTrack = first,
+            playlistId = if (playable.size == 1) "RDAMVM${first.videoId}" else null,
+            playlistName = name,
+            playlistType = if (playable.size == 1) PlaylistType.RADIO else PlaylistType.LOCAL_PLAYLIST,
         ))
-        viewModel.loadMediaItem(track, Config.SONG_CLICK)
+        viewModel.loadMediaItem(first, if (playable.size == 1) Config.SONG_CLICK else Config.PLAYLIST_CLICK, 0)
+    }
+
+    val listeningShelf: @Composable () -> Unit = {
+        HomeListeningHistory(
+            history = (youtubeHistory as? echo.music.iad1tya.viewModel.YouTubeListeningHistory.Loaded)
+                ?.let { it.copy(tracks = allowedTracks(it.tracks)) } ?: youtubeHistory,
+            localTracks = allowedTracks(localHistory.map { it.toTrack() }),
+            currentTrackId = nowPlayingTrack?.mediaItem?.mediaId,
+            onPlay = { track ->
+                if (track.videoId == nowPlayingTrack?.mediaItem?.mediaId) onOpenNowPlaying()
+                else playTracks(listOf(track), track.title)
+            },
+            onPlayAll = { playTracks(it, "Listen again") },
+            onConnect = { navController.navigate(LoginDestination) { launchSingleTop = true } },
+            onRetry = viewModel::refreshYouTubeListeningHistory,
+            modifier = Modifier.padding(horizontal = 16.dp),
+        )
     }
     val isSongPlaying = controllerState.isPlaying && !nowPlayingTrack?.mediaItem?.mediaId.isNullOrBlank()
 
@@ -313,6 +320,7 @@ fun HomeScreen(
 
     val onRefresh: () -> Unit = {
         isRefreshing = true
+        viewModel.refreshYouTubeListeningHistory()
         viewModel.getHomeItemList(params)
         Logger.w("HomeScreen", "onRefresh")
     }
@@ -336,9 +344,6 @@ fun HomeScreen(
                 pullToRefreshState.animateToHidden()
             }
         }
-    }
-    LaunchedEffect(key1 = homeData) {
-        accountShow = homeData.find { it.subtitle == accountInfo?.first } == null
     }
 
 
@@ -388,18 +393,15 @@ fun HomeScreen(
         SupportProjectDialog(onDismiss = { showSupportDialog = false })
     }
 
+    val headerTint = nowPlayingColor ?: MaterialTheme.colorScheme.primary
+    val headerFadeHeight = with(LocalDensity.current) { 280.dp.toPx() }
     Box(
-        // Gentle whole-page wash in the current song's colour (surfaces only; fades out downward).
-        modifier =
-            if (nowPlayingColor != null) {
-                Modifier.background(
-                    Brush.verticalGradient(
-                        listOf(nowPlayingColor.copy(alpha = 0.12f), Color.Transparent),
-                    ),
-                )
-            } else {
-                Modifier
-            },
+        modifier = Modifier.background(
+            Brush.verticalGradient(
+                colors = listOf(headerTint.copy(alpha = 0.16f), Color.Transparent),
+                endY = headerFadeHeight,
+            ),
+        ),
     ) {
         PullToRefreshBox(
             modifier =
@@ -444,20 +446,8 @@ fun HomeScreen(
                         verticalArrangement = Arrangement.spacedBy(8.dp),
                     ) {
                         item(key = "home-listening") {
-                            Column(Modifier.padding(horizontal = 16.dp)) {
-                                Spacer(Modifier.height(with(LocalDensity.current) { topAppBarHeightPx.toDp() }))
-                                HomeListeningCanvas(
-                                    currentTrack = nowPlayingTrack,
-                                    playerArtwork = playerArtwork,
-                                    isPlaying = isSongPlaying,
-                                    motionAllowed = motionAllowed,
-                                    recentSongs = recentlyPlayed,
-                                    onOpenPlayer = onOpenNowPlaying,
-                                    onPlayPause = { sharedViewModel.onUIEvent(UIEvent.PlayPause) },
-                                    onPlaySong = ::playFromHistory,
-                                    onSearch = { navController.navigate(SearchDestination) { launchSingleTop = true } },
-                                )
-                            }
+                            Spacer(Modifier.height(with(LocalDensity.current) { topAppBarHeightPx.toDp() }))
+                            if (params == null) listeningShelf()
                         }
                         if (homeData.isEmpty() && homeListState == ListState.PAGINATION_EXHAUST) {
                             item(key = "home-offline") {
@@ -480,59 +470,20 @@ fun HomeScreen(
                                         Modifier
                                             .padding(horizontal = 15.dp),
                                 ) {
-                                    if (index == 0 && accountInfo != null && accountShow) {
-                                        AccountLayout(
-                                            accountName = accountInfo?.first ?: "",
-                                            url = accountInfo?.second ?: "",
-                                        )
-                                        Spacer(Modifier.height(8.dp))
+                                    val songsOnly = item.contents.filterNotNull().let { contents ->
+                                        contents.isNotEmpty() && contents.all { !it.videoId.isNullOrBlank() }
                                     }
-                                    if (item.title == stringResource(Res.string.quick_picks)) {
-                                        AnimatedVisibility(
-                                            visible =
-                                                homeData.find {
-                                                    it.title ==
-                                                        stringResource(
-                                                            Res.string.quick_picks,
-                                                        )
-                                                } != null,
-                                        ) {
-                                            QuickPicks(
-                                                homeItem =
-                                                    (
-                                                        homeData.find {
-                                                            it.title ==
-                                                                stringResource(
-                                                                    Res.string.quick_picks,
-                                                                )
-                                                        } ?: return@AnimatedVisibility
-                                                    ).let { content ->
-                                                        content.copy(
-                                                            contents =
-                                                                content.contents.mapNotNull { ct ->
-                                                                    ct?.copy(
-                                                                        artists =
-                                                                            ct.artists?.let { art ->
-                                                                                if (art.size > 1) {
-                                                                                    art.dropLast(1)
-                                                                                } else {
-                                                                                    art
-                                                                                }
-                                                                            },
-                                                                    )
-                                                                },
-                                                        )
-                                                    },
-                                                navController = navController,
-                                                viewModel = viewModel,
-                                            )
-                                        }
-                                    } else {
-
-                                        HomeItem(
+                                    if (songsOnly) {
+                                        HomeSongShelf(
+                                            title = item.title,
+                                            tracks = allowedTracks(item.contents.filterNotNull().map { it.toTrack() }.distinctBy { it.videoId }),
+                                            activeTrackId = nowPlayingTrack?.mediaItem?.mediaId,
+                                            onPlay = { playTracks(listOf(it), it.title) },
+                                            onPlayAll = { playTracks(it, item.title) },
                                             navController = navController,
-                                            data = item,
                                         )
+                                    } else {
+                                        HomeItem(navController = navController, data = item)
                                     }
                                     
                                 }
@@ -642,12 +593,7 @@ fun HomeScreen(
                                 }
                             }
                         }
-                        item(key = "developerFooter") {
-                            echo.music.iad1tya.ui.component.MeloqisFooter(onClick = {
-                                navController.navigate(echo.music.iad1tya.ui.navigation.destination.home.AboutDeveloperDestination)
-                            })
-                            EndOfPage()
-                        }
+                        item(key = "home-end") { EndOfPage() }
                     }
                 } else {
                     Column {
@@ -658,20 +604,7 @@ fun HomeScreen(
                                 },
                             ),
                         )
-                        if (params != HOME_PARAMS_MIX_FOR_YOU && (nowPlayingTrack?.songEntity != null || recentlyPlayed.isNotEmpty())) {
-                            HomeListeningCanvas(
-                                currentTrack = nowPlayingTrack,
-                                playerArtwork = playerArtwork,
-                                isPlaying = isSongPlaying,
-                                motionAllowed = false,
-                                recentSongs = recentlyPlayed,
-                                onOpenPlayer = onOpenNowPlaying,
-                                onPlayPause = { sharedViewModel.onUIEvent(UIEvent.PlayPause) },
-                                onPlaySong = ::playFromHistory,
-                                onSearch = { navController.navigate(SearchDestination) { launchSingleTop = true } },
-                                modifier = Modifier.padding(horizontal = 16.dp),
-                            )
-                        }
+                        if (params == null) listeningShelf()
                         HomeShimmer(isGrid = params == HOME_PARAMS_MIX_FOR_YOU)
                     }
                 }
@@ -864,135 +797,41 @@ fun HomeTopAppBar(
     )
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun AccountLayout(
-    accountName: String,
-    url: String,
-) {
-    Column {
-        Text(
-            text = stringResource(Res.string.welcome_back),
-            style = typo().bodyMedium,
-            color = MaterialTheme.colorScheme.onBackground,
-            modifier = Modifier.padding(bottom = 3.dp),
-        )
-        if (accountName.isNotEmpty() && url.isNotEmpty()) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.padding(horizontal = 5.dp, vertical = 5.dp),
-            ) {
-                AsyncImage(
-                    model =
-                        ImageRequest
-                            .Builder(LocalPlatformContext.current)
-                            .data(url)
-                            .diskCachePolicy(CachePolicy.ENABLED)
-                            .diskCacheKey(url)
-                            .crossfade(true)
-                            .build(),
-                    placeholder = rememberHolderPainter(),
-                    error = rememberHolderPainter(),
-                    contentDescription = null,
-                    contentScale = ContentScale.Crop,
-                    modifier =
-                        Modifier
-                            .size(40.dp)
-                            .clip(
-                                CircleShape,
-                            ),
-                )
-                Text(
-                    text = accountName,
-                    style = typo().headlineMedium,
-                    color = MaterialTheme.colorScheme.onBackground,
-                    modifier =
-                        Modifier
-                            .padding(start = 8.dp),
-                )
-            }
-        }
-    }
-}
-
-@ExperimentalFoundationApi
-@Composable
-fun QuickPicks(
-    homeItem: HomeItem,
+private fun HomeSongShelf(
+    title: String,
+    tracks: List<Track>,
+    activeTrackId: String?,
+    onPlay: (Track) -> Unit,
+    onPlayAll: (List<Track>) -> Unit,
     navController: NavController,
-    viewModel: HomeViewModel = koinViewModel(),
 ) {
-    val lazyListState = rememberLazyGridState()
-    val snapperFlingBehavior = rememberSnapFlingBehavior(SnapLayoutInfoProvider(lazyGridState = lazyListState, snapPosition = SnapPosition.Start))
-    val density = LocalDensity.current
-    var widthDp by remember {
-        mutableStateOf(0.dp)
+    if (tracks.isEmpty()) return
+    var menuTrack by remember { mutableStateOf<Track?>(null) }
+    menuTrack?.let {
+        NowPlayingBottomSheet(onDismiss = { menuTrack = null }, song = it.toSongEntity(), navController = navController)
     }
-    var bottomSheetShow by remember { mutableStateOf(false) }
-    var track by remember { mutableStateOf<Track?>(null) }
-
-    if (bottomSheetShow) {
-        NowPlayingBottomSheet(
-            onDismiss = { bottomSheetShow = false },
-            song = track?.toSongEntity(),
-            navController = navController,
-        )
-    }
-
-    Column(
-        Modifier
-            .padding(vertical = 8.dp)
-            .onGloballyPositioned { coordinates ->
-                with(density) {
-                    widthDp = (coordinates.size.width).toDp()
-                }
-            },
-    ) {
-        Text(
-            text = stringResource(Res.string.let_s_start_with_a_radio),
-            style = typo().bodySmall,
-        )
-        Text(
-            text = stringResource(Res.string.quick_picks),
-            style = typo().headlineMedium,
-            color = MaterialTheme.colorScheme.onBackground,
-            maxLines = 1,
-            modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 5.dp),
-        )
-        LazyHorizontalGrid(
-            rows = GridCells.Fixed(4),
-            modifier = Modifier.height(256.dp),
-            state = lazyListState,
-            flingBehavior = snapperFlingBehavior,
-        ) {
-            items(homeItem.contents, key = { it.hashCode() }) {
-                if (it != null) {
-                    QuickPicksItem(
-                        onClick = {
-                            val firstQueue: Track = it.toTrack()
-                            viewModel.setQueueData(
-                                QueueData.Data(
-                                    listTracks = arrayListOf(firstQueue),
-                                    firstPlayedTrack = firstQueue,
-                                    playlistId = "RDAMVM${it.videoId}",
-                                    playlistName = "\"${it.title}\" Radio",
-                                    playlistType = PlaylistType.RADIO,
-                                    continuation = null,
-                                ),
-                            )
-                            viewModel.loadMediaItem(
-                                firstQueue,
-                                type = Config.SONG_CLICK,
-                            )
-                        },
-                        onLongClick = {
-                            track = it.toTrack()
-                            bottomSheetShow = true
-                        },
-                        data = it,
-                        widthDp = widthDp,
+    val pages = tracks.chunked(4)
+    val pager = androidx.compose.foundation.pager.rememberPagerState(pageCount = { pages.size })
+    Column(Modifier.padding(vertical = 10.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+            Text(
+                title, modifier = Modifier.weight(1f).padding(end = 6.dp),
+                style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.onSurface,
+                maxLines = 2, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+            )
+            if (tracks.size > 1) OutlinedButton(onClick = { onPlayAll(tracks) }) { Text("Play all") }
+        }
+        androidx.compose.foundation.pager.HorizontalPager(state = pager, pageSpacing = 12.dp) { page ->
+            Column(Modifier.fillMaxWidth().height((minOf(tracks.size, 4) * 60).dp)) {
+                pages[page].forEach { track ->
+                    SongFullWidthItems(
+                        track = track,
+                        isPlaying = activeTrackId == track.videoId,
+                        onMoreClickListener = { menuTrack = track },
+                        onClickListener = { onPlay(track) },
+                        modifier = Modifier.fillMaxWidth().height(60.dp),
                     )
                 }
             }

@@ -79,12 +79,14 @@ fun AppBottomNavigationBar(
             Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 12.dp, vertical = 6.dp)
-                .clip(androidx.compose.foundation.shape.RoundedCornerShape(28.dp))
+                .windowInsetsPadding(NavigationBarDefaults.windowInsets)
+                .clip(androidx.compose.foundation.shape.RoundedCornerShape(18.dp))
                 .background(MaterialTheme.colorScheme.surfaceContainer),
     ) {
         NavigationBar(
             windowInsets = WindowInsets(0, 0, 0, 0),
             containerColor = Color.Transparent,
+            modifier = Modifier.height(64.dp),
         ) {
             bottomNavScreens.forEach { screen ->
                 NavigationBarItem(
@@ -129,10 +131,6 @@ fun AppBottomNavigationBar(
                             indicatorColor = MaterialTheme.colorScheme.primaryContainer,
                             selectedIconColor = MaterialTheme.colorScheme.onPrimaryContainer,
                             unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                        ),
-                    modifier =
-                        Modifier.windowInsetsPadding(
-                            NavigationBarDefaults.windowInsets,
                         ),
                 )
             }

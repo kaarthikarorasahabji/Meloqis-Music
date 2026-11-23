@@ -540,7 +540,6 @@ if (data.scheme == "wordbyword" && data.host == "lastfm-auth") {
                                     showNavBar = {
                                         isNavBarVisible = true
                                     },
-                                    isNowPlayingOpen = isShowNowPlaylistScreen,
                                     showNowPlayingSheet = {
                                         isShowNowPlaylistScreen = true
                                     },
