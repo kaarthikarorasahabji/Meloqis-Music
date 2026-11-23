@@ -1,11 +1,14 @@
 package echo.music.iad1tya.ui.navigation.graph
 
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.runtime.LaunchedEffect
 import androidx.navigation.NavController
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.compose.composable
 import androidx.navigation.toRoute
+import echo.music.iad1tya.ui.navigation.destination.home.HomeDestination
 import echo.music.iad1tya.ui.navigation.destination.home.MoodDestination
+import echo.music.iad1tya.ui.navigation.destination.home.SurpriseMixDestination
 import echo.music.iad1tya.ui.navigation.destination.home.RecentlySongsDestination
 import echo.music.iad1tya.ui.navigation.destination.home.SettingsDestination
 import echo.music.iad1tya.ui.screen.home.MoodScreen
@@ -19,6 +22,13 @@ fun NavGraphBuilder.homeScreenGraph(
 ) {
     composable<echo.music.iad1tya.ui.navigation.destination.home.AboutDeveloperDestination> {
         echo.music.iad1tya.ui.screen.home.AboutDeveloperScreen(navController, innerPadding)
+    }
+    composable<SurpriseMixDestination> {
+        LaunchedEffect(navController) {
+            if (!navController.popBackStack()) {
+                navController.navigate(HomeDestination) { launchSingleTop = true }
+            }
+        }
     }
     composable<MoodDestination> { entry ->
         val params = entry.toRoute<MoodDestination>().params
