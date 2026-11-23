@@ -1,6 +1,6 @@
 # Meloqis Music launch
 
-This package prepares a first Google Play upload. Building an AAB does not publish the app or guarantee acceptance. The app's public pages are configured for `https://axenoraai.in/meloqis/`; they must be deployed before submission.
+This package prepares a first Google Play upload. Build the signed AAB and submit it from the app's release track in Play Console. The app's public pages use `https://meloqis.axenoraai.in/`.
 
 ## Files
 
@@ -26,16 +26,16 @@ If needed, pass `-JavaHome` to the build script with the JDK 21 installation pat
 
 The Play build removes `REQUEST_INSTALL_PACKAGES` and advertising ID permission, disables advertising ID collection and personalization signals, and directs update actions to Google Play. Regular sideload builds keep their existing updater. Privacy/support links are in Settings → About us.
 
-## Hosting at axenoraai.in
+## Hosting at meloqis.axenoraai.in
 
 1. Run the hosting packaging script.
-2. Extract `Meloqis-hosting.zip` into the existing website's public root. Keep the containing `meloqis` folder. On a framework site, copy it into that site's public/static directory, or route `/meloqis/` to the static files. Do not overwrite your site's homepage.
-3. Deploy the existing site through its hosting provider with HTTPS. These public pages need only static hosting. The separate owner-private Meloqis Studio handles push campaigns with its deployed server and database; music providers, lyrics, Firebase and optional integrations remain external dependencies.
+2. Extract `Meloqis-hosting.zip` and serve the contents of the `meloqis` folder at the root of the Meloqis subdomain.
+3. Deploy the static site with HTTPS. The separately hosted Meloqis Studio handles push campaigns. Music providers, lyrics, Firebase and optional integrations use their existing services.
 4. Verify these pages return HTTP 200 without login, geographical restrictions or download prompts:
-   - `https://axenoraai.in/meloqis/`
-   - `https://axenoraai.in/meloqis/privacy.html`
-   - `https://axenoraai.in/meloqis/support.html`
-   - `https://axenoraai.in/meloqis/delete-data.html`
+   - `https://meloqis.axenoraai.in/`
+   - `https://meloqis.axenoraai.in/privacy.html`
+   - `https://meloqis.axenoraai.in/support.html`
+   - `https://meloqis.axenoraai.in/delete-data.html`
 5. Use the privacy URL and support email `kaarthikdassarorasahabji@gmail.com` in Play Console. `_headers` and `vercel.json` contain optional provider security headers; apply equivalent settings to your existing host as appropriate. These files are scoped to the static package and do not configure routing in your existing website.
 
 The download button currently points to existing GitHub APK releases. Switch it to the verified Play listing after Google approves the app. Do not invent a live listing or replace the APK button before it exists.

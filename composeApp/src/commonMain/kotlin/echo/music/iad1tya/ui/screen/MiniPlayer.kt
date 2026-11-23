@@ -165,6 +165,7 @@ fun MiniPlayer(
     sharedViewModel: SharedViewModel = koinInject(),
     onClose: () -> Unit,
     onClick: () -> Unit,
+    integratedDock: Boolean = false,
 ) {
     val storedGlassPreference by sharedViewModel.getEnableLiquidGlass().collectAsStateWithLifecycle(DataStoreManager.FALSE)
     val isLiquidGlassEnabled = if (LocalBatterySaver.current) DataStoreManager.FALSE else storedGlassPreference
@@ -190,7 +191,9 @@ fun MiniPlayer(
         // With liquid glass the surface follows the theme (light = frosted white → black text);
         // without it, the surface is the artwork colour, so follow the backdrop luminance.
         targetValue =
-            if (useGlassSurface) {
+            if (integratedDock) {
+                MaterialTheme.colorScheme.onSurface
+            } else if (useGlassSurface) {
                 if (isDarkTheme) Color.White else Color.Black
             } else if (background.value.luminance() > 0.179f) {
                 Color.Black
@@ -331,18 +334,23 @@ fun MiniPlayer(
     }
 
     if (getPlatform() == Platform.Android) {
+        val dockColor = if (integratedDock) MaterialTheme.colorScheme.surfaceContainer else background.value
         Card(
-            shape = if (isLiquidGlassEnabled == DataStoreManager.TRUE) CircleShape else RoundedCornerShape(16.dp),
+            shape = when {
+                integratedDock -> RoundedCornerShape(0.dp)
+                isLiquidGlassEnabled == DataStoreManager.TRUE -> CircleShape
+                else -> RoundedCornerShape(16.dp)
+            },
             colors =
                 CardDefaults.cardColors(
-                    containerColor = if (isLiquidGlassEnabled == DataStoreManager.TRUE) Color.Transparent else background.value,
-                    disabledContainerColor = if (isLiquidGlassEnabled == DataStoreManager.TRUE) Color.Transparent else background.value,
+                    containerColor = if (isLiquidGlassEnabled == DataStoreManager.TRUE) Color.Transparent else dockColor,
+                    disabledContainerColor = if (isLiquidGlassEnabled == DataStoreManager.TRUE) Color.Transparent else dockColor,
                 ),
             // Subtle lift so the capsule reads as a floating card over content, Apple Music-style.
             // No shadow under liquid glass — the glass surface already provides its own depth.
             elevation =
                 CardDefaults.cardElevation(
-                    defaultElevation = if (isLiquidGlassEnabled == DataStoreManager.TRUE) 0.dp else 8.dp,
+                    defaultElevation = if (integratedDock || isLiquidGlassEnabled == DataStoreManager.TRUE) 0.dp else 8.dp,
                 ),
             modifier =
                 modifier

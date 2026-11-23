@@ -1,13 +1,15 @@
 package echo.music.iad1tya.ui.screen.home
 
-import androidx.compose.animation.AnimatedContent
-import androidx.compose.animation.AnimatedVisibility
+import echomusic.composeapp.generated.resources.search
+import echo.music.iad1tya.ui.icon.Search
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.Icon
+import androidx.compose.material3.FilterChipDefaults
+import androidx.compose.material3.FilterChip
 import androidx.compose.animation.Crossfade
 import androidx.compose.animation.core.tween
-import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.shrinkVertically
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
@@ -24,6 +26,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.exclude
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.only
@@ -61,7 +64,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -107,7 +109,6 @@ import echo.music.iad1tya.ui.component.CenterLoadingBox
 import echo.music.iad1tya.ui.component.Chip
 import echo.music.iad1tya.ui.component.DropdownButton
 import echo.music.iad1tya.ui.component.EndOfPage
-import echo.music.iad1tya.ui.component.EqualizerBars
 import echo.music.iad1tya.ui.component.HomeItem
 import echo.music.iad1tya.ui.component.HomeItemContentPlaylist
 import echo.music.iad1tya.ui.component.HomeShimmer
@@ -115,7 +116,6 @@ import echo.music.iad1tya.ui.component.ItemArtistChart
 import echo.music.iad1tya.ui.component.MoodMomentAndGenreHomeItem
 import echo.music.iad1tya.ui.component.OfflineErrorState
 import echo.music.iad1tya.ui.component.NowPlayingBottomSheet
-import echo.music.iad1tya.ui.component.SupportProjectDialog
 import echo.music.iad1tya.ui.component.ReviewDialog
 import echo.music.iad1tya.ui.component.RippleIconButton
 import echo.music.iad1tya.ui.component.ShareSavedLyricsDialog
@@ -126,9 +126,7 @@ import echo.music.iad1tya.ui.icon.echoIcons
 import echo.music.iad1tya.ui.icon.Menu
 import echo.music.iad1tya.ui.navigation.destination.home.HomeDestination
 import echo.music.iad1tya.ui.navigation.destination.home.MoodDestination
-import echo.music.iad1tya.ui.navigation.destination.home.RecentlySongsDestination
 import echo.music.iad1tya.ui.navigation.destination.home.SettingsDestination
-import echo.music.iad1tya.ui.navigation.destination.home.EqualizerDestination
 import echo.music.iad1tya.ui.navigation.destination.library.LibraryDynamicPlaylistDestination
 import echo.music.iad1tya.ui.navigation.destination.list.ArtistDestination
 import echo.music.iad1tya.ui.screen.library.LibraryDynamicPlaylistType
@@ -158,11 +156,7 @@ import echomusic.composeapp.generated.resources.no_mixes_found
 import echo.music.iad1tya.viewModel.HomeViewModel.Companion.HOME_PARAMS_WORKOUT
 import echo.music.iad1tya.viewModel.ListState
 import echo.music.iad1tya.viewModel.SharedViewModel
-import dev.chrisbanes.haze.hazeEffect
-import dev.chrisbanes.haze.hazeSource
-import dev.chrisbanes.haze.materials.ExperimentalHazeMaterialsApi
 import dev.chrisbanes.haze.materials.HazeMaterials
-import dev.chrisbanes.haze.rememberHazeState
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
@@ -196,23 +190,7 @@ import echomusic.composeapp.generated.resources.workout
 import echomusic.composeapp.generated.resources.meloqis_logo
 
 
-private val listOfHomeChip =
-    listOf(
-        Res.string.all,
-        Res.string.mix_for_you,
-        Res.string.relax,
-        Res.string.sleep,
-        Res.string.energize,
-        Res.string.sad,
-        Res.string.romance,
-        Res.string.feel_good,
-        Res.string.workout,
-        Res.string.party,
-        Res.string.commute,
-        Res.string.focus,
-    )
-
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalHazeMaterialsApi::class)
+@OptIn(ExperimentalMaterial3Api::class)
 @ExperimentalFoundationApi
 @Composable
 fun HomeScreen(
@@ -251,7 +229,6 @@ fun HomeScreen(
 
     val openAppTime by sharedViewModel.openAppTime.collectAsStateWithLifecycle()
     val shareLyricsPermissions by sharedViewModel.shareSavedLyrics.collectAsStateWithLifecycle()
-    val controllerState by sharedViewModel.controllerState.collectAsStateWithLifecycle()
     val nowPlayingTrack by sharedViewModel.nowPlayingState.collectAsStateWithLifecycle()
     val localHistory by viewModel.recentlyPlayed.collectAsStateWithLifecycle()
     val youtubeHistory by viewModel.youtubeListeningHistory.collectAsStateWithLifecycle()
@@ -288,19 +265,8 @@ fun HomeScreen(
             modifier = Modifier.padding(horizontal = 16.dp),
         )
     }
-    val isSongPlaying = controllerState.isPlaying && !nowPlayingTrack?.mediaItem?.mediaId.isNullOrBlank()
 
     val nowPlayingColor = LocalNowPlayingColor.current
-    val mainHomeThumbnail by viewModel.mainHomeThumbnail.collectAsStateWithLifecycle()
-
-    var topAppBarHeightPx by rememberSaveable {
-        mutableIntStateOf(0)
-    }
-
-    val hazeState =
-        rememberHazeState(
-            blurEnabled = true,
-        )
 
     LaunchedEffect(params) {
         if (params == HOME_PARAMS_MIX_FOR_YOU && youTubeMixForYou.data.isNullOrEmpty()) {
@@ -326,7 +292,7 @@ fun HomeScreen(
     }
     LaunchedEffect(key1 = reloadDestination) {
         if (reloadDestination == HomeDestination::class) {
-            if (scrollState.firstVisibleItemIndex > 1) {
+            if (scrollState.firstVisibleItemIndex > 0 || scrollState.firstVisibleItemScrollOffset > 0) {
                 Logger.w("HomeScreen", "scrollState.firstVisibleItemIndex: ${scrollState.firstVisibleItemIndex}")
                 scrollState.animateScrollToItem(0)
                 sharedViewModel.reloadDestinationDone()
@@ -384,327 +350,169 @@ fun HomeScreen(
 
 
 
-    var showSupportDialog by rememberSaveable { mutableStateOf(false) }
-    LaunchedEffect(Unit) {
-        // Persist before showing, so a navigation or restart cannot prompt twice this week.
-        showSupportDialog = viewModel.claimWeeklySupportPrompt()
-    }
-    if (showSupportDialog) {
-        SupportProjectDialog(onDismiss = { showSupportDialog = false })
-    }
-
     val headerTint = nowPlayingColor ?: MaterialTheme.colorScheme.primary
-    val headerFadeHeight = with(LocalDensity.current) { 280.dp.toPx() }
-    Box(
-        modifier = Modifier.background(
+    val headerFadeHeight = with(LocalDensity.current) { 220.dp.toPx() }
+    Column(
+        Modifier.fillMaxSize().background(
             Brush.verticalGradient(
-                colors = listOf(headerTint.copy(alpha = 0.16f), Color.Transparent),
+                colors = listOf(headerTint.copy(alpha = 0.19f), Color.Transparent),
                 endY = headerFadeHeight,
             ),
         ),
     ) {
+        HomeTopAppBar(navController = navController, accountInfo = accountInfo)
+        HomeMoodStrip(
+            params = params,
+            modifier = Modifier.horizontalScroll(chipRowState),
+            onSelect = viewModel::setParams,
+        )
         PullToRefreshBox(
-            modifier =
-                Modifier
-                    .hazeSource(hazeState),
+            modifier = Modifier.weight(1f).fillMaxWidth(),
             state = pullToRefreshState,
             onRefresh = onRefresh,
             isRefreshing = isRefreshing,
-            indicator = {
-                PullToRefreshDefaults.Indicator(
-                    state = pullToRefreshState,
-                    isRefreshing = isRefreshing,
-                    modifier =
-                        Modifier
-                            .align(Alignment.TopCenter)
-                            .padding(
-                                top =
-                                    with(LocalDensity.current) {
-                                        topAppBarHeightPx.toDp()
-                                    },
-                            ),
-                    containerColor = PullToRefreshDefaults.indicatorContainerColor,
-                    color = PullToRefreshDefaults.indicatorColor,
-                    maxDistance = PullToRefreshDefaults.PositionalThreshold,
-                )
-            },
         ) {
-            Crossfade(targetState = loading, label = "Home Shimmer") { loading ->
-                if (!loading) {
-                    if (params == HOME_PARAMS_MIX_FOR_YOU) {
-                        GridLibraryPlaylist(
-                            navController = navController,
-                            contentPadding = PaddingValues(top = with(androidx.compose.ui.platform.LocalDensity.current) { topAppBarHeightPx.toDp() }),
-                            data = youTubeMixForYou,
-                            emptyText = Res.string.no_mixes_found,
-                            onReload = { libraryViewModel.getYouTubeMixedForYou() }
-                        )
-                        return@Crossfade
+            if (params == HOME_PARAMS_MIX_FOR_YOU) {
+                GridLibraryPlaylist(
+                    navController = navController,
+                    contentPadding = PaddingValues(0.dp),
+                    data = youTubeMixForYou,
+                    emptyText = Res.string.no_mixes_found,
+                    onReload = { libraryViewModel.getYouTubeMixedForYou() },
+                )
+            } else {
+                LazyColumn(
+                    state = scrollState,
+                    modifier = Modifier.fillMaxSize(),
+                    contentPadding = PaddingValues(bottom = 8.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    if (params == null) item(key = "home-listening") { listeningShelf() }
+                    if (loading && homeData.isEmpty()) {
+                        item(key = "home-loading") { HomeShimmer(isGrid = false) }
                     }
-                    LazyColumn(
-                        state = scrollState,
-                        verticalArrangement = Arrangement.spacedBy(8.dp),
-                    ) {
-                        item(key = "home-listening") {
-                            Spacer(Modifier.height(with(LocalDensity.current) { topAppBarHeightPx.toDp() }))
-                            if (params == null) listeningShelf()
+                    if (homeData.isEmpty() && homeListState == ListState.PAGINATION_EXHAUST) {
+                        item(key = "home-offline") {
+                            OfflineErrorState(
+                                onRetry = onRefresh,
+                                onOpenDownloaded = {
+                                    navController.navigate(LibraryDynamicPlaylistDestination(
+                                        type = LibraryDynamicPlaylistType.Downloaded.toStringParams(),
+                                    ))
+                                },
+                            )
                         }
-                        if (homeData.isEmpty() && homeListState == ListState.PAGINATION_EXHAUST) {
-                            item(key = "home-offline") {
-                                OfflineErrorState(
-                                    onRetry = onRefresh,
-                                    onOpenDownloaded = {
-                                        navController.navigate(LibraryDynamicPlaylistDestination(
-                                            type = LibraryDynamicPlaylistType.Downloaded.toStringParams(),
-                                        ))
-                                    },
+                    }
+                    itemsIndexed(homeData, key = { index, item -> "feed:$index:${item.title}" }) { _, item ->
+                        Box {
+                            Column(
+                                modifier =
+                                    Modifier
+                                        .padding(horizontal = 15.dp),
+                            ) {
+                                val songsOnly = item.contents.filterNotNull().let { contents ->
+                                    contents.isNotEmpty() && contents.all { !it.videoId.isNullOrBlank() }
+                                }
+                                if (songsOnly) {
+                                    HomeSongShelf(
+                                        title = item.title,
+                                        tracks = allowedTracks(item.contents.filterNotNull().map { it.toTrack() }.distinctBy { it.videoId }),
+                                        activeTrackId = nowPlayingTrack?.mediaItem?.mediaId,
+                                        onPlay = { playTracks(listOf(it), it.title) },
+                                        onPlayAll = { playTracks(it, item.title) },
+                                        navController = navController,
+                                    )
+                                } else {
+                                    HomeItem(navController = navController, data = item)
+                                }
+
+                            }
+                        }
+                    }
+                    if (homeListState == ListState.PAGINATING) {
+                        item(key = "home-loading-more") {
+                            CenterLoadingBox(
+                                modifier =
+                                    Modifier
+                                        .fillMaxWidth()
+                                        .height(200.dp),
+                            )
+                        }
+                    }
+                    if (homeListState == ListState.PAGINATION_EXHAUST) {
+                        items(newRelease, key = { it.hashCode() }) { release ->
+                            Box(modifier = Modifier.padding(horizontal = 15.dp)) {
+                                HomeItem(
+                                    navController = navController,
+                                    data = release,
                                 )
                             }
                         }
-                        itemsIndexed(homeData, key = { _, item ->
-                            item.hashCode().toString() + (mainHomeThumbnail ?: "nothumb")
-                        }) { index, item ->
-                            Box {
-                                Column(
-                                    modifier =
-                                        Modifier
-                                            .padding(horizontal = 15.dp),
-                                ) {
-                                    val songsOnly = item.contents.filterNotNull().let { contents ->
-                                        contents.isNotEmpty() && contents.all { !it.videoId.isNullOrBlank() }
-                                    }
-                                    if (songsOnly) {
-                                        HomeSongShelf(
-                                            title = item.title,
-                                            tracks = allowedTracks(item.contents.filterNotNull().map { it.toTrack() }.distinctBy { it.videoId }),
-                                            activeTrackId = nowPlayingTrack?.mediaItem?.mediaId,
-                                            onPlay = { playTracks(listOf(it), it.title) },
-                                            onPlayAll = { playTracks(it, item.title) },
-                                            navController = navController,
-                                        )
-                                    } else {
-                                        HomeItem(navController = navController, data = item)
-                                    }
-                                    
+                        moodMomentAndGenre?.let { mood ->
+                            item(key = "home-moods") {
+                                Box(modifier = Modifier.padding(horizontal = 15.dp)) {
+                                    MoodMomentAndGenre(
+                                        mood = mood,
+                                        navController = navController,
+                                    )
                                 }
                             }
                         }
                         item {
-                            AnimatedVisibility(
-                                homeListState == ListState.PAGINATING,
-                                enter = expandVertically() + expandVertically(),
-                                exit = fadeOut() + shrinkVertically(),
+                            Column(
+                                Modifier
+                                    .padding(vertical = 10.dp)
+                                    .padding(horizontal = 15.dp),
+                                verticalArrangement = Arrangement.SpaceBetween,
                             ) {
-                                CenterLoadingBox(
-                                    modifier =
-                                        Modifier
-                                            .fillMaxWidth()
-                                            .height(200.dp),
-                                )
-                            }
-                        }
-                        if (homeListState == ListState.PAGINATION_EXHAUST) {
-                            items(newRelease, key = { it.hashCode() }) {
-                                AnimatedVisibility(
-                                    visible = newRelease.isNotEmpty(),
-                                ) {
-                                    Box(
-                                        modifier =
-                                            Modifier
-                                                .padding(horizontal = 15.dp),
-                                    ) {
-
-                                        HomeItem(
-                                            navController = navController,
-                                            data = it,
+                                ChartTitle()
+                                Spacer(modifier = Modifier.height(5.dp))
+                                Crossfade(targetState = regionChart) {
+                                    Logger.w("HomeScreen", "regionChart: $it")
+                                    if (it != null) {
+                                        DropdownButton(
+                                            items = CHART_SUPPORTED_COUNTRY.itemsData.toList(),
+                                            defaultSelected =
+                                                CHART_SUPPORTED_COUNTRY.itemsData.getOrNull(
+                                                    CHART_SUPPORTED_COUNTRY.items.indexOf(it),
+                                                )
+                                                    ?: CHART_SUPPORTED_COUNTRY.itemsData[1],
+                                        ) {
+                                            viewModel.exploreChart(
+                                                CHART_SUPPORTED_COUNTRY.items[
+                                                    CHART_SUPPORTED_COUNTRY.itemsData.indexOf(
+                                                        it,
+                                                    ),
+                                                ],
+                                            )
+                                        }
+                                    }
+                                }
+                                Spacer(modifier = Modifier.height(5.dp))
+                                Crossfade(
+                                    targetState = chartLoading,
+                                    label = "Chart",
+                                ) { loading ->
+                                    if (!loading) {
+                                        chart?.let {
+                                            ChartData(
+                                                chart = it,
+                                                navController = navController,
+                                            )
+                                        }
+                                    } else {
+                                        CenterLoadingBox(
+                                            modifier =
+                                                Modifier
+                                                    .fillMaxWidth()
+                                                    .height(400.dp),
                                         )
                                     }
                                 }
                             }
-                            item {
-                                AnimatedVisibility(
-                                    visible = moodMomentAndGenre != null,
-                                ) {
-                                    Box(
-                                        modifier =
-                                            Modifier
-                                                .padding(horizontal = 15.dp),
-                                    ) {
-                                        moodMomentAndGenre?.let {
-                                            MoodMomentAndGenre(
-                                                mood = it,
-                                                navController = navController,
-                                            )
-                                        }
-                                    }
-                                }
-                            }
-                            item {
-                                Column(
-                                    Modifier
-                                        .padding(vertical = 10.dp)
-                                        .padding(horizontal = 15.dp),
-                                    verticalArrangement = Arrangement.SpaceBetween,
-                                ) {
-                                    ChartTitle()
-                                    Spacer(modifier = Modifier.height(5.dp))
-                                    Crossfade(targetState = regionChart) {
-                                        Logger.w("HomeScreen", "regionChart: $it")
-                                        if (it != null) {
-                                            DropdownButton(
-                                                items = CHART_SUPPORTED_COUNTRY.itemsData.toList(),
-                                                defaultSelected =
-                                                    CHART_SUPPORTED_COUNTRY.itemsData.getOrNull(
-                                                        CHART_SUPPORTED_COUNTRY.items.indexOf(it),
-                                                    )
-                                                        ?: CHART_SUPPORTED_COUNTRY.itemsData[1],
-                                            ) {
-                                                viewModel.exploreChart(
-                                                    CHART_SUPPORTED_COUNTRY.items[
-                                                        CHART_SUPPORTED_COUNTRY.itemsData.indexOf(
-                                                            it,
-                                                        ),
-                                                    ],
-                                                )
-                                            }
-                                        }
-                                    }
-                                    Spacer(modifier = Modifier.height(5.dp))
-                                    Crossfade(
-                                        targetState = chartLoading,
-                                        label = "Chart",
-                                    ) { loading ->
-                                        if (!loading) {
-                                            chart?.let {
-                                                ChartData(
-                                                    chart = it,
-                                                    navController = navController,
-                                                )
-                                            }
-                                        } else {
-                                            CenterLoadingBox(
-                                                modifier =
-                                                    Modifier
-                                                        .fillMaxWidth()
-                                                        .height(400.dp),
-                                            )
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                        item(key = "home-end") { EndOfPage() }
-                    }
-                } else {
-                    Column {
-                        Spacer(
-                            Modifier.height(
-                                with(LocalDensity.current) {
-                                    topAppBarHeightPx.toDp()
-                                },
-                            ),
-                        )
-                        if (params == null) listeningShelf()
-                        HomeShimmer(isGrid = params == HOME_PARAMS_MIX_FOR_YOU)
-                    }
-                }
-            }
-        }
-        AnimatedContent(
-            targetState = scrollState.firstVisibleItemIndex == 0 && scrollState.firstVisibleItemScrollOffset == 0,
-            transitionSpec = {
-                fadeIn(tween(300)).togetherWith(fadeOut(tween(300)))
-            },
-        ) { target ->
-            Column(
-                modifier =
-                    Modifier
-                        .align(Alignment.TopCenter)
-                        .then(
-                            if (target) {
-                                Modifier.background(Color.Transparent)
-                            } else {
-                                Modifier
-                                    .hazeEffect(hazeState, style = HazeMaterials.ultraThin()) {
-                                        blurEnabled = true
-                                    }
-                            },
-                        ).onGloballyPositioned { coordinates ->
-                            topAppBarHeightPx = coordinates.size.height
-                        },
-            ) {
-                AnimatedVisibility(
-                    visible = isScrollingUp,
-                    enter = fadeIn() + expandVertically(),
-                    exit = fadeOut() + shrinkVertically(),
-                ) {
-                    HomeTopAppBar(
-                        navController = navController,
-                        accountInfo = accountInfo,
-                        isPlaying = isSongPlaying,
-                        accentColor = nowPlayingColor ?: MaterialTheme.colorScheme.onBackground,
-                    )
-                }
-                AnimatedVisibility(
-                    visible = !isScrollingUp,
-                    enter = fadeIn() + expandVertically(),
-                    exit = fadeOut() + shrinkVertically(),
-                ) {
-                    Spacer(
-                        modifier =
-                            Modifier
-                                .fillMaxWidth()
-                                .windowInsetsPadding(
-                                    WindowInsets.statusBars,
-                                ),
-                    )
-                }
-                Row(
-                    modifier =
-                        Modifier
-                            .horizontalScroll(chipRowState)
-                            .padding(vertical = 8.dp, horizontal = 15.dp)
-                            .background(Color.Transparent),
-                    horizontalArrangement = Arrangement.spacedBy(4.dp),
-                ) {
-                    listOfHomeChip.forEach { id ->
-                        val isSelected =
-                            when (params) {
-                                HOME_PARAMS_MIX_FOR_YOU -> id == Res.string.mix_for_you
-                                HOME_PARAMS_RELAX -> id == Res.string.relax
-                                HOME_PARAMS_SLEEP -> id == Res.string.sleep
-                                HOME_PARAMS_ENERGIZE -> id == Res.string.energize
-                                HOME_PARAMS_SAD -> id == Res.string.sad
-                                HOME_PARAMS_ROMANCE -> id == Res.string.romance
-                                HOME_PARAMS_FEEL_GOOD -> id == Res.string.feel_good
-                                HOME_PARAMS_WORKOUT -> id == Res.string.workout
-                                HOME_PARAMS_PARTY -> id == Res.string.party
-                                HOME_PARAMS_COMMUTE -> id == Res.string.commute
-                                HOME_PARAMS_FOCUS -> id == Res.string.focus
-                                else -> id == Res.string.all
-                            }
-                        Chip(
-                            isAnimated = loading,
-                            isAi = id == Res.string.mix_for_you,
-                            isSelected = isSelected,
-                            text = stringResource(id),
-                        ) {
-                            when (id) {
-                                Res.string.all -> viewModel.setParams(null)
-                                Res.string.mix_for_you -> viewModel.setParams(HOME_PARAMS_MIX_FOR_YOU)
-                                Res.string.relax -> viewModel.setParams(HOME_PARAMS_RELAX)
-                                Res.string.sleep -> viewModel.setParams(HOME_PARAMS_SLEEP)
-                                Res.string.energize -> viewModel.setParams(HOME_PARAMS_ENERGIZE)
-                                Res.string.sad -> viewModel.setParams(HOME_PARAMS_SAD)
-                                Res.string.romance -> viewModel.setParams(HOME_PARAMS_ROMANCE)
-                                Res.string.feel_good -> viewModel.setParams(HOME_PARAMS_FEEL_GOOD)
-                                Res.string.workout -> viewModel.setParams(HOME_PARAMS_WORKOUT)
-                                Res.string.party -> viewModel.setParams(HOME_PARAMS_PARTY)
-                                Res.string.commute -> viewModel.setParams(HOME_PARAMS_COMMUTE)
-                                Res.string.focus -> viewModel.setParams(HOME_PARAMS_FOCUS)
-                            }
                         }
                     }
+                    item(key = "home-end") { EndOfPage() }
                 }
             }
         }
@@ -713,88 +521,83 @@ fun HomeScreen(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun HomeTopAppBar(
+private fun HomeTopAppBar(
     navController: NavController,
     accountInfo: Pair<String?, String?>?,
-    isPlaying: Boolean,
-    accentColor: Color,
 ) {
     TopAppBar(
-        windowInsets =
-            TopAppBarDefaults.windowInsets.exclude(
-                TopAppBarDefaults.windowInsets.only(WindowInsetsSides.Start),
-            ),
-        navigationIcon = {
-            androidx.compose.material3.IconButton(
-                onClick = { navController.navigate(SettingsDestination) },
-                modifier = Modifier.semantics { contentDescription = "Open settings" },
-            ) {
-                if (!accountInfo?.second.isNullOrEmpty()) {
-                    coil3.compose.AsyncImage(
-                        model =
-                            coil3.request.ImageRequest
-                                .Builder(coil3.compose.LocalPlatformContext.current)
-                                .data(accountInfo?.second)
-                                .diskCachePolicy(coil3.request.CachePolicy.ENABLED)
-                                .diskCacheKey(accountInfo?.second)
-                                .crossfade(true)
-                                .build(),
-                        placeholder = echo.music.iad1tya.ui.component.rememberHolderPainter(),
-                        error = echo.music.iad1tya.ui.component.rememberHolderPainter(),
-                        contentDescription = null,
-                        contentScale = androidx.compose.ui.layout.ContentScale.Crop,
-                        modifier =
-                            Modifier
-                                .size(30.dp)
-                                .clip(
-                                    androidx.compose.foundation.shape.CircleShape,
-                                ),
-                    )
-                } else {
-                    androidx.compose.material3.Icon(
-                        imageVector = echoIcons.Menu,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.onBackground
-                    )
-                }
-            }
-        },
+        expandedHeight = 52.dp,
         title = {
-            Row(verticalAlignment = Alignment.CenterVertically) {
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 Image(
                     painter = painterResource(Res.drawable.meloqis_logo),
                     contentDescription = null,
-                    modifier = Modifier.size(30.dp),
+                    modifier = Modifier.size(28.dp),
                 )
-                Spacer(Modifier.width(7.dp))
-                Text(
-                    text = "Meloqis",
-                    style = MaterialTheme.typography.titleLarge,
-                    color = MaterialTheme.colorScheme.onBackground,
-                )
-                Spacer(Modifier.width(4.dp))
-                androidx.compose.material3.IconButton(
-                    onClick = { navController.navigate(EqualizerDestination) },
-                    modifier = Modifier.semantics { contentDescription = "Open equalizer" },
-                ) {
-                    EqualizerBars(
-                        color = accentColor,
-                        size = 18.dp,
-                        isActive = isPlaying,
+                Text("Meloqis", style = MaterialTheme.typography.titleLarge)
+            }
+        },
+        actions = {
+            IconButton(onClick = { navController.navigate(SearchDestination) { launchSingleTop = true } }) {
+                Icon(echoIcons.Search, contentDescription = stringResource(Res.string.search))
+            }
+            IconButton(onClick = { navController.navigate(SettingsDestination) { launchSingleTop = true } }) {
+                val avatar = accountInfo?.second
+                if (avatar.isNullOrBlank()) {
+                    Icon(echoIcons.Settings, contentDescription = "Settings")
+                } else {
+                    AsyncImage(
+                        model = avatar,
+                        contentDescription = "Account and settings",
+                        modifier = Modifier.size(30.dp).clip(CircleShape),
+                        contentScale = androidx.compose.ui.layout.ContentScale.Crop,
                     )
                 }
             }
         },
-        actions = {
-            RippleIconButton(imageVector = echoIcons.History, tint = MaterialTheme.colorScheme.onBackground) {
-                navController.navigate(RecentlySongsDestination)
-            }
-        },
-        colors =
-            TopAppBarDefaults.topAppBarColors(
-                containerColor = Color.Transparent,
-            ),
+        colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent),
     )
+}
+
+@Composable
+private fun HomeMoodStrip(
+    params: String?,
+    modifier: Modifier,
+    onSelect: (String?) -> Unit,
+) {
+    val moods = listOf(
+        Res.string.all to null,
+        Res.string.workout to HOME_PARAMS_WORKOUT,
+        Res.string.feel_good to HOME_PARAMS_FEEL_GOOD,
+        Res.string.energize to HOME_PARAMS_ENERGIZE,
+        Res.string.relax to HOME_PARAMS_RELAX,
+        Res.string.focus to HOME_PARAMS_FOCUS,
+        Res.string.mix_for_you to HOME_PARAMS_MIX_FOR_YOU,
+        Res.string.sleep to HOME_PARAMS_SLEEP,
+        Res.string.sad to HOME_PARAMS_SAD,
+        Res.string.romance to HOME_PARAMS_ROMANCE,
+        Res.string.party to HOME_PARAMS_PARTY,
+        Res.string.commute to HOME_PARAMS_COMMUTE,
+    )
+    Row(
+        modifier = modifier.fillMaxWidth().padding(horizontal = 16.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        moods.forEach { (label, endpoint) ->
+            FilterChip(
+                selected = params == endpoint,
+                onClick = { onSelect(endpoint) },
+                label = { Text(stringResource(label), maxLines = 1) },
+                shape = RoundedCornerShape(10.dp),
+                colors = FilterChipDefaults.filterChipColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+                    selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
+                    selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                ),
+                border = null,
+            )
+        }
+    }
 }
 
 @OptIn(ExperimentalFoundationApi::class)
@@ -828,6 +631,7 @@ private fun HomeSongShelf(
                 pages[page].forEach { track ->
                     SongFullWidthItems(
                         track = track,
+                        steadyText = true,
                         isPlaying = activeTrackId == track.videoId,
                         onMoreClickListener = { menuTrack = track },
                         onClickListener = { onPlay(track) },

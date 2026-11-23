@@ -36,7 +36,6 @@ import kotlin.reflect.KClass
 fun AppBottomNavigationBar(
     startDestination: Any = HomeDestination,
     navController: NavController,
-    isTranslucentBackground: Boolean = false,
     showAnalyticsTab: Boolean = false,
     reloadDestinationIfNeeded: (KClass<*>) -> Unit = { _ -> },
 ) {
@@ -78,10 +77,8 @@ fun AppBottomNavigationBar(
         modifier =
             Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 12.dp, vertical = 6.dp)
-                .windowInsetsPadding(NavigationBarDefaults.windowInsets)
-                .clip(androidx.compose.foundation.shape.RoundedCornerShape(18.dp))
-                .background(MaterialTheme.colorScheme.surfaceContainer),
+                .background(MaterialTheme.colorScheme.surfaceContainer)
+                .windowInsetsPadding(NavigationBarDefaults.windowInsets),
     ) {
         NavigationBar(
             windowInsets = WindowInsets(0, 0, 0, 0),

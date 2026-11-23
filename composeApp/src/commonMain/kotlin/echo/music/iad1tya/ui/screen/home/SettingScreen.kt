@@ -2226,12 +2226,12 @@ fun SettingScreen(
                 SettingItem(
                     title = "Privacy policy",
                     subtitle = "How Meloqis Music handles your data",
-                    onClick = { uriHandler.openUri("https://axenoraai.in/meloqis/privacy.html") },
+                    onClick = { uriHandler.openUri("https://meloqis.axenoraai.in/privacy.html") },
                 )
                 SettingItem(
                     title = "Support and data deletion",
                     subtitle = "Contact support or remove your app data",
-                    onClick = { uriHandler.openUri("https://axenoraai.in/meloqis/support.html") },
+                    onClick = { uriHandler.openUri("https://meloqis.axenoraai.in/support.html") },
                 )
                 if (echo.music.iad1tya.BuildKonfig.playStore == 0) {
                     SettingItem(

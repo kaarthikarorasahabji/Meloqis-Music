@@ -102,10 +102,6 @@ import echo.music.iad1tya.utils.VersionManager
 import echo.music.iad1tya.viewModel.SharedViewModel
 import com.mikepenz.markdown.m3.Markdown
 import com.mikepenz.markdown.m3.markdownTypography
-import dev.chrisbanes.haze.hazeEffect
-import dev.chrisbanes.haze.hazeSource
-import dev.chrisbanes.haze.materials.HazeMaterials
-import dev.chrisbanes.haze.rememberHazeState
 import kotlinx.coroutines.runBlocking
 import kotlinx.datetime.LocalDateTime
 import kotlinx.datetime.TimeZone
@@ -180,11 +176,6 @@ fun App(viewModel: SharedViewModel = koinInject()) {
     var shouldShowUpdateDialog by rememberSaveable {
         mutableStateOf(false)
     }
-
-    val hazeState =
-        rememberHazeState(
-            blurEnabled = true,
-        )
 
     LaunchedEffect(nowPlayingData) {
         isShowMiniPlayer = !(nowPlayingData?.mediaItem == null || nowPlayingData?.mediaItem == GenericMediaItem.EMPTY)
@@ -429,7 +420,12 @@ if (data.scheme == "wordbyword" && data.host == "lastfm-auth") {
                         enter = fadeIn() + slideInHorizontally(),
                         exit = fadeOut(),
                     ) {
-                        Column {
+                        Column(
+                            Modifier.fillMaxWidth().then(
+                                if (isLiquidGlassEnabled == TRUE) Modifier
+                                else Modifier.background(MaterialTheme.colorScheme.surfaceContainer),
+                            ),
+                        ) {
                             AnimatedVisibility(
                                 isShowMiniPlayer && isLiquidGlassEnabled == DataStoreManager.FALSE,
                                 enter = fadeIn() + slideInHorizontally(),
@@ -437,13 +433,9 @@ if (data.scheme == "wordbyword" && data.host == "lastfm-auth") {
                             ) {
                                 MiniPlayer(
                                     Modifier
-                                        .height(56.dp)
-                                        .fillMaxWidth()
-                                        .padding(
-                                            horizontal = 12.dp,
-                                        ).padding(
-                                            bottom = 4.dp,
-                                        ),
+                                        .height(60.dp)
+                                        .fillMaxWidth(),
+                                    integratedDock = true,
                                     backdrop = backdrop,
                                     onClick = {
                                         isShowNowPlaylistScreen = true
@@ -466,18 +458,11 @@ if (data.scheme == "wordbyword" && data.host == "lastfm-auth") {
                                     viewModel.reloadDestination(klass)
                                 }
                             } else {
-                                Box(
-                                    modifier = Modifier.hazeEffect(hazeState, style = HazeMaterials.ultraThin()) {
-                                        blurEnabled = true
-                                    }
-                                ) {
-                                    AppBottomNavigationBar(
-                                        navController = navController,
-                                        isTranslucentBackground = false,
-                                        showAnalyticsTab = showAnalyticsTab,
-                                    ) { klass ->
-                                        viewModel.reloadDestination(klass)
-                                    }
+                                AppBottomNavigationBar(
+                                    navController = navController,
+                                    showAnalyticsTab = showAnalyticsTab,
+                                ) { klass ->
+                                    viewModel.reloadDestination(klass)
                                 }
                             }
                         }
@@ -529,7 +514,7 @@ if (data.scheme == "wordbyword" && data.host == "lastfm-auth") {
                                         } else {
                                             Modifier
                                         },
-                                    ).hazeSource(hazeState),
+                                    ),
                             ) {
                                 AppNavigationGraph(
                                     innerPadding = innerPadding,

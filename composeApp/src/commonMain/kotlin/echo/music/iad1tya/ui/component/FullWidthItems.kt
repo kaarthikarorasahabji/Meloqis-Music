@@ -129,6 +129,7 @@ fun SongFullWidthItems(
     modifier: Modifier,
     rightView: @Composable (() -> Unit)? = null,
     forceDark: Boolean = LocalForceDarkText.current,
+    steadyText: Boolean = false,
 ) {
     val contentColor = if (forceDark) Color.White else MaterialTheme.colorScheme.onSurface
     val subtitleColor = if (forceDark) Color(0xC4FFFFFF) else MaterialTheme.colorScheme.onSurfaceVariant
@@ -286,15 +287,17 @@ fun SongFullWidthItems(
                         text = track?.title ?: songEntity?.title ?: "",
                         style = typo().titleSmall,
                         maxLines = 1,
+                        overflow = if (steadyText) androidx.compose.ui.text.style.TextOverflow.Ellipsis else androidx.compose.ui.text.style.TextOverflow.Clip,
                         color = contentColor,
                         modifier =
                             Modifier
                                 .fillMaxWidth()
                                 .wrapContentHeight(align = Alignment.CenterVertically)
-                                .basicMarquee(
-                                    iterations = Int.MAX_VALUE,
-                                    animationMode = MarqueeAnimationMode.Immediately,
-                                ).focusable(),
+                                .then(
+                                    if (steadyText) Modifier else Modifier.basicMarquee(
+                                        iterations = Int.MAX_VALUE, animationMode = MarqueeAnimationMode.Immediately,
+                                    ).focusable(),
+                                ),
                     )
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         AnimatedVisibility(
@@ -335,15 +338,17 @@ fun SongFullWidthItems(
                                 ) ?: "",
                             style = typo().bodySmall,
                             maxLines = 1,
+                            overflow = if (steadyText) androidx.compose.ui.text.style.TextOverflow.Ellipsis else androidx.compose.ui.text.style.TextOverflow.Clip,
                             color = subtitleColor,
                             modifier =
                                 Modifier
                                     .fillMaxWidth()
                                     .wrapContentHeight(align = Alignment.CenterVertically)
-                                    .basicMarquee(
-                                        iterations = Int.MAX_VALUE,
-                                        animationMode = MarqueeAnimationMode.Immediately,
-                                    ).focusable(),
+                                    .then(
+                                        if (steadyText) Modifier else Modifier.basicMarquee(
+                                            iterations = Int.MAX_VALUE, animationMode = MarqueeAnimationMode.Immediately,
+                                        ).focusable(),
+                                    ),
                         )
                     }
                 }
@@ -351,9 +356,10 @@ fun SongFullWidthItems(
                     rightView()
                 }
                 if (onMoreClickListener != null) {
-                    RippleIconButton(imageVector = echoIcons.MoreVert, fillMaxSize = false, tint = contentColor) {
-                        val videoId = track?.videoId ?: songEntity?.videoId
-                        videoId?.let { onMoreClickListener.invoke(it) }
+                    androidx.compose.material3.IconButton(onClick = {
+                        (track?.videoId ?: songEntity?.videoId)?.let(onMoreClickListener)
+                    }) {
+                        Icon(echoIcons.MoreVert, contentDescription = "Song options", tint = contentColor)
                     }
                 }
                 AnimatedVisibility(
