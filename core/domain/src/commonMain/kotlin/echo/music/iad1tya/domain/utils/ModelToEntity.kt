@@ -107,7 +107,7 @@ fun Track.toSongEntity(): SongEntity {
         isExplicit = this.isExplicit,
         likeStatus = this.likeStatus ?: "",
         thumbnails =
-            this.thumbnails?.last()?.url?.let {
+            this.thumbnails?.lastOrNull()?.url?.let {
                 if (it.contains("w120")) {
                     return@let Regex("([wh])120").replace(it, "$1544")
                 } else if (it.contains("sddefault")) {

@@ -420,9 +420,6 @@ suspend fun LazyListState.animateScrollAndCentralizeItem(index: Int) {
 }
 
 @Composable
-expect fun KeepScreenOn()
-
-@Composable
 fun LazyListState.isScrollingUp(): State<Boolean> {
     var previousIndex by remember(this) { mutableIntStateOf(firstVisibleItemIndex) }
     var previousScrollOffset by remember(this) { mutableIntStateOf(firstVisibleItemScrollOffset) }

@@ -1041,6 +1041,12 @@ interface DatabaseDao {
         return eventId
     }
 
+    @Query(
+        "SELECT videoId FROM playback_event WHERE videoId != '' " +
+            "GROUP BY videoId ORDER BY MAX(timestamp) DESC, MAX(eventId) DESC LIMIT :limit",
+    )
+    fun observeRecentlyPlayedIds(limit: Int): Flow<List<String>>
+
     @Query("SELECT * FROM playback_event ORDER BY timestamp DESC LIMIT :limit OFFSET :offset")
     suspend fun getPlaybackEventsByOffset(
         offset: Int,

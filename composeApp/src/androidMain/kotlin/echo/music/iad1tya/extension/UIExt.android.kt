@@ -15,7 +15,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.platform.LocalView
 import androidx.core.app.PictureInPictureModeChangedInfo
 import androidx.core.util.Consumer
 import echo.music.iad1tya.domain.data.model.ui.ScreenSizeInfo
@@ -71,17 +70,6 @@ actual fun getScreenSizeInfo(): ScreenSizeInfo {
                 hPX = point.y,
                 wPX = point.x,
             )
-        }
-    }
-}
-
-@Composable
-actual fun KeepScreenOn() {
-    val currentView = LocalView.current
-    DisposableEffect(Unit) {
-        currentView.keepScreenOn = true
-        onDispose {
-            currentView.keepScreenOn = false
         }
     }
 }

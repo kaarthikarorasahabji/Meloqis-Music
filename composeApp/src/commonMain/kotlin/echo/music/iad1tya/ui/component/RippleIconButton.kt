@@ -12,6 +12,10 @@ import androidx.compose.ui.unit.dp
 import echo.music.iad1tya.ui.icon.Pause
 import echo.music.iad1tya.ui.icon.PlayArrow
 import echo.music.iad1tya.ui.icon.echoIcons
+import echomusic.composeapp.generated.resources.Res
+import echomusic.composeapp.generated.resources.player_pause
+import echomusic.composeapp.generated.resources.player_play
+import org.jetbrains.compose.resources.stringResource
 
 @Composable
 fun RippleIconButton(
@@ -41,14 +45,11 @@ fun PlayPauseButton(
     tint: Color = Color.White,
     onClick: () -> Unit,
 ) {
-    RippleIconButton(
-        if (!isPlaying) {
-            echoIcons.PlayArrow
-        } else {
-            echoIcons.Pause
-        },
-        modifier = modifier,
-        tint = tint,
-        onClick = onClick,
-    )
+    IconButton(onClick = onClick, modifier = modifier) {
+        Icon(
+            imageVector = if (isPlaying) echoIcons.Pause else echoIcons.PlayArrow,
+            contentDescription = stringResource(if (isPlaying) Res.string.player_pause else Res.string.player_play),
+            tint = tint,
+        )
+    }
 }

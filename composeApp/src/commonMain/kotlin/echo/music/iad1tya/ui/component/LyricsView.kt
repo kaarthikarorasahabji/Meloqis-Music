@@ -90,7 +90,6 @@ import coil3.request.ImageRequest
 import coil3.request.crossfade
 import echo.music.iad1tya.domain.data.model.streams.TimeLine
 import echo.music.iad1tya.ui.theme.LocalBatterySaver
-import echo.music.iad1tya.extension.KeepScreenOn
 import echo.music.iad1tya.extension.ParsedRichSyncLine
 import echo.music.iad1tya.extension.animateScrollAndCentralizeItem
 import echo.music.iad1tya.extension.formatDuration
@@ -663,9 +662,6 @@ fun FullscreenLyricsSheet(
             }
     }
 
-    if (screenDataState.lyricsData != null) {
-        KeepScreenOn()
-    }
 
     var showQueueBottomSheet by rememberSaveable {
         mutableStateOf(false)

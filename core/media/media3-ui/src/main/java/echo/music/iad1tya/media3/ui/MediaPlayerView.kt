@@ -90,10 +90,6 @@ fun MediaPlayerView(
         mutableIntStateOf(screenSize.wPX)
     }
 
-    var keepScreenOn by rememberSaveable {
-        mutableStateOf(false)
-    }
-
     val playerListener =
         remember {
             object : Player.Listener {
@@ -107,10 +103,6 @@ fun MediaPlayerView(
                     }
                 }
 
-                override fun onIsPlayingChanged(isPlaying: Boolean) {
-                    super.onIsPlayingChanged(isPlaying)
-                    keepScreenOn = isPlaying
-                }
             }
         }
 
@@ -143,6 +135,7 @@ fun MediaPlayerView(
                 ).build()
                 .apply {
                     addListener(playerListener)
+                    volume = 0f
                     videoScalingMode = C.VIDEO_SCALING_MODE_DEFAULT
                 }
         }
@@ -167,10 +160,6 @@ fun MediaPlayerView(
             exoPlayer.removeListener(playerListener)
             exoPlayer.release()
         }
-    }
-
-    if (keepScreenOn) {
-        KeepScreenOn()
     }
 
     val presentationState = rememberPresentationState(exoPlayer)

@@ -18,6 +18,8 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -76,10 +78,13 @@ fun PlayerControlLayout(
 ) {
     val seekBackLabel = stringResource(Res.string.player_seek_back)
     val seekForwardLabel = stringResource(Res.string.player_seek_forward)
-    val height = if (isSmallSize) 48.dp else 96.dp
-    val smallIcon = if (isSmallSize) 20.dp to 28.dp else 32.dp to 42.dp
-    val mediumIcon = if (isSmallSize) 28.dp to 38.dp else 42.dp to 52.dp
-    val bigIcon = if (isSmallSize) 38.dp to 48.dp else 72.dp to 96.dp
+    val height = if (isSmallSize) 48.dp else 82.dp
+    val smallIcon = if (isSmallSize) 20.dp to 28.dp else 23.dp to 48.dp
+    val mediumIcon = if (isSmallSize) 28.dp to 38.dp else 32.dp to 50.dp
+    val bigIcon = if (isSmallSize) 30.dp to 48.dp else 34.dp to 68.dp
+    val playShape = if (isSmallSize) CircleShape else RoundedCornerShape(22.dp)
+    val playFill = if (isSmallSize) Color.Transparent else MaterialTheme.colorScheme.primaryContainer
+    val playColor = if (isSmallSize) contentColor else MaterialTheme.colorScheme.onPrimaryContainer
     Row(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceEvenly,
@@ -150,16 +155,13 @@ fun PlayerControlLayout(
                 )
             }
         }
-        Box(Modifier.weight(1f), contentAlignment = Alignment.Center) {
+        Box(Modifier.weight(if (isSmallSize) 1f else 1.35f), contentAlignment = Alignment.Center) {
             Box(
                 modifier =
                     Modifier
-                        .background(Color.Transparent)
                         .size(bigIcon.second)
-                        .aspectRatio(1f)
-                        .clip(
-                            CircleShape,
-                        )
+                        .clip(playShape)
+                        .background(playFill)
                         .transportClick(onClick = {
                             onUIEvent(UIEvent.PlayPause)
                         }),
@@ -168,15 +170,15 @@ fun PlayerControlLayout(
                 Crossfade(targetState = controllerState.isPlaying) { isPlaying ->
                     if (!isPlaying) {
                         Icon(
-                            imageVector = if (plainPlayPause) echoIcons.PlayArrow else echoIcons.PlayCircle,
-                            tint = contentColor,
+                            imageVector = if (plainPlayPause || !isSmallSize) echoIcons.PlayArrow else echoIcons.PlayCircle,
+                            tint = playColor,
                             contentDescription = stringResource(Res.string.player_play),
                             modifier = Modifier.size(bigIcon.first),
                         )
                     } else {
                         Icon(
-                            imageVector = if (plainPlayPause) echoIcons.Pause else echoIcons.PauseCircle,
-                            tint = contentColor,
+                            imageVector = if (plainPlayPause || !isSmallSize) echoIcons.Pause else echoIcons.PauseCircle,
+                            tint = playColor,
                             contentDescription = stringResource(Res.string.player_pause),
                             modifier = Modifier.size(bigIcon.first),
                         )

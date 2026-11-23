@@ -129,7 +129,7 @@ internal fun MusicLightsStudio(onClose: () -> Unit) {
                         StudioSwitch("Gentle glow between songs",settings.ambient) { update(settings.copy(ambient=it)) }
                         StudioSwitch("Mirror the spectrum",settings.mirror) { update(settings.copy(mirror=it)) }
                         StudioSwitch("Reduce motion in battery saver",settings.powerSaver) { update(settings.copy(powerSaver=it)) }
-                        Text("Device animation preferences are respected. Lighting pauses when Meloqis is in the background and never keeps your screen awake.",style=MaterialTheme.typography.bodySmall,color=Color(0xFFC7C1D5))
+                        Text("Device animation preferences are respected. Automatic lighting pauses while charging or when Meloqis is in the background.",style=MaterialTheme.typography.bodySmall,color=Color(0xFFC7C1D5))
                         Text("Music response uses Meloqis playback on this device. Turn Demo off to check the real response.",style=MaterialTheme.typography.bodySmall,color=Color(0xFFC7C1D5))
                     }
                 }

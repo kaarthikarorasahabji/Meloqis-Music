@@ -6,8 +6,6 @@ import androidx.compose.animation.Crossfade
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
-import androidx.compose.animation.slideInVertically
-import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -144,6 +142,7 @@ import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.koinInject
 import echomusic.composeapp.generated.resources.Res
+import echomusic.composeapp.generated.resources.search
 import echomusic.composeapp.generated.resources.albums
 import echomusic.composeapp.generated.resources.artists
 import echomusic.composeapp.generated.resources.clear_search_history
@@ -154,7 +153,6 @@ import echomusic.composeapp.generated.resources.no_results_found
 import echomusic.composeapp.generated.resources.playlists
 import echomusic.composeapp.generated.resources.podcasts
 import echomusic.composeapp.generated.resources.retry
-import echomusic.composeapp.generated.resources.search_for
 import echomusic.composeapp.generated.resources.search_for_songs_artists_albums_playlists_and_more
 import echomusic.composeapp.generated.resources.song
 import echomusic.composeapp.generated.resources.videos
@@ -231,37 +229,6 @@ fun SearchScreen(
                 SearchUIType.SEARCH_RESULTS ->
                     resultsState.firstVisibleItemIndex == 0 && resultsState.firstVisibleItemScrollOffset == 0
             }
-        }
-    }
-
-    val searchForString = stringResource(Res.string.search_for)
-    val songString = stringResource(Res.string.song).lowercase()
-    val artistString = stringResource(Res.string.artists).lowercase()
-    val albumString = stringResource(Res.string.albums).lowercase()
-    val playlistString = stringResource(Res.string.playlists).lowercase()
-    val videoString = stringResource(Res.string.videos).lowercase()
-    val podcastString = stringResource(Res.string.podcasts).lowercase()
-
-    // Animated Placeholder
-    val placeholderTexts =
-        remember {
-            listOf(
-                "$searchForString $songString...",
-                "$searchForString $artistString...",
-                "$searchForString $albumString...",
-                "$searchForString $playlistString...",
-                "$searchForString $videoString...",
-                "$searchForString $podcastString...",
-            )
-        }
-
-    var currentPlaceholderIndex by remember { mutableIntStateOf(0) }
-
-    // Animate placeholder - pause when focused
-    LaunchedEffect(isFocused) {
-        while (!isFocused) {
-            delay(3000) // Change every 3 seconds
-            currentPlaceholderIndex = (currentPlaceholderIndex + 1) % placeholderTexts.size
         }
     }
 
@@ -911,7 +878,12 @@ fun SearchScreen(
                             },
                         ).padding(vertical = 10.dp),
             ) {
-        // Search Bar with Animated Placeholder
+                Text(
+                    stringResource(Res.string.search),
+                    style = MaterialTheme.typography.headlineMedium,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    modifier = Modifier.padding(start = 20.dp, end = 20.dp, bottom = 8.dp),
+                )
         SearchBar(
             inputField = {
                 SearchBarDefaults.InputField(
@@ -948,25 +920,12 @@ fun SearchScreen(
                     onExpandedChange = {},
                     enabled = true,
                     placeholder = {
-                        // Animated placeholder text
-                        AnimatedContent(
-                            targetState = currentPlaceholderIndex,
-                            transitionSpec = {
-                                (
-                                    fadeIn(animationSpec = tween(500)) +
-                                        slideInVertically { height -> height }
-                                ).togetherWith(
-                                    fadeOut(animationSpec = tween(500)) +
-                                        slideOutVertically { height -> -height },
-                                )
-                            },
-                            label = "placeholder_animation",
-                        ) { index ->
-                            Text(
-                                text = placeholderTexts[index],
-                                style = typo().labelMedium,
-                            )
-                        }
+                        Text(
+                            stringResource(Res.string.search_for_songs_artists_albums_playlists_and_more),
+                            style = MaterialTheme.typography.bodyMedium,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
                     },
                     leadingIcon = {
                         Icon(
@@ -1002,7 +961,8 @@ fun SearchScreen(
                     .onFocusChanged {
                         isFocused = it.isFocused
                     }.padding(horizontal = 16.dp),
-            shape = RoundedCornerShape(8.dp),
+            shape = RoundedCornerShape(20.dp),
+            colors = SearchBarDefaults.colors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
             content = {},
         )
                 // Filter chips ride along inside the blurred block instead of sitting in the

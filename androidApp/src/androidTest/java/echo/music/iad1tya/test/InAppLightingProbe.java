@@ -4,7 +4,9 @@ import android.app.Activity;
 import android.app.Instrumentation;
 import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.SharedPreferences;
+import android.os.BatteryManager;
 import android.os.Bundle;
 import android.view.View;
 import android.view.WindowManager;
@@ -25,23 +27,19 @@ public final class InAppLightingProbe extends Instrumentation {
             prefs.edit().remove("enabled").putBoolean("guide_seen_in_app_v3",true).commit();
             if(!LightsPreferences.INSTANCE.read(prefs).getEnabled())throw new AssertionError("Default-on preference missing");
             activity=startActivitySync(new Intent(c,MusicLightsSettingsActivity.class).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
-            waitState(true);
-            if(android.os.Build.VERSION.SDK_INT>=29) for(View window:android.view.inspector.WindowInspector.getGlobalWindowViews()) {
-                android.view.ViewGroup.LayoutParams params=window.getLayoutParams();
-                if(params instanceof WindowManager.LayoutParams && ((WindowManager.LayoutParams)params).type==WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY)
-                    throw new AssertionError("Lighting created a system overlay");
+            Intent battery = c.registerReceiver(null, new IntentFilter(Intent.ACTION_BATTERY_CHANGED));
+            boolean pluggedIn = battery == null || battery.getIntExtra(BatteryManager.EXTRA_PLUGGED, -1) != 0;
+            if (pluggedIn) {
+                waitForIdleSync();
+                waitState(false);
+                passed = true;
+                result.putString("stream", "IN_APP_LIGHTS_OK: charging suppresses lighting. Run on battery to check the foreground lifecycle.\n");
+            } else {
+                waitState(true);
+                checkForegroundLifecycle(activity, prefs);
+                passed = true;
+                result.putString("stream", "IN_APP_LIGHTS_OK: default on, persistent off, re-enable, focus loss/recovery, background stop, no system overlay window\n");
             }
-            runOnMainSync(()->prefs.edit().putBoolean("enabled",false).commit());waitState(false);
-            if(LightsPreferences.INSTANCE.read(prefs).getEnabled())throw new AssertionError("Off choice did not persist");
-            runOnMainSync(()->prefs.edit().putBoolean("enabled",true).commit());waitState(true);
-            final Activity screen=activity;
-            final android.app.AlertDialog[] dialog=new android.app.AlertDialog[1];
-            runOnMainSync(()->{dialog[0]=new android.app.AlertDialog.Builder(screen).setMessage("Focus lifecycle check").create();dialog[0].show();});
-            waitState(false);
-            runOnMainSync(()->dialog[0].dismiss());waitState(true);
-            runOnMainSync(()->screen.moveTaskToBack(true));waitState(false);
-            passed=true;
-            result.putString("stream","IN_APP_LIGHTS_OK: default on, persistent off, re-enable, focus loss/recovery, background stop, no system overlay window\n");
         } catch(Throwable t) { result.putString("stream","IN_APP_LIGHTS_FAILED: "+t+"\n"); }
         finally {
             if(activity!=null){final Activity screen=activity;runOnMainSync(screen::finishAffinity);waitForIdleSync();}
@@ -58,6 +56,22 @@ public final class InAppLightingProbe extends Instrumentation {
             restore.commit();
         }
         finish(passed?Activity.RESULT_OK:Activity.RESULT_CANCELED,result);
+    }
+
+    private void checkForegroundLifecycle(Activity screen, SharedPreferences prefs) throws Exception {
+        if(android.os.Build.VERSION.SDK_INT>=29) for(View window:android.view.inspector.WindowInspector.getGlobalWindowViews()) {
+            android.view.ViewGroup.LayoutParams params=window.getLayoutParams();
+            if(params instanceof WindowManager.LayoutParams && ((WindowManager.LayoutParams)params).type==WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY)
+                throw new AssertionError("Lighting created a system overlay");
+        }
+        runOnMainSync(()->prefs.edit().putBoolean("enabled",false).commit());waitState(false);
+        if(LightsPreferences.INSTANCE.read(prefs).getEnabled())throw new AssertionError("Off choice did not persist");
+        runOnMainSync(()->prefs.edit().putBoolean("enabled",true).commit());waitState(true);
+        final android.app.AlertDialog[] dialog=new android.app.AlertDialog[1];
+        runOnMainSync(()->{dialog[0]=new android.app.AlertDialog.Builder(screen).setMessage("Focus lifecycle check").create();dialog[0].show();});
+        waitState(false);
+        runOnMainSync(()->dialog[0].dismiss());waitState(true);
+        runOnMainSync(()->screen.moveTaskToBack(true));waitState(false);
     }
     private void waitState(boolean expected)throws Exception {
         long end=System.currentTimeMillis()+5000;

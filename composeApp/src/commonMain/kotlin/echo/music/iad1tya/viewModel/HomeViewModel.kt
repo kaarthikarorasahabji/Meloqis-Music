@@ -10,10 +10,13 @@ import echo.music.iad1tya.domain.data.model.home.chart.Chart
 import echo.music.iad1tya.domain.data.model.mood.Mood
 import echo.music.iad1tya.domain.manager.DataStoreManager
 import echo.music.iad1tya.domain.manager.DataStoreManager.Values.TRUE
+import echo.music.iad1tya.domain.repository.AnalyticsRepository
 import echo.music.iad1tya.domain.repository.HomeRepository
+import echo.music.iad1tya.domain.repository.SongRepository
 import echo.music.iad1tya.domain.utils.Resource
 import echo.music.iad1tya.logger.Logger
 import echo.music.iad1tya.viewModel.base.BaseViewModel
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -24,6 +27,10 @@ import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.mapLatest
+import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -36,7 +43,24 @@ import echomusic.composeapp.generated.resources.view_count
 class HomeViewModel(
     private val dataStoreManager: DataStoreManager,
     private val homeRepository: HomeRepository,
+    private val analyticsRepository: AnalyticsRepository,
+    private val songRepository: SongRepository,
 ) : BaseViewModel() {
+    @OptIn(ExperimentalCoroutinesApi::class)
+    val recentlyPlayed = dataStoreManager.localTrackingEnabled
+        .distinctUntilChanged()
+        .flatMapLatest { tracking ->
+            if (tracking == TRUE) {
+                analyticsRepository.observeRecentlyPlayedIds(12).mapLatest { ids ->
+                    if (ids.isEmpty()) emptyList() else songRepository.getSongsByListVideoId(ids).first()
+                }
+            } else {
+                flowOf(emptyList())
+            }
+        }
+        .catch { emit(emptyList()) }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(replayExpirationMillis = 0), emptyList())
+
     suspend fun claimWeeklySupportPrompt(): Boolean {
         val now = kotlin.time.Clock.System.now().toEpochMilliseconds()
         val key = "weekly_support_prompt_at"

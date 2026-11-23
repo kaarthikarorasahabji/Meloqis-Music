@@ -3,7 +3,6 @@ package echo.music.iad1tya.ui.screen.home
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.Crossfade
-import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
@@ -74,23 +73,22 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.lerp
-import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.compose.currentStateAsState
 import androidx.navigation.NavController
 import coil3.compose.AsyncImage
 import coil3.compose.LocalPlatformContext
 import coil3.request.CachePolicy
 import coil3.request.ImageRequest
 import coil3.request.crossfade
-import com.kmpalette.loader.rememberNetworkLoader
-import com.kmpalette.rememberDominantColorState
 import echo.music.iad1tya.common.CHART_SUPPORTED_COUNTRY
 import echo.music.iad1tya.common.Config
 import echo.music.iad1tya.domain.data.model.browse.album.Track
@@ -106,16 +104,12 @@ import echo.music.iad1tya.domain.utils.toListName
 import echo.music.iad1tya.domain.utils.toTrack
 import echo.music.iad1tya.logger.Logger
 import echo.music.iad1tya.ui.component.rememberHolderPainter
-import echo.music.iad1tya.extension.artworkScrimBrush
 import echo.music.iad1tya.extension.isScrollingUp
-import echo.music.iad1tya.extension.rgbFactor
 import echo.music.iad1tya.ui.component.CenterLoadingBox
 import echo.music.iad1tya.ui.component.Chip
 import echo.music.iad1tya.ui.component.DropdownButton
 import echo.music.iad1tya.ui.component.EndOfPage
 import echo.music.iad1tya.ui.component.EqualizerBars
-import echo.music.iad1tya.ui.component.HeroCarouselItem
-import echo.music.iad1tya.ui.component.ListeningRoom
 import echo.music.iad1tya.ui.component.HomeItem
 import echo.music.iad1tya.ui.component.HomeItemContentPlaylist
 import echo.music.iad1tya.ui.component.HomeShimmer
@@ -146,6 +140,10 @@ import echo.music.iad1tya.ui.navigation.destination.login.LoginDestination
 import echo.music.iad1tya.ui.theme.LocalNowPlayingColor
 import echo.music.iad1tya.ui.theme.typo
 import echo.music.iad1tya.viewModel.HomeViewModel
+import echo.music.iad1tya.viewModel.UIEvent
+import echo.music.iad1tya.ui.component.HomeListeningCanvas
+import echo.music.iad1tya.ui.theme.LocalBatterySaver
+import echo.music.iad1tya.ui.navigation.destination.search.SearchDestination
 import echo.music.iad1tya.viewModel.HomeViewModel.Companion.HOME_PARAMS_COMMUTE
 import echo.music.iad1tya.viewModel.HomeViewModel.Companion.HOME_PARAMS_ENERGIZE
 import echo.music.iad1tya.viewModel.HomeViewModel.Companion.HOME_PARAMS_FEEL_GOOD
@@ -168,8 +166,6 @@ import dev.chrisbanes.haze.hazeSource
 import dev.chrisbanes.haze.materials.ExperimentalHazeMaterialsApi
 import dev.chrisbanes.haze.materials.HazeMaterials
 import dev.chrisbanes.haze.rememberHazeState
-import echo.music.iad1tya.ui.component.rememberArtworkNetworkClient
-import io.ktor.http.Url
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
@@ -234,6 +230,8 @@ fun HomeScreen(
     libraryViewModel: LibraryViewModel =
         koinViewModel(),
     navController: NavController,
+    onOpenNowPlaying: () -> Unit = {},
+    isNowPlayingOpen: Boolean = false,
 ) {
     val coroutineScope = rememberCoroutineScope()
     val scrollState = rememberLazyListState()
@@ -265,95 +263,28 @@ fun HomeScreen(
     val shareLyricsPermissions by sharedViewModel.shareSavedLyrics.collectAsStateWithLifecycle()
     val controllerState by sharedViewModel.controllerState.collectAsStateWithLifecycle()
     val nowPlayingTrack by sharedViewModel.nowPlayingState.collectAsStateWithLifecycle()
+    val playerArtwork by sharedViewModel.nowPlayingScreenData.collectAsStateWithLifecycle()
+    val recentlyPlayed by viewModel.recentlyPlayed.collectAsStateWithLifecycle()
+    val dataSaver by sharedViewModel.dataSaver.collectAsStateWithLifecycle()
+    val lifecycle by LocalLifecycleOwner.current.lifecycle.currentStateAsState()
+    val motionAllowed = lifecycle.isAtLeast(Lifecycle.State.RESUMED) && !dataSaver &&
+        !LocalBatterySaver.current && !isNowPlayingOpen && scrollState.firstVisibleItemIndex == 0
+
+    fun playFromHistory(song: echo.music.iad1tya.domain.data.entities.SongEntity) {
+        val track = song.toTrack()
+        viewModel.setQueueData(QueueData.Data(
+            listTracks = listOf(track),
+            firstPlayedTrack = track,
+            playlistId = "RDAMVM${song.videoId}",
+            playlistName = song.title,
+            playlistType = PlaylistType.RADIO,
+        ))
+        viewModel.loadMediaItem(track, Config.SONG_CLICK)
+    }
     val isSongPlaying = controllerState.isPlaying && !nowPlayingTrack?.mediaItem?.mediaId.isNullOrBlank()
 
-    val backgroundColor = MaterialTheme.colorScheme.background
-    val isLightTheme = backgroundColor.luminance() > 0.5f
-    var topHeaderColor by remember {
-        mutableStateOf(backgroundColor)
-    }
-    // Song-driven recolour: when a track is playing, the header breathes in THAT song's artwork
-    // colour (processed the same way as the home-thumbnail tone below). Falls back to the home
-    // feed's dominant colour when nothing is playing. Base scheme (buttons/chips) is untouched.
     val nowPlayingColor = LocalNowPlayingColor.current
-    val activeMediaId =
-        nowPlayingTrack?.mediaItem?.mediaId.takeIf { controllerState.isPlaying }
-    val headerTarget =
-        if (nowPlayingColor != null) {
-            if (isLightTheme) lerp(nowPlayingColor, Color.White, 0.85f) else nowPlayingColor.rgbFactor(0.3f)
-        } else {
-            topHeaderColor
-        }
-    val animatedColor by animateColorAsState(headerTarget, tween(500))
     val mainHomeThumbnail by viewModel.mainHomeThumbnail.collectAsStateWithLifecycle()
-    val networkLoader = rememberNetworkLoader(rememberArtworkNetworkClient())
-    val dominantColorState =
-        rememberDominantColorState(
-            defaultColor = backgroundColor,
-            defaultOnColor = backgroundColor,
-            loader = networkLoader,
-        )
-
-    LaunchedEffect(mainHomeThumbnail) {
-        try {
-        mainHomeThumbnail?.let {
-            dominantColorState.updateFrom(Url(it))
-        }
-        } catch (cancelled: CancellationException) {
-            throw cancelled
-        } catch (error: Exception) {
-            Logger.w("ArtworkColor", "Could not load artwork color: ${error.message}")
-        }
-    }
-
-    LaunchedEffect(dominantColorState, isLightTheme) {
-        snapshotFlow { dominantColorState.color }.collect {
-            // Light theme: pull the artwork color toward white for a soft pastel header;
-            // dark theme keeps the original darkened tone.
-            topHeaderColor = if (isLightTheme) lerp(it, Color.White, 0.85f) else it.rgbFactor(0.3f)
-        }
-    }
-
-    // Listening Room source: reuse artwork and tracks already loaded for the home feed.
-    val heroItems =
-        remember(homeData, activeMediaId) {
-            homeData
-                .flatMap { it.contents }
-                .filterNotNull()
-                .filter { !it.videoId.isNullOrEmpty() && it.thumbnails.isNotEmpty() }
-                .distinctBy { it.videoId }
-                .take(7)
-                .map { content ->
-                    HeroCarouselItem(
-                        id = content.videoId!!,
-                        title = content.title,
-                        subtitle =
-                            content.artists
-                                .toListName()
-                                .connectArtists()
-                                .takeIf { it.isNotBlank() }
-                                ?: content.album?.name,
-                        thumbnailUrl = content.thumbnails.lastOrNull()?.url,
-                        isPlaying = activeMediaId == content.videoId,
-                        onClick = {
-                            val firstQueue: Track = content.toTrack()
-                            viewModel.setQueueData(
-                                QueueData.Data(
-                                    listTracks = arrayListOf(firstQueue),
-                                    firstPlayedTrack = firstQueue,
-                                    playlistId = "RDAMVM${content.videoId}",
-                                    playlistName = content.title,
-                                    playlistType = PlaylistType.RADIO,
-                                    continuation = null,
-                                ),
-                            )
-                            viewModel.loadMediaItem(firstQueue, Config.SONG_CLICK)
-                        },
-                    )
-                }
-        }
-
-
 
     var topAppBarHeightPx by rememberSaveable {
         mutableIntStateOf(0)
@@ -508,96 +439,53 @@ fun HomeScreen(
                         )
                         return@Crossfade
                     }
-                    if (homeData.isEmpty() && homeListState == ListState.PAGINATION_EXHAUST) {
-                        OfflineErrorState(
-                            onRetry = onRefresh,
-                            onOpenDownloaded = {
-                                navController.navigate(
-                                    LibraryDynamicPlaylistDestination(
-                                        type = LibraryDynamicPlaylistType.Downloaded.toStringParams(),
-                                    ),
-                                )
-                            },
-                        )
-                        return@Crossfade
-                    }
                     LazyColumn(
                         state = scrollState,
-                        verticalArrangement = Arrangement.spacedBy(2.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp),
                     ) {
+                        item(key = "home-listening") {
+                            Column(Modifier.padding(horizontal = 16.dp)) {
+                                Spacer(Modifier.height(with(LocalDensity.current) { topAppBarHeightPx.toDp() }))
+                                HomeListeningCanvas(
+                                    currentTrack = nowPlayingTrack,
+                                    playerArtwork = playerArtwork,
+                                    isPlaying = isSongPlaying,
+                                    motionAllowed = motionAllowed,
+                                    recentSongs = recentlyPlayed,
+                                    onOpenPlayer = onOpenNowPlaying,
+                                    onPlayPause = { sharedViewModel.onUIEvent(UIEvent.PlayPause) },
+                                    onPlaySong = ::playFromHistory,
+                                    onSearch = { navController.navigate(SearchDestination) { launchSingleTop = true } },
+                                )
+                            }
+                        }
+                        if (homeData.isEmpty() && homeListState == ListState.PAGINATION_EXHAUST) {
+                            item(key = "home-offline") {
+                                OfflineErrorState(
+                                    onRetry = onRefresh,
+                                    onOpenDownloaded = {
+                                        navController.navigate(LibraryDynamicPlaylistDestination(
+                                            type = LibraryDynamicPlaylistType.Downloaded.toStringParams(),
+                                        ))
+                                    },
+                                )
+                            }
+                        }
                         itemsIndexed(homeData, key = { _, item ->
                             item.hashCode().toString() + (mainHomeThumbnail ?: "nothumb")
                         }) { index, item ->
                             Box {
-                                if (index == 0) {
-                                    Box(
-                                        modifier =
-                                            Modifier
-                                                .fillMaxWidth()
-                                                .height(300.dp)
-                                                .background(
-                                                    Brush.verticalGradient(
-                                                        listOf(
-                                                            animatedColor.copy(alpha = 0.38f),
-                                                            animatedColor.copy(alpha = 0.12f),
-                                                            Color.Transparent,
-                                                        ),
-                                                    ),
-                                                ),
-                                    ) {
-                                        Box(
-                                            modifier =
-                                                Modifier
-                                                    .fillMaxWidth()
-                                                    .height(180.dp)
-                                                    .align(Alignment.BottomCenter)
-                                                    .background(artworkScrimBrush(backgroundColor)),
-                                        )
-                                    }
-                                }
                                 Column(
                                     modifier =
                                         Modifier
                                             .padding(horizontal = 15.dp),
                                 ) {
-                                    if (index == 0) {
-                                        Spacer(
-                                            Modifier.height(
-                                                with(LocalDensity.current) { topAppBarHeightPx.toDp() },
-                                            ),
-                                        )
-                                    }
                                     if (index == 0 && accountInfo != null && accountShow) {
                                         AccountLayout(
                                             accountName = accountInfo?.first ?: "",
                                             url = accountInfo?.second ?: "",
                                         )
                                         Spacer(Modifier.height(8.dp))
-                                    }
-                                    if (index == 0) {
-                                        echo.music.iad1tya.ui.component.StudioHeading(
-                                            eyebrow = "YOUR LISTENING STUDIO",
-                                            title = "Find your frequency.",
-                                            subtitle = "A little discovery. A lot of you.",
-                                        )
-                                    }
-                                    if (index == 0) {
-                                        echo.music.iad1tya.ui.component.ListeningDesk(
-                                            onSurprise = { navController.navigate(echo.music.iad1tya.ui.navigation.destination.home.SurpriseMixDestination) { launchSingleTop = true } },
-                                            onSearch = { navController.navigate(echo.music.iad1tya.ui.navigation.destination.search.SearchDestination) { launchSingleTop = true } },
-                                            onLibrary = { navController.navigate(echo.music.iad1tya.ui.navigation.destination.library.LibraryDestination) { launchSingleTop = true } },
-                                        )
-                                    }
-                                    if (index == 0 && heroItems.isNotEmpty()) {
-                                        ListeningRoom(
-                                            items = heroItems,
-                                            onPrepare = { sharedViewModel.prepareAudio(it) },
-                                            accentColor = nowPlayingColor ?: MaterialTheme.colorScheme.primary,
-                                            modifier =
-                                                Modifier
-                                                    .fillMaxWidth()
-                                                    .padding(bottom = 12.dp),
-                                        )
                                     }
                                     if (item.title == stringResource(Res.string.quick_picks)) {
                                         AnimatedVisibility(
@@ -770,6 +658,20 @@ fun HomeScreen(
                                 },
                             ),
                         )
+                        if (params != HOME_PARAMS_MIX_FOR_YOU && (nowPlayingTrack?.songEntity != null || recentlyPlayed.isNotEmpty())) {
+                            HomeListeningCanvas(
+                                currentTrack = nowPlayingTrack,
+                                playerArtwork = playerArtwork,
+                                isPlaying = isSongPlaying,
+                                motionAllowed = false,
+                                recentSongs = recentlyPlayed,
+                                onOpenPlayer = onOpenNowPlaying,
+                                onPlayPause = { sharedViewModel.onUIEvent(UIEvent.PlayPause) },
+                                onPlaySong = ::playFromHistory,
+                                onSearch = { navController.navigate(SearchDestination) { launchSingleTop = true } },
+                                modifier = Modifier.padding(horizontal = 16.dp),
+                            )
+                        }
                         HomeShimmer(isGrid = params == HOME_PARAMS_MIX_FOR_YOU)
                     }
                 }
@@ -891,7 +793,8 @@ fun HomeTopAppBar(
             ),
         navigationIcon = {
             androidx.compose.material3.IconButton(
-                onClick = { navController.navigate(SettingsDestination) }
+                onClick = { navController.navigate(SettingsDestination) },
+                modifier = Modifier.semantics { contentDescription = "Open settings" },
             ) {
                 if (!accountInfo?.second.isNullOrEmpty()) {
                     coil3.compose.AsyncImage(
@@ -932,8 +835,8 @@ fun HomeTopAppBar(
                 )
                 Spacer(Modifier.width(7.dp))
                 Text(
-                    text = "Meloqis Music",
-                    style = typo().titleMedium,
+                    text = "Meloqis",
+                    style = MaterialTheme.typography.titleLarge,
                     color = MaterialTheme.colorScheme.onBackground,
                 )
                 Spacer(Modifier.width(4.dp))

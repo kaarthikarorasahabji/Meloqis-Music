@@ -28,6 +28,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilledTonalIconButton
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
@@ -76,6 +78,7 @@ import echo.music.iad1tya.ui.theme.LocalNowPlayingColor
 import echo.music.iad1tya.ui.theme.typo
 import echo.music.iad1tya.viewModel.LibraryViewModel
 import kotlinx.coroutines.launch
+import echo.music.iad1tya.ui.icon.Add
 import org.jetbrains.compose.resources.getString
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
@@ -198,12 +201,6 @@ fun LibraryScreen(
                     state = state,
                 ) {
                     item {
-                        echo.music.iad1tya.ui.component.StudioHeading(
-                            eyebrow = "THE COLLECTION",
-                            title = "Your music, kept close.",
-                            subtitle = "Favorites, discoveries and offline listening.",
-                            modifier = Modifier.padding(horizontal = 16.dp),
-                        )
                         LibraryTilingBox(navController)
                     }
 
@@ -406,7 +403,7 @@ fun LibraryScreen(
             title = {
                 Text(
                     text = stringResource(Res.string.library),
-                    style = typo().titleMedium,
+                    style = MaterialTheme.typography.headlineMedium,
                     color = MaterialTheme.colorScheme.onBackground,
                 )
             },
@@ -416,6 +413,12 @@ fun LibraryScreen(
                 ),
 
             actions = {
+                FilledTonalIconButton(
+                    onClick = { showAddSheet = true },
+                    modifier = Modifier.padding(end = 10.dp),
+                ) {
+                    Icon(echoIcons.Add, contentDescription = stringResource(Res.string.create))
+                }
             },
         )
         Row(

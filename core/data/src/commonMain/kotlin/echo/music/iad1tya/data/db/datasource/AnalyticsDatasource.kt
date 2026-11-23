@@ -23,6 +23,8 @@ internal class AnalyticsDatasource(
         listenedSecond = listenedSecond,
     )
 
+    fun observeRecentlyPlayedIds(limit: Int) = databaseDao.observeRecentlyPlayedIds(limit)
+
     suspend fun getPlaybackEventsByOffset(
         offset: Int,
         limit: Int,

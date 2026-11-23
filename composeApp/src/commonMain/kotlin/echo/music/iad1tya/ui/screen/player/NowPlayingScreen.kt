@@ -142,7 +142,6 @@ import echo.music.iad1tya.expect.ui.PlatformCastButton
 import echo.music.iad1tya.expect.ui.toImageBitmap
 import echo.music.iad1tya.extension.GradientAngle
 import echo.music.iad1tya.extension.GradientOffset
-import echo.music.iad1tya.extension.KeepScreenOn
 import echo.music.iad1tya.extension.formatDuration
 import echo.music.iad1tya.extension.getColorFromPalette
 import echo.music.iad1tya.extension.getScreenSizeInfo
@@ -807,9 +806,6 @@ fun NowPlayingScreenContent(
         )
     }
 
-    if (screenDataState.lyricsData != null && controllerState.isPlaying) {
-        KeepScreenOn()
-    }
     Box {
         Column(
             Modifier
@@ -1901,6 +1897,7 @@ fun NowPlayingScreenContent(
                                         // Control Button Layout
                                         PlayerControlLayout(
                                             controllerState,
+                                            activeColor = MaterialTheme.colorScheme.primary,
                                         ) {
                                             sharedViewModel.onUIEvent(it)
                                         }

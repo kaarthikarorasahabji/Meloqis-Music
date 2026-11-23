@@ -9,6 +9,7 @@ import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.content.SharedPreferences
+import android.os.BatteryManager
 import android.os.Bundle
 import android.os.Looper
 import android.os.PowerManager
@@ -32,6 +33,7 @@ object InAppEdgeLighting : Application.ActivityLifecycleCallbacks {
     val running = state.asStateFlow()
     private lateinit var preferences: SharedPreferences
     private lateinit var application: Application
+    private var pluggedIn = true
     private fun refresh() {
         val activities = resumed.toList()
         activities.forEach { detach(it) }
@@ -39,10 +41,21 @@ object InAppEdgeLighting : Application.ActivityLifecycleCallbacks {
     }
     private val screenEvents = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
-            if (intent?.action == Intent.ACTION_SCREEN_OFF) layers.keys.toList().forEach { detach(it) }
-            else refresh()
+            when (intent?.action) {
+                Intent.ACTION_SCREEN_OFF -> layers.keys.toList().forEach(::detach)
+                Intent.ACTION_USER_PRESENT -> refresh()
+                Intent.ACTION_BATTERY_CHANGED -> updatePowerSource(intent)
+            }
         }
     }
+    private fun updatePowerSource(intent: Intent?) {
+        val newPluggedIn = intent?.getIntExtra(BatteryManager.EXTRA_PLUGGED, -1) != 0
+        if (newPluggedIn != pluggedIn) {
+            pluggedIn = newPluggedIn
+            refresh()
+        }
+    }
+
     private val changes = SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
         if (key == "enabled") {
             val sync = Runnable { refresh() }
@@ -63,13 +76,17 @@ object InAppEdgeLighting : Application.ActivityLifecycleCallbacks {
         }
         application.registerActivityLifecycleCallbacks(this)
         ContextCompat.registerReceiver(application, screenEvents, IntentFilter().apply {
-            addAction(Intent.ACTION_SCREEN_OFF); addAction(Intent.ACTION_SCREEN_ON); addAction(Intent.ACTION_USER_PRESENT)
+            addAction(Intent.ACTION_SCREEN_OFF)
+            addAction(Intent.ACTION_USER_PRESENT)
         }, ContextCompat.RECEIVER_NOT_EXPORTED)
+        updatePowerSource(ContextCompat.registerReceiver(
+            application, screenEvents, IntentFilter(Intent.ACTION_BATTERY_CHANGED), ContextCompat.RECEIVER_NOT_EXPORTED,
+        ))
     }
     private fun attach(activity: Activity) {
         if (!edgeLightingVisible(LightsPreferences.read(preferences).enabled, resumed.contains(activity),
                 application.getSystemService(PowerManager::class.java).isInteractive,
-                application.getSystemService(KeyguardManager::class.java).let { it.isDeviceLocked || it.isKeyguardLocked }, activity.hasWindowFocus()) ||
+                application.getSystemService(KeyguardManager::class.java).let { it.isDeviceLocked || it.isKeyguardLocked }, activity.hasWindowFocus(), pluggedIn) ||
             activity.isFinishing || activity.isDestroyed ||
             activity.javaClass.name.endsWith(".MandatoryUpdateActivity") || layers.containsKey(activity)) return
         val root = activity.findViewById<ViewGroup>(android.R.id.content) ?: return

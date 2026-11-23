@@ -16,6 +16,8 @@ interface AnalyticsRepository {
         listenedSecond: Long,
     ): Flow<Long>
 
+    fun observeRecentlyPlayedIds(limit: Int): Flow<List<String>>
+
     suspend fun getPlaybackEventsByOffset(
         offset: Int,
         limit: Int,

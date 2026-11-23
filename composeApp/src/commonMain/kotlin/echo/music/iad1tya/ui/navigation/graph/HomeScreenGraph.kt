@@ -20,9 +20,6 @@ fun NavGraphBuilder.homeScreenGraph(
     composable<echo.music.iad1tya.ui.navigation.destination.home.AboutDeveloperDestination> {
         echo.music.iad1tya.ui.screen.home.AboutDeveloperScreen(navController, innerPadding)
     }
-    composable<echo.music.iad1tya.ui.navigation.destination.home.SurpriseMixDestination> {
-        echo.music.iad1tya.ui.screen.home.SurpriseMixScreen(navController, innerPadding)
-    }
     composable<MoodDestination> { entry ->
         val params = entry.toRoute<MoodDestination>().params
         MoodScreen(

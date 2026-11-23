@@ -8,6 +8,7 @@ import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -33,8 +34,10 @@ fun AppNavigationGraph(
     hideNavBar: () -> Unit = { },
     showNavBar: (shouldShowNowPlayingSheet: Boolean) -> Unit = { },
     showNowPlayingSheet: () -> Unit = {},
+    isNowPlayingOpen: Boolean = false,
     onScrolling: (onTop: Boolean) -> Unit = {},
 ) {
+    val latestPlayerOpen = rememberUpdatedState(isNowPlayingOpen)
     NavHost(
         navController,
         startDestination = startDestination,
@@ -56,6 +59,8 @@ fun AppNavigationGraph(
             HomeScreen(
                 onScrolling = onScrolling,
                 navController = navController,
+                onOpenNowPlaying = showNowPlayingSheet,
+                isNowPlayingOpen = latestPlayerOpen.value,
             )
         }
         composable<SearchDestination> {

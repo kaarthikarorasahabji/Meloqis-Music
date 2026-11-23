@@ -20,10 +20,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
@@ -39,6 +38,9 @@ import androidx.compose.ui.input.pointer.util.VelocityTracker
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.selected
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
@@ -56,8 +58,6 @@ import echo.music.iad1tya.expect.ui.PlatformBackdrop
 import echo.music.iad1tya.ui.theme.LocalIsDarkTheme
 import echo.music.iad1tya.ui.theme.typo
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.flow.collectLatest
-import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
@@ -67,7 +67,6 @@ import kotlin.math.roundToInt
 import kotlin.math.sign
 
 private val CapsuleShape = RoundedCornerShape(percent = 50)
-private val TabWidth = 96.dp
 private val BarHeight = 64.dp
 private val BlobHeight = 56.dp
 
@@ -86,7 +85,7 @@ private val BlobHeight = 56.dp
  * bottom bar's luminance sampling.
  *
  * @param layer shared graphics layer the capsule records into for luminance sampling.
- * @param luminance current sampled luminance (0..1) driving the glass brightness.
+ * @param luminance theme luminance (0..1) driving the glass brightness.
  * @param onTabSelected fired when the user taps a tab or drag-snaps the blob.
  */
 @Composable
@@ -97,23 +96,26 @@ fun LiquidGlassTabBar(
     layer: GraphicsLayer,
     luminance: Float,
     modifier: Modifier = Modifier,
+    tabWidth: Dp = 96.dp,
     onTabSelected: (Int) -> Unit,
 ) {
     val density = LocalDensity.current
     val tabsCount = tabs.size
-    val tabWidthPx = with(density) { TabWidth.toPx() }
+    val tabWidthPx = with(density) { tabWidth.toPx() }
     val isLtr = LocalLayoutDirection.current == LayoutDirection.Ltr
     val animationScope = rememberCoroutineScope()
     val barInteraction = rememberGlassInteraction()
     val isDark = LocalIsDarkTheme.current
 
-    var currentIndex by remember { mutableIntStateOf(selectedTab.coerceAtLeast(0)) }
+    val currentIndex = selectedTab.coerceIn(tabs.indices)
+    val latestSelected by rememberUpdatedState(currentIndex)
+    val navigateToTab by rememberUpdatedState(onTabSelected)
     // [0] = a real drag happened (vs a pure tap) — keeps the blob from snapping back
     // and stealing a tab tap.
     val draggedFlag = remember { booleanArrayOf(false) }
 
     val dampedDrag =
-        remember(animationScope, tabsCount) {
+        remember(animationScope, tabsCount, tabWidthPx) {
             DampedDragAnimation(
                 animationScope = animationScope,
                 initialValue = selectedTab.coerceAtLeast(0).toFloat(),
@@ -127,7 +129,8 @@ fun LiquidGlassTabBar(
                 onDragStopped = {
                     if (draggedFlag[0]) {
                         val target = targetValue.roundToInt().coerceIn(0, tabsCount - 1)
-                        currentIndex = target
+                        draggedFlag[0] = false
+                        if (target != latestSelected) navigateToTab(target)
                         // Always snap the blob to a tab — even if the rounded target is unchanged —
                         // otherwise `value` settles mid-slide and the blob sticks after release.
                         animateToValue(target.toFloat())
@@ -143,27 +146,15 @@ fun LiquidGlassTabBar(
             )
         }
 
-    // Keep the blob in sync when selection changes from outside (e.g. back stack).
-    LaunchedEffect(selectedTab) {
-        if (selectedTab >= 0 && currentIndex != selectedTab) currentIndex = selectedTab
-    }
-    // Drive navigation + blob animation from the internal current index.
-    LaunchedEffect(dampedDrag) {
-        snapshotFlow { currentIndex }
-            .drop(1)
-            .collectLatest { index ->
-                dampedDrag.animateToValue(index.toFloat())
-                // Taps already navigate directly from onClick; only drag-snap navigates here
-                // (prevents a double onTabSelected and avoids the dropped-tap race).
-                if (draggedFlag[0]) onTabSelected(index)
-            }
+    LaunchedEffect(dampedDrag, currentIndex) {
+        dampedDrag.animateToValue(currentIndex.toFloat())
     }
 
     Box(
         modifier =
             modifier
                 .height(BarHeight)
-                .width(TabWidth * tabsCount)
+                .width(tabWidth * tabsCount)
                 // Press detection for the whole capsule lives on the outer Box — it's the common
                 // ancestor of the glass, blob and tab Row, so it sees the touch on the Initial pass
                 // before the children. The capsule glass sits underneath the Row and would never get
@@ -230,7 +221,7 @@ fun LiquidGlassTabBar(
                             if (isDark) lerp(0.22f, 0.55f, lumNorm) else lerp(0.06f, 0.14f, lumNorm)
                         drawRect(Color.Black.copy(alpha = darken))
                     },
-                ).width(TabWidth - 8.dp)
+                ).width((tabWidth - 8.dp).coerceAtLeast(0.dp))
                 .height(BlobHeight),
         )
 
@@ -246,19 +237,10 @@ fun LiquidGlassTabBar(
             tabs.forEachIndexed { position, screen ->
                 LiquidGlassTab(
                     screen = screen,
+                    width = tabWidth,
                     selected = currentIndex == position,
                 ) {
-                    if (position == currentIndex) {
-                        // Re-tapping the active tab: snapshotFlow won't fire (state unchanged),
-                        // so call onTabSelected directly to keep the reload / scroll-to-top behaviour.
-                        onTabSelected(position)
-                    } else {
-                        // Navigate immediately on tap. Don't route this through snapshotFlow: a
-                        // concurrent drag-stop on the same Row can reset currentIndex back before the
-                        // flow emits, which silently drops the tap (observed: currentIndex stuck at 0).
-                        currentIndex = position
-                        onTabSelected(position)
-                    }
+                    navigateToTab(position)
                 }
             }
         }
@@ -268,13 +250,15 @@ fun LiquidGlassTabBar(
 @Composable
 private fun LiquidGlassTab(
     screen: BottomNavScreen,
+    width: Dp,
     selected: Boolean,
     onClick: () -> Unit,
 ) {
     val color = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
     Column(
         Modifier
-            .width(TabWidth)
+            .width(width)
+            .semantics { this.selected = selected }
             .fillMaxHeight()
             .clip(CapsuleShape)
             .clickable(
@@ -293,6 +277,7 @@ private fun LiquidGlassTab(
                 style = typo().bodySmall,
                 color = color,
                 maxLines = 1,
+                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
             )
         }
     }

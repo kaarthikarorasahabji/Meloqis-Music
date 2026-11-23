@@ -38,6 +38,9 @@ internal class AnalyticsRepositoryImpl(
             )
         }.flowOn(Dispatchers.IO)
 
+    override fun observeRecentlyPlayedIds(limit: Int): Flow<List<String>> =
+        analyticsDatasource.observeRecentlyPlayedIds(limit)
+
     override suspend fun getPlaybackEventsByOffset(
         offset: Int,
         limit: Int,

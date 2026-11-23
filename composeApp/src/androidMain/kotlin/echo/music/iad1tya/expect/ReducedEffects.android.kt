@@ -5,6 +5,7 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
+import android.os.Build
 import android.os.PowerManager
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -42,5 +43,5 @@ actual fun rememberDeviceReducedEffects(): Boolean {
         )
         onDispose { context.unregisterReceiver(receiver) }
     }
-    return constrainedHardware || savingPower
+    return Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU || constrainedHardware || savingPower
 }
