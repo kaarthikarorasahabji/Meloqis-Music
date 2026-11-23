@@ -859,16 +859,23 @@ class YouTube {
      * @return a [Result]<[BrowseResponse]> object
      */
     suspend fun getListeningHistory(cookie: String, pageId: String?, limit: Int): List<SongItem> {
+        return getAccountBrowse("FEmusic_history", cookie, pageId).listeningHistory(limit)
+    }
+
+    suspend fun getMixedForYou(cookie: String, pageId: String?): BrowseResponse =
+        getAccountBrowse("FEmusic_mixed_for_you", cookie, pageId)
+
+    private suspend fun getAccountBrowse(browseId: String, cookie: String, pageId: String?): BrowseResponse {
         require(cookie.isNotBlank())
         val response = ytMusic.browse(
             client = WEB_REMIX,
-            browseId = "FEmusic_history",
+            browseId = browseId,
             setLogin = true,
             customCookie = cookie,
             requestPageId = pageId,
         )
-        check(response.status.isSuccess()) { "YouTube Music history request failed" }
-        return response.body<BrowseResponse>().listeningHistory(limit)
+        check(response.status.isSuccess()) { "YouTube Music account request failed" }
+        return response.body<BrowseResponse>()
     }
 
     suspend fun customQuery(

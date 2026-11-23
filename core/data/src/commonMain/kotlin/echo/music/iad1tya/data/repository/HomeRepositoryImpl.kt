@@ -4,6 +4,7 @@ import echo.music.iad1tya.data.mapping.toTrack
 import echo.music.iad1tya.data.parser.parseChart
 import echo.music.iad1tya.domain.data.model.browse.album.Track
 import echo.music.iad1tya.data.parser.parseGenreObject
+import echo.music.iad1tya.data.parser.parseNextLibraryPlaylist
 import echo.music.iad1tya.data.parser.parseMixedContent
 import echo.music.iad1tya.data.parser.parseMoodsMomentObject
 import echo.music.iad1tya.data.parser.parseNewRelease
@@ -14,6 +15,7 @@ import echo.music.iad1tya.domain.data.model.mood.MoodItem
 import echo.music.iad1tya.domain.data.model.mood.MoodSection
 import echo.music.iad1tya.domain.data.model.mood.genre.GenreObject
 import echo.music.iad1tya.domain.data.model.mood.moodmoments.MoodsMomentObject
+import echo.music.iad1tya.domain.data.model.searchResult.playlists.PlaylistsResult
 import echo.music.iad1tya.domain.manager.DataStoreManager
 import echo.music.iad1tya.domain.repository.HomeRepository
 import echo.music.iad1tya.domain.utils.Resource
@@ -64,6 +66,23 @@ internal class HomeRepositoryImpl(
 
     override suspend fun getYouTubeListeningHistory(cookie: String, pageId: String?): List<Track> =
         withContext(Dispatchers.IO) { youTube.getListeningHistory(cookie, pageId, limit = 21).map { it.toTrack().copy(isAvailable = true) } }
+
+    override suspend fun getYouTubePersonalMixes(cookie: String, pageId: String?): List<PlaylistsResult> =
+        withContext(Dispatchers.IO) {
+            val sections = youTube.getMixedForYou(cookie, pageId).contents
+                ?.singleColumnBrowseResultsRenderer
+                ?.tabs
+                ?.flatMap { it.tabRenderer?.content?.sectionListRenderer?.contents.orEmpty() }
+                .orEmpty()
+            val tiles = sections.flatMap { section ->
+                section.gridRenderer?.items.orEmpty().mapNotNull { it.musicTwoRowItemRenderer } +
+                    section.musicCarouselShelfRenderer?.contents.orEmpty().mapNotNull { it.musicTwoRowItemRenderer }
+            }
+            parseNextLibraryPlaylist(tiles)
+                .filter { it.browseId.isNotBlank() && it.title.isNotBlank() }
+                .distinctBy { it.browseId }
+                .take(12)
+        }
 
     override fun getHomeData(
         params: String?,

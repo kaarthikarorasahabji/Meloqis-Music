@@ -39,12 +39,12 @@ import coil3.compose.AsyncImage
 import echo.music.iad1tya.domain.data.model.browse.album.Track
 import echo.music.iad1tya.ui.icon.PlayArrow
 import echo.music.iad1tya.ui.icon.echoIcons
-import echo.music.iad1tya.viewModel.YouTubeListeningHistory
+import echo.music.iad1tya.viewModel.YouTubeAccountContent
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun HomeListeningHistory(
-    history: YouTubeListeningHistory,
+    history: YouTubeAccountContent<Track>,
     localTracks: List<Track>,
     currentTrackId: String?,
     onPlay: (Track) -> Unit,
@@ -53,7 +53,7 @@ fun HomeListeningHistory(
     onRetry: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val accountTracks = (history as? YouTubeListeningHistory.Loaded)?.tracks.orEmpty()
+    val accountTracks = (history as? YouTubeAccountContent.Loaded)?.items.orEmpty()
     val isAccountHistory = accountTracks.isNotEmpty()
     val tracks = accountTracks.ifEmpty { localTracks }
     Column(
@@ -81,19 +81,19 @@ fun HomeListeningHistory(
         }
 
         when (history) {
-            YouTubeListeningHistory.Loading -> {
+            YouTubeAccountContent.Loading -> {
                 if (tracks.isEmpty()) LinearProgressIndicator(Modifier.fillMaxWidth())
             }
-            YouTubeListeningHistory.SignedOut -> {
+            YouTubeAccountContent.SignedOut -> {
                 TextButton(onClick = onConnect) { Text("Connect YouTube Music") }
             }
-            YouTubeListeningHistory.Unavailable -> {
+            YouTubeAccountContent.Unavailable -> {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text("YouTube Music history is unavailable.", Modifier.weight(1f), style = MaterialTheme.typography.bodySmall)
                     TextButton(onClick = onRetry) { Text("Retry") }
                 }
             }
-            is YouTubeListeningHistory.Loaded -> {
+            is YouTubeAccountContent.Loaded -> {
                 if (accountTracks.isEmpty()) {
                     Text("No YouTube Music tracks to show yet.", style = MaterialTheme.typography.bodyMedium)
                 }

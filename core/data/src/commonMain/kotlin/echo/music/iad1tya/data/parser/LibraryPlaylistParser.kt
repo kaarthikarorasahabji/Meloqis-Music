@@ -47,7 +47,7 @@ internal fun parseNextLibraryPlaylist(input: List<MusicTwoRowItemRenderer>): Lis
             author =
                 it.subtitle
                     ?.runs
-                    ?.get(0)
+                    ?.firstOrNull()
                     ?.text ?: "",
             browseId = it.navigationEndpoint?.browseEndpoint?.browseId ?: "",
             category = "",
@@ -62,7 +62,7 @@ internal fun parseNextLibraryPlaylist(input: List<MusicTwoRowItemRenderer>): Lis
             title =
                 it.title
                     ?.runs
-                    ?.get(0)
+                    ?.firstOrNull()
                     ?.text ?: "",
         )
     }

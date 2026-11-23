@@ -6,11 +6,14 @@ import echo.music.iad1tya.domain.data.model.home.chart.Chart
 import echo.music.iad1tya.domain.data.model.mood.Mood
 import echo.music.iad1tya.domain.data.model.mood.genre.GenreObject
 import echo.music.iad1tya.domain.data.model.mood.moodmoments.MoodsMomentObject
+import echo.music.iad1tya.domain.data.model.searchResult.playlists.PlaylistsResult
 import echo.music.iad1tya.domain.utils.Resource
 import kotlinx.coroutines.flow.Flow
 
 interface HomeRepository {
     suspend fun getYouTubeListeningHistory(cookie: String, pageId: String?): List<Track>
+
+    suspend fun getYouTubePersonalMixes(cookie: String, pageId: String?): List<PlaylistsResult>
 
     /**
      * @return Pair of continueParams and HomeItem List
