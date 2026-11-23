@@ -1,8 +1,6 @@
 package echo.music.iad1tya.ui.component
 
 import androidx.compose.animation.core.Animatable
-import androidx.compose.animation.core.Spring
-import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -61,7 +59,7 @@ fun MeloqisSplashOverlay(onFinished: () -> Unit) {
             Modifier
                 .fillMaxSize()
                 .graphicsLayer { alpha = overlayAlpha.value }
-                .background(Color(0xFF101315)),
+                .background(Brush.radialGradient(listOf(Color(0xFF31263F), Color(0xFF14101B), Color(0xFF0B0910)))),
         contentAlignment = Alignment.Center,
     ) {
         Column(
@@ -86,15 +84,6 @@ fun MeloqisSplashOverlay(onFinished: () -> Unit) {
                 color = Color.White,
                 fontSize = 30.sp,
                 fontWeight = FontWeight.Bold,
-                textAlign = TextAlign.Center,
-                modifier = Modifier.graphicsLayer { alpha = contentAlpha.value },
-            )
-            Spacer(Modifier.height(6.dp))
-            Text(
-                text = "YOUR LISTENING STUDIO",
-                color = Color.White.copy(alpha = 0.85f),
-                fontSize = 11.sp,
-                letterSpacing = 2.sp,
                 textAlign = TextAlign.Center,
                 modifier = Modifier.graphicsLayer { alpha = contentAlpha.value },
             )

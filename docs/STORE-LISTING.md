@@ -4,7 +4,7 @@ Review against the features and rights cleared for the final published build.
 
 App name: Meloqis Music
 
-Short description: Your listening studio with synced lyrics and artwork-inspired colors.
+Short description: A music player with synced lyrics, Canvas and artwork-inspired colors.
 
 Full description:
 
