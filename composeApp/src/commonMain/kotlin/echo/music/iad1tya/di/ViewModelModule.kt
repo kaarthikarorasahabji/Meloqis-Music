@@ -27,6 +27,7 @@ import org.koin.dsl.module
 
 val viewModelModule =
     module {
+        viewModel { echo.music.iad1tya.viewModel.SurpriseMixViewModel(get(), get(), get()) }
         single {
             SharedViewModel(
                 get(),

@@ -79,6 +79,76 @@ jobs:
         with:
           name: Meloqis-test-results
           path: composeApp/build/test-results/testAndroidHostTest/
+  play-bundle:
+    if: github.event_name == 'workflow_dispatch' && inputs.artifact_run_id == ''
+    name: Build Play bundle for offline signing
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: microsoft
+          cache: gradle
+      - name: Build unsigned Play bundle
+        run: |
+          chmod +x gradlew
+          ./gradlew :androidApp:bundleRelease -PplayStore=true --no-configuration-cache --console=plain -x :androidApp:uploadCrashlyticsMappingFileRelease
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Meloqis-play-unsigned-${{ github.sha }}
+          path: |
+            androidApp/build/outputs/bundle/release/*.aab
+            androidApp/build/outputs/mapping/release/mapping.txt
+          if-no-files-found: error
+  device-check:
+    if: github.event_name == 'workflow_dispatch' && inputs.artifact_run_id == ''
+    name: Check native streaming on Android 13
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: microsoft
+          cache: gradle
+      - name: Build device test
+        run: |
+          chmod +x gradlew
+          ./gradlew :androidApp:assembleDebug :androidApp:assembleDebugAndroidTest -PstreamingProbe=true --no-configuration-cache --console=plain
+      - name: Start cloud Android device and verify playback
+        run: |
+          image='system-images;android-33;google_apis;x86_64'
+          sdkmanager --install 'emulator' "$image"
+          avdmanager create avd --force --name MeloqisCI --package "$image" <<< no
+          sudo chmod a+rw /dev/kvm
+          "$ANDROID_HOME/emulator/emulator" -avd MeloqisCI -no-window -no-audio -no-snapshot -gpu swiftshader_indirect > emulator.log 2>&1 &
+          trap 'adb emu kill || true' EXIT
+          timeout 180 adb wait-for-device
+          for attempt in {1..90}; do
+            if [[ "$(adb shell getprop sys.boot_completed | tr -d '\r')" == 1 ]]; then break; fi
+            sleep 2
+          done
+          test "$(adb shell getprop sys.boot_completed | tr -d '\r')" = 1
+          apk="$(find androidApp/build/outputs/apk/debug -name '*x86_64*.apk' -print -quit)"
+          if [[ -z "$apk" ]]; then apk="$(find androidApp/build/outputs/apk/debug -name '*.apk' -print -quit)"; fi
+          test_apk="$(find androidApp/build/outputs/apk/androidTest/debug -name '*.apk' -print -quit)"
+          adb install "$apk"
+          adb install "$test_apk"
+          timeout 100 adb shell am instrument -w echo.music.iad1tya.test/echo.music.iad1tya.test.StreamingPlaybackProbe | tee streaming-probe.txt
+          grep -F 'STREAMING_OK:' streaming-probe.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: Meloqis-device-check
+          path: |
+            emulator.log
+            streaming-probe.txt
   publish-verified-build:
     if: ${{ inputs.artifact_run_id != '' }}
     runs-on: ubuntu-latest
