@@ -437,7 +437,7 @@ interface DataStoreManager {
 
     suspend fun setThemeMode(mode: String)
 
-    /** One of [THEME_COLOR_DEFAULT], [THEME_COLOR_WALLPAPER], [THEME_COLOR_CUSTOM]. */
+    /** One of [THEME_COLOR_SONG], [THEME_COLOR_DEFAULT], [THEME_COLOR_WALLPAPER], [THEME_COLOR_CUSTOM]. */
     val themeColorSource: Flow<String>
 
     suspend fun setThemeColorSource(source: String)
@@ -526,6 +526,7 @@ interface DataStoreManager {
         const val THEME_MODE_LIGHT = "LIGHT"
 
         const val THEME_COLOR_DEFAULT = "DEFAULT"
+        const val THEME_COLOR_SONG = "SONG"
         const val THEME_COLOR_WALLPAPER = "WALLPAPER"
         const val THEME_COLOR_CUSTOM = "CUSTOM"
 

@@ -4,8 +4,6 @@ import androidx.lifecycle.viewModelScope
 import echo.music.iad1tya.domain.data.model.browse.album.Track
 import echo.music.iad1tya.domain.data.model.home.HomeItem
 import echo.music.iad1tya.domain.manager.DataStoreManager
-import echo.music.iad1tya.domain.manager.DataStoreManager.Values.TRUE
-import echo.music.iad1tya.domain.repository.AnalyticsRepository
 import echo.music.iad1tya.domain.repository.HomeRepository
 import echo.music.iad1tya.domain.repository.SongRepository
 import echo.music.iad1tya.logger.Logger
@@ -23,10 +21,10 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.firstOrNull
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
-import kotlinx.coroutines.flow.mapLatest
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
@@ -45,7 +43,6 @@ sealed interface YouTubeAccountContent<out T> {
 class HomeViewModel(
     private val dataStoreManager: DataStoreManager,
     private val homeRepository: HomeRepository,
-    private val analyticsRepository: AnalyticsRepository,
     private val songRepository: SongRepository,
 ) : BaseViewModel() {
     private val historyRefresh = MutableStateFlow(0)
@@ -82,6 +79,8 @@ class HomeViewModel(
 
     val youtubeListeningHistory = accountContent(homeRepository::getYouTubeListeningHistory)
     val youtubePersonalMixes = accountContent(homeRepository::getYouTubePersonalMixes)
+    val youtubeConnected = dataStoreManager.cookie.map(String::isNotBlank).distinctUntilChanged()
+    val spotifyConnected = dataStoreManager.spdc.map(String::isNotBlank).distinctUntilChanged()
 
     @OptIn(ExperimentalCoroutinesApi::class)
     private fun <T> accountContent(load: suspend (String, String?) -> List<T>): StateFlow<YouTubeAccountContent<T>> =
@@ -105,18 +104,7 @@ class HomeViewModel(
         historyRefresh.update { it + 1 }
     }
 
-    @OptIn(ExperimentalCoroutinesApi::class)
-    val recentlyPlayed = dataStoreManager.localTrackingEnabled
-        .distinctUntilChanged()
-        .flatMapLatest { tracking ->
-            if (tracking == TRUE) {
-                analyticsRepository.observeRecentlyPlayedIds(12).mapLatest { ids ->
-                    if (ids.isEmpty()) emptyList() else songRepository.getSongsByListVideoId(ids).first()
-                }
-            } else {
-                flowOf(emptyList())
-            }
-        }
+    val recentlyPlayed = songRepository.observeRecentlyPlayedSongs(limit = 12)
         .catch { emit(emptyList()) }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(replayExpirationMillis = 0), emptyList())
 

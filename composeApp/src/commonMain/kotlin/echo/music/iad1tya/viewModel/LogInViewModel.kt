@@ -26,17 +26,14 @@ class LogInViewModel(
     val fullYouTubeCookies: StateFlow<List<Pair<String, String?>>> get() = _fullYouTubeCookies.asStateFlow()
 
     fun saveSpotifySpdc(cookie: String) {
+        val token = cookie.split(';').firstNotNullOfOrNull { entry ->
+            val pair = entry.trim()
+            if (pair.substringBefore('=') == "sp_dc") pair.substringAfter('=', "").takeIf(String::isNotBlank)
+            else null
+        } ?: return
         viewModelScope.launch {
-            cookie
-                .split("; ")
-                .filter { it.isNotEmpty() }
-                .associate {
-                    val (key, value) = it.split("=")
-                    key to value
-                }.let {
-                    dataStoreManager.setSpdc(it["sp_dc"] ?: "")
-                    _spotifyStatus.value = true
-                }
+            dataStoreManager.setSpdc(token)
+            _spotifyStatus.value = true
         }
     }
 

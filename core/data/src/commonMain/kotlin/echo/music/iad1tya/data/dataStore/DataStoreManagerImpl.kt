@@ -839,7 +839,7 @@ internal class DataStoreManagerImpl(
 
     override val themeColorSource =
         settingsDataStore.data.map { preferences ->
-            preferences[THEME_COLOR_SOURCE] ?: DataStoreManager.THEME_COLOR_WALLPAPER
+            preferences[THEME_COLOR_SOURCE] ?: DataStoreManager.THEME_COLOR_SONG
         }
 
     override suspend fun setThemeColorSource(source: String) {
@@ -1438,7 +1438,7 @@ internal class DataStoreManagerImpl(
     override val enableLiquidGlass: Flow<String>
         get() =
             settingsDataStore.data.map { preferences ->
-                preferences[LIQUID_GLASS] ?: FALSE
+                preferences[LIQUID_GLASS] ?: TRUE
             }
 
     override suspend fun setEnableLiquidGlass(enable: Boolean) {

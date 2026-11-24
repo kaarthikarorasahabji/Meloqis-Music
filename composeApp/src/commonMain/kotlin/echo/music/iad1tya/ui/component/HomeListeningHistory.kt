@@ -55,7 +55,26 @@ fun HomeListeningHistory(
 ) {
     val accountTracks = (history as? YouTubeAccountContent.Loaded)?.items.orEmpty()
     val isAccountHistory = accountTracks.isNotEmpty()
-    val tracks = accountTracks.ifEmpty { localTracks }
+    val hasLocalHistory = localTracks.isNotEmpty()
+    val tracks = remember(accountTracks, localTracks) { mergeListeningHistory(localTracks, accountTracks) }
+    if (history == YouTubeAccountContent.SignedOut && tracks.isEmpty()) {
+        Surface(
+            modifier = modifier.fillMaxWidth().padding(top = 12.dp),
+            shape = RoundedCornerShape(16.dp),
+            color = MaterialTheme.colorScheme.surfaceContainerLow,
+        ) {
+            Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Text("Make Home yours", style = MaterialTheme.typography.titleLarge)
+                Text(
+                    "Connect YouTube Music for your listening history and mixes.",
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    style = MaterialTheme.typography.bodyMedium,
+                )
+                TextButton(onClick = onConnect) { Text("Connect YouTube Music") }
+            }
+        }
+        return
+    }
     Column(
         modifier.fillMaxWidth().padding(top = 12.dp, bottom = 16.dp),
         verticalArrangement = Arrangement.spacedBy(10.dp),
@@ -69,7 +88,11 @@ fun HomeListeningHistory(
                 Text("Listen again", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
                 if (tracks.isNotEmpty()) {
                     Text(
-                        if (isAccountHistory) "YouTube Music history" else "On this device",
+                        when {
+                            isAccountHistory && hasLocalHistory -> "Meloqis and YouTube Music"
+                            isAccountHistory -> "YouTube Music history"
+                            else -> "On this device"
+                        },
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -120,6 +143,14 @@ fun HomeListeningHistory(
         }
     }
 }
+
+internal fun mergeListeningHistory(localTracks: List<Track>, accountTracks: List<Track>): List<Track> =
+    buildList {
+        repeat(maxOf(localTracks.size, accountTracks.size)) { index ->
+            localTracks.getOrNull(index)?.let { add(it) }
+            accountTracks.getOrNull(index)?.let { add(it) }
+        }
+    }.distinctBy(Track::videoId)
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable

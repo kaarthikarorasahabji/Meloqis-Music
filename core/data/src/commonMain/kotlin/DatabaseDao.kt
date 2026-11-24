@@ -223,6 +223,9 @@ interface DatabaseDao {
     @Query("SELECT * FROM song ORDER BY inLibrary DESC LIMIT :limit OFFSET 0")
     suspend fun getAllSongs(limit: Int): List<SongEntity>
 
+    @Query("SELECT * FROM song WHERE totalPlayTime > 0 AND inLibrary != :removedAt ORDER BY inLibrary DESC LIMIT :limit")
+    fun observeRecentlyPlayedSongs(limit: Int, removedAt: LocalDateTime): Flow<List<SongEntity>>
+
     @Query("SELECT * FROM song WHERE liked = 1 ORDER BY favoriteAt DESC LIMIT :limit OFFSET :offset")
     suspend fun getLikedSongs(
         limit: Int,
@@ -1086,6 +1089,9 @@ interface DatabaseDao {
 
     @Query("DELETE FROM playback_event")
     suspend fun deleteAllPlaybackEvents()
+
+    @Query("UPDATE song SET totalPlayTime = 0 WHERE totalPlayTime > 0")
+    suspend fun resetAllListenCounts()
 
     /**
      * Artists cached only because they turned up while browsing.

@@ -72,6 +72,7 @@ import echo.music.iad1tya.extension.isScrollingUp
 import echo.music.iad1tya.ui.component.CenterLoadingBox
 import echo.music.iad1tya.ui.component.ChoosePlaybackMoodDialog
 import echo.music.iad1tya.ui.component.CreateHomePlaylistDialog
+import echo.music.iad1tya.ui.component.HomeAccountsSheet
 import echo.music.iad1tya.ui.component.PlaybackMoodRow
 import echo.music.iad1tya.ui.component.PersonalYouTubeMixes
 import echo.music.iad1tya.ui.component.accent
@@ -81,7 +82,7 @@ import echo.music.iad1tya.ui.component.homeLoadingItems
 import echo.music.iad1tya.ui.component.OfflineErrorState
 import echo.music.iad1tya.ui.component.NowPlayingBottomSheet
 import echo.music.iad1tya.ui.icon.PlaylistAdd
-import echo.music.iad1tya.ui.icon.Settings
+import echo.music.iad1tya.ui.icon.AccountCircle
 import echo.music.iad1tya.ui.icon.echoIcons
 import echo.music.iad1tya.ui.navigation.destination.home.HomeDestination
 import echo.music.iad1tya.ui.navigation.destination.home.SettingsDestination
@@ -89,6 +90,7 @@ import echo.music.iad1tya.ui.navigation.destination.library.LibraryDynamicPlayli
 import echo.music.iad1tya.ui.screen.library.LibraryDynamicPlaylistType
 import echo.music.iad1tya.ui.navigation.destination.list.PlaylistDestination
 import echo.music.iad1tya.ui.navigation.destination.login.LoginDestination
+import echo.music.iad1tya.ui.navigation.destination.login.SpotifyLoginDestination
 import echo.music.iad1tya.ui.theme.LocalNowPlayingColor
 import echo.music.iad1tya.viewModel.HomeViewModel
 import echo.music.iad1tya.viewModel.YouTubeAccountContent
@@ -154,6 +156,9 @@ fun HomeScreen(
     val localHistory by viewModel.recentlyPlayed.collectAsStateWithLifecycle()
     val youtubeHistory by viewModel.youtubeListeningHistory.collectAsStateWithLifecycle()
     val youtubeMixes by viewModel.youtubePersonalMixes.collectAsStateWithLifecycle()
+    val youtubeConnected by viewModel.youtubeConnected.collectAsStateWithLifecycle(false)
+    val spotifyConnected by viewModel.spotifyConnected.collectAsStateWithLifecycle(false)
+    var showAccounts by rememberSaveable { mutableStateOf(false) }
     val explicitEnabled by viewModel.explicitContentEnabled.collectAsStateWithLifecycle(DataStoreManager.TRUE)
 
     fun allowedTracks(tracks: List<Track>): List<Track> =
@@ -275,7 +280,27 @@ fun HomeScreen(
         )
     }
 
-    val headerTint = playbackMood?.accent ?: nowPlayingColor ?: MaterialTheme.colorScheme.primary
+    if (showAccounts) {
+        HomeAccountsSheet(
+            youtubeConnected = youtubeConnected,
+            spotifyConnected = spotifyConnected,
+            onDismiss = { showAccounts = false },
+            onConnectYouTube = {
+                showAccounts = false
+                navController.navigate(LoginDestination) { launchSingleTop = true }
+            },
+            onConnectSpotify = {
+                showAccounts = false
+                navController.navigate(SpotifyLoginDestination) { launchSingleTop = true }
+            },
+            onOpenSettings = {
+                showAccounts = false
+                navController.navigate(SettingsDestination) { launchSingleTop = true }
+            },
+        )
+    }
+
+    val headerTint = nowPlayingColor ?: playbackMood?.accent ?: MaterialTheme.colorScheme.primary
     val headerFadeHeight = with(LocalDensity.current) { 220.dp.toPx() }
     Column(
         Modifier.fillMaxSize().background(
@@ -288,6 +313,7 @@ fun HomeScreen(
         HomeTopAppBar(
             navController = navController,
             accountInfo = accountInfo,
+            onOpenAccounts = { showAccounts = true },
             onCreatePlaylist = {
                 playlistSeed = nowPlayingTrack?.songEntity ?: nowPlayingTrack?.track?.toSongEntity()
                 showPlaylistDialog = true
@@ -392,6 +418,7 @@ fun HomeScreen(
 private fun HomeTopAppBar(
     navController: NavController,
     accountInfo: Pair<String?, String?>?,
+    onOpenAccounts: () -> Unit,
     onCreatePlaylist: () -> Unit,
 ) {
     TopAppBar(
@@ -413,10 +440,10 @@ private fun HomeTopAppBar(
             IconButton(onClick = { navController.navigate(SearchDestination) { launchSingleTop = true } }) {
                 Icon(echoIcons.Search, contentDescription = stringResource(Res.string.search))
             }
-            IconButton(onClick = { navController.navigate(SettingsDestination) { launchSingleTop = true } }) {
+            IconButton(onClick = onOpenAccounts) {
                 val avatar = accountInfo?.second
                 if (avatar.isNullOrBlank()) {
-                    Icon(echoIcons.Settings, contentDescription = "Settings")
+                    Icon(echoIcons.AccountCircle, contentDescription = "Accounts and settings")
                 } else {
                     AsyncImage(
                         model = avatar,

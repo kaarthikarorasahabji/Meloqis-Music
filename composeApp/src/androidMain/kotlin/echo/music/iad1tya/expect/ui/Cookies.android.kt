@@ -17,12 +17,7 @@ import androidx.compose.ui.viewinterop.AndroidView
 actual fun createWebViewCookieManager(): WebViewCookieManager =
     object : WebViewCookieManager {
         override fun getCookie(url: String): String {
-            val cookie = CookieManager.getInstance()
-            return if (cookie.hasCookies()) {
-                cookie.getCookie(url)
-            } else {
-                ""
-            }
+            return CookieManager.getInstance().getCookie(url).orEmpty()
         }
 
         override fun removeAllCookies() {

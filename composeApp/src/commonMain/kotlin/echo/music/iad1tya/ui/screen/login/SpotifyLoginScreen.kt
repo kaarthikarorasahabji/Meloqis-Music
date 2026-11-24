@@ -31,7 +31,6 @@ import echo.music.iad1tya.common.Config
 import echo.music.iad1tya.expect.ui.PlatformWebView
 import echo.music.iad1tya.expect.ui.createWebViewCookieManager
 import echo.music.iad1tya.expect.ui.rememberWebViewState
-import echo.music.iad1tya.extension.getStringBlocking
 import echo.music.iad1tya.ui.component.DevCookieLogInBottomSheet
 import echo.music.iad1tya.ui.component.DevLogInBottomSheet
 import echo.music.iad1tya.ui.component.DevLogInType
@@ -143,8 +142,6 @@ fun SpotifyLoginScreen(
                                 devLoginSheet = false
                                 val spdcText = "sp_dc=$spdc"
                                 viewModel.saveSpotifySpdc(spdcText)
-                                viewModel.makeToast(getStringBlocking(Res.string.login_success))
-                                navController.navigateUp()
                             },
                             type = DevLogInType.Spotify,
                         )
@@ -166,9 +163,10 @@ fun SpotifyLoginScreen(
                     it.isNotEmpty()
                 }?.let { cookie ->
                     val cookies =
-                        cookie.split("; ").map {
-                            val (key, value) = it.split("=")
-                            key to value
+                        cookie.split(';').mapNotNull { entry ->
+                            val separator = entry.indexOf('=')
+                            if (separator <= 0) null
+                            else entry.substring(0, separator).trim() to entry.substring(separator + 1)
                         }
                     viewModel.setFullSpotifyCookies(cookies)
                 }

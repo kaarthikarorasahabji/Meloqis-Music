@@ -18,6 +18,7 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
@@ -46,6 +47,8 @@ import dev.chrisbanes.haze.hazeSource
 import dev.chrisbanes.haze.materials.ExperimentalHazeMaterialsApi
 import dev.chrisbanes.haze.materials.HazeMaterials
 import dev.chrisbanes.haze.rememberHazeState
+import io.ktor.http.URLProtocol
+import io.ktor.http.Url
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.getString
 import org.jetbrains.compose.resources.stringResource
@@ -70,6 +73,7 @@ fun LoginScreen(
     var devLoginSheet by rememberSaveable {
         mutableStateOf(false)
     }
+    var checkingAccount by remember { mutableStateOf(false) }
 
     val state = rememberWebViewState()
 
@@ -134,25 +138,28 @@ fun LoginScreen(
                     }
                 }
             ) { url ->
-                Logger.d("LogInScreen", "Current URL: $url")
-                if (url == Config.YOUTUBE_MUSIC_MAIN_URL) {
+                val destination = runCatching { Url(url) }.getOrNull()
+                if (!checkingAccount && destination?.protocol == URLProtocol.HTTPS &&
+                    destination.host == "music.youtube.com" && destination.encodedPath.trimEnd('/').isEmpty()
+                ) {
+                    val cookies = createWebViewCookieManager().getCookie(Config.YOUTUBE_MUSIC_MAIN_URL)
+                    val hasSession = cookies.split(';').any { entry ->
+                        val key = entry.trim().substringBefore('=')
+                        key in setOf("SAPISID", "__Secure-3PAPISID") && entry.substringAfter('=', "").isNotBlank()
+                    }
+                    if (!hasSession) return@PlatformWebView
+                    checkingAccount = true
                     coroutineScope.launch {
-                        val success =
-                            createWebViewCookieManager()
-                                .getCookie(url)
-                                .takeIf {
-                                    it.isNotEmpty()
-                                }?.let {
-                                    settingsViewModel.addAccount(it)
-                                } ?: false
-
-                        createWebViewCookieManager().removeAllCookies()
-
-                        if (success) {
-                            viewModel.makeToast(getString(Res.string.login_success))
-                            navController.navigateUp()
-                        } else {
-                            viewModel.makeToast(getString(Res.string.login_failed))
+                        try {
+                            if (settingsViewModel.addAccount(cookies)) {
+                                createWebViewCookieManager().removeAllCookies()
+                                viewModel.makeToast(getString(Res.string.login_success))
+                                navController.navigateUp()
+                            } else {
+                                viewModel.makeToast(getString(Res.string.login_failed))
+                            }
+                        } finally {
+                            checkingAccount = false
                         }
                     }
                 }
