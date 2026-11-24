@@ -1,5 +1,6 @@
 package echo.music.iad1tya.data.repository
 
+import echo.music.iad1tya.common.Config
 import echo.music.iad1tya.common.MERGING_DATA_TYPE
 import echo.music.iad1tya.data.db.datasource.LocalDataSource
 import echo.music.iad1tya.data.extension.getFullDataFromDB
@@ -52,6 +53,9 @@ internal class SongRepositoryImpl(
         flow {
             emit(localDataSource.getAllSongs(limit))
         }.flowOn(Dispatchers.IO)
+
+    override fun observeRecentlyPlayedSongs(limit: Int): Flow<List<SongEntity>> =
+        localDataSource.observeRecentlyPlayedSongs(limit, Config.REMOVED_SONG_DATE_TIME).flowOn(Dispatchers.IO)
 
     override suspend fun setInLibrary(
         videoId: String,
@@ -133,6 +137,7 @@ internal class SongRepositoryImpl(
         withContext(Dispatchers.IO) {
             val pinnedQueue = persistLiveQueueBeforeSweep()
             localDataSource.deleteAllPlaybackEvents()
+            localDataSource.resetAllListenCounts()
             val artists = localDataSource.deleteUnfollowedArtists()
             val notifications = localDataSource.deleteNotificationsOfUnfollowedArtists()
             val artistReleases = localDataSource.deleteFollowedArtistReleasesOfUnfollowedArtists()

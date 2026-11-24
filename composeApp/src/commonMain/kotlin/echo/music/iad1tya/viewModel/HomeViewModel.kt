@@ -11,7 +11,6 @@ import echo.music.iad1tya.domain.data.model.home.chart.Chart
 import echo.music.iad1tya.domain.data.model.mood.Mood
 import echo.music.iad1tya.domain.manager.DataStoreManager
 import echo.music.iad1tya.domain.manager.DataStoreManager.Values.TRUE
-import echo.music.iad1tya.domain.repository.AnalyticsRepository
 import echo.music.iad1tya.domain.repository.HomeRepository
 import echo.music.iad1tya.domain.repository.SongRepository
 import echo.music.iad1tya.domain.utils.Resource
@@ -54,7 +53,6 @@ sealed interface YouTubeListeningHistory {
 class HomeViewModel(
     private val dataStoreManager: DataStoreManager,
     private val homeRepository: HomeRepository,
-    private val analyticsRepository: AnalyticsRepository,
     private val songRepository: SongRepository,
 ) : BaseViewModel() {
     private val historyRefresh = MutableStateFlow(0)
@@ -88,21 +86,7 @@ class HomeViewModel(
         historyRefresh.update { it + 1 }
     }
 
-    @OptIn(ExperimentalCoroutinesApi::class)
-    val recentlyPlayed = dataStoreManager.localTrackingEnabled
-        .distinctUntilChanged()
-        .flatMapLatest { tracking ->
-            if (tracking == TRUE) {
-                analyticsRepository.observeRecentlyPlayedIds(18).mapLatest { ids ->
-                    if (ids.isEmpty()) emptyList() else {
-                        val songsById = songRepository.getSongsByListVideoId(ids).first().associateBy { it.videoId }
-                        ids.mapNotNull(songsById::get)
-                    }
-                }
-            } else {
-                flowOf(emptyList())
-            }
-        }
+    val recentlyPlayed = songRepository.observeRecentlyPlayedSongs(18)
         .catch { emit(emptyList()) }
         .stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
 

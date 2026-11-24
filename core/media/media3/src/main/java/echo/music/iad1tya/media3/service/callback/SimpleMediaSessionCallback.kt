@@ -509,11 +509,12 @@ internal class SimpleMediaSessionCallback(
                 MediaSession.MediaItemsWithStartPosition(emptyList(), startIndex, startPositionMs)
             val requested = mediaItems.firstOrNull() ?: return@future defaultResult
             requested.requestMetadata.searchQuery?.let { query ->
-                voicePlayback.play(
+                val played = voicePlayback.play(
                     query,
                     requested.mediaMetadata.title?.toString(),
                     requested.mediaMetadata.artist?.toString(),
                 )
+                if (!played) throw NoSuchElementException("No playable match for the media search")
                 return@future defaultResult
             }
             val path = requested.mediaId.split("/")

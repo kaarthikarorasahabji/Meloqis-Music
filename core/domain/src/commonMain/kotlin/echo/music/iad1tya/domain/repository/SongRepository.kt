@@ -13,6 +13,8 @@ import kotlinx.datetime.LocalDateTime
 interface SongRepository {
     fun getAllSongs(limit: Int): Flow<List<SongEntity>>
 
+    fun observeRecentlyPlayedSongs(limit: Int): Flow<List<SongEntity>>
+
     suspend fun setInLibrary(
         videoId: String,
         inLibrary: LocalDateTime,

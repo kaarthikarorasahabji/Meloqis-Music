@@ -36,11 +36,13 @@ class PlaybackWidget : AppWidgetProvider() {
         super.onReceive(context, intent)
         val action = intent.action
         if (action != TOGGLE && action != PREVIOUS && action != NEXT) return
+        // The broadcast context forbids binding to the playback service.
+        val appContext = context.applicationContext
         val pending = goAsync()
         CoroutineScope(Dispatchers.Main).launch {
             try {
-                val token = SessionToken(context, ComponentName(context, SimpleMediaService::class.java))
-                val future = MediaController.Builder(context, token).buildAsync()
+                val token = SessionToken(appContext, ComponentName(appContext, SimpleMediaService::class.java))
+                val future = MediaController.Builder(appContext, token).buildAsync()
                 try {
                     val player = withTimeoutOrNull(5_000) { future.await() } ?: return@launch
                     when (action) {

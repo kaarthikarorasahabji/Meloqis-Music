@@ -64,6 +64,11 @@ internal class LocalDataSource(
 
     suspend fun getAllSongs(limit: Int) = databaseDao.getAllSongs(limit)
 
+    fun observeRecentlyPlayedSongs(limit: Int, removedAt: LocalDateTime) =
+        databaseDao.observeRecentlyPlayedSongs(limit, removedAt)
+
+    suspend fun resetAllListenCounts() = databaseDao.resetAllListenCounts()
+
     suspend fun getRecentSongs(
         limit: Int,
         offset: Int,
