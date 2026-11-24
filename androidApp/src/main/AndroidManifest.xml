@@ -86,6 +86,11 @@
                 <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
 
+            <intent-filter>
+                <action android:name="android.media.action.MEDIA_PLAY_FROM_SEARCH" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+
             <!-- Car App Library: host asks to surface the media playback screen
                  (minimized control panel tap, system media surfaces) -->
             <intent-filter>
@@ -249,6 +254,18 @@
                 <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
         </service>
+
+        <receiver
+            android:name="echo.music.iad1tya.media3.service.widget.PlaybackWidget"
+            android:label="@string/playback_widget_name"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/playback_widget_info" />
+        </receiver>
 
         <receiver
             android:name="androidx.media3.session.MediaButtonReceiver"

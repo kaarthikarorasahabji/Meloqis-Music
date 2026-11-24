@@ -50,6 +50,7 @@ import echo.music.iad1tya.domain.utils.toTrack
 import echo.music.iad1tya.logger.Logger
 import echo.music.iad1tya.media3.R
 import echo.music.iad1tya.media3.extension.toMediaItem
+import echo.music.iad1tya.media3.service.VoicePlayback
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
@@ -71,6 +72,7 @@ internal class SimpleMediaSessionCallback(
     private val playlistRepository: PlaylistRepository,
     private val homeRepository: HomeRepository,
     private val streamRepository: StreamRepository,
+    private val voicePlayback: VoicePlayback,
 ) : MediaLibrarySession.Callback {
     var toggleLike: () -> Unit = {
         mediaPlayerHandler.toggleLike()
@@ -189,11 +191,15 @@ internal class SimpleMediaSessionCallback(
                         MediaMetadata
                             .Builder()
                             .setIsPlayable(false)
-                            .setIsBrowsable(false)
+                            .setIsBrowsable(true)
                             .setMediaType(MediaMetadata.MEDIA_TYPE_FOLDER_MIXED)
                             .build(),
                     ).build(),
-                params,
+                MediaLibraryService.LibraryParams.Builder()
+                    .setExtras(Bundle(params?.extras ?: Bundle()).apply {
+                        putBoolean(MEDIA_SEARCH_SUPPORTED, true)
+                    })
+                    .build(),
             ),
         )
 
@@ -499,12 +505,18 @@ internal class SimpleMediaSessionCallback(
         startPositionMs: Long,
     ): ListenableFuture<MediaSession.MediaItemsWithStartPosition> =
         scope.future {
-            // Play from Android Auto
             val defaultResult =
                 MediaSession.MediaItemsWithStartPosition(emptyList(), startIndex, startPositionMs)
-            val path =
-                mediaItems.firstOrNull()?.mediaId?.split("/")
-                    ?: return@future defaultResult
+            val requested = mediaItems.firstOrNull() ?: return@future defaultResult
+            requested.requestMetadata.searchQuery?.let { query ->
+                voicePlayback.play(
+                    query,
+                    requested.mediaMetadata.title?.toString(),
+                    requested.mediaMetadata.artist?.toString(),
+                )
+                return@future defaultResult
+            }
+            val path = requested.mediaId.split("/")
             when (path.firstOrNull()) {
                 SONG -> {
                     val songId = path.getOrNull(1) ?: return@future defaultResult

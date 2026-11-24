@@ -382,6 +382,7 @@ developed with ❤️ by Kaarthik Dass Arora Sahab Ji</string>
     <string name="theme_color">Theme color</string>
     <string name="theme_color_default">Default</string>
     <string name="theme_color_wallpaper">Wallpaper</string>
+    <string name="theme_color_song">Song artwork</string>
     <string name="theme_color_custom">Custom</string>
     <string name="custom_color">Custom color</string>
     <string name="translucent_bottom_navigation_bar">Translucent bottom navigation bar</string>

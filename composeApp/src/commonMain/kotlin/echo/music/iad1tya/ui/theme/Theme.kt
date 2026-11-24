@@ -123,6 +123,7 @@ fun AppTheme(
     themeColorSource: String = DataStoreManager.THEME_COLOR_WALLPAPER,
     customThemeColor: Color? = null,
     batterySaver: Boolean = false,
+    songColor: Color? = null,
     content:
         @Composable()
         () -> Unit,
@@ -133,18 +134,18 @@ fun AppTheme(
             DataStoreManager.THEME_MODE_SYSTEM -> isSystemInDarkTheme()
             else -> true
         }
+    val followsSong = themeColorSource == DataStoreManager.THEME_COLOR_SONG
     val wallpaperScheme =
-        if (themeColorSource == DataStoreManager.THEME_COLOR_WALLPAPER) {
+        if (themeColorSource == DataStoreManager.THEME_COLOR_WALLPAPER || (followsSong && songColor == null)) {
             platformDynamicColorScheme(isDark)
         } else {
             null
         }
-    val seedColor =
-        if (themeColorSource == DataStoreManager.THEME_COLOR_CUSTOM) {
-            customThemeColor ?: seed
-        } else {
-            seed
-        }
+    val seedColor = when (themeColorSource) {
+        DataStoreManager.THEME_COLOR_SONG -> songColor ?: seed
+        DataStoreManager.THEME_COLOR_CUSTOM -> customThemeColor ?: seed
+        else -> seed
+    }
     // Symmetric base: dark pins background/surface to pure black via isAmoled; light pins them to
     // pure white with a neutral-grey ramp (the seed otherwise tints the light neutrals warm/cream).
     val colorScheme =

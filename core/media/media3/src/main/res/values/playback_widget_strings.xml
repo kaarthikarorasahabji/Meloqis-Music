@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="playback_widget_name">Meloqis Now Playing</string>
+    <string name="playback_widget_description">See the current song and control Meloqis from your home screen.</string>
+    <string name="playback_widget_empty">Open Meloqis to pick a song</string>
+    <string name="playback_widget_open">Open Meloqis</string>
+    <string name="playback_widget_play">Play</string>
+    <string name="playback_widget_pause">Pause</string>
+    <string name="playback_widget_previous">Previous track</string>
+    <string name="playback_widget_next">Next track</string>
+</resources>

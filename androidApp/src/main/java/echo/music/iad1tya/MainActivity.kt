@@ -16,6 +16,9 @@ import androidx.work.WorkManager
 import java.util.concurrent.TimeUnit
 import android.os.Bundle
 import android.os.IBinder
+import android.provider.MediaStore
+import android.app.SearchManager
+import android.widget.Toast
 import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -43,12 +46,15 @@ import echo.music.iad1tya.domain.mediaservice.handler.MediaPlayerHandler
 import echo.music.iad1tya.domain.mediaservice.handler.ToastType
 import echo.music.iad1tya.logger.Logger
 import echo.music.iad1tya.media3.di.setServiceActivitySession
+import echo.music.iad1tya.media3.service.VoicePlayback
 import echo.music.iad1tya.di.viewModelModule
 import echo.music.iad1tya.service.test.notification.NotifyWork
 import echo.music.iad1tya.utils.ComposeResUtils
 import echo.music.iad1tya.utils.VersionManager
 import echo.music.iad1tya.viewModel.SharedViewModel
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.runBlocking
 import org.koin.android.ext.android.inject
 import org.koin.core.context.loadKoinModules
@@ -63,6 +69,8 @@ class MainActivity : AppCompatActivity() {
     val viewModel: SharedViewModel by inject()
     val mediaPlayerHandler by inject<MediaPlayerHandler>()
     val dataStoreManager: DataStoreManager by inject()
+    private val voicePlayback: VoicePlayback by inject()
+    private var voiceRequest: Job? = null
 
     private var mBound = false
     private var shouldUnbind = false
@@ -98,6 +106,7 @@ class MainActivity : AppCompatActivity() {
 
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
+        if (handleVoiceRequest(intent)) return
         echo.music.iad1tya.ui.component.FestivalEngine.checkToday(this, intent.getStringExtra("festival_id"))
         Logger.d("MainActivity", "onNewIntent: $intent")
         viewModel.setIntent(
@@ -132,7 +141,8 @@ class MainActivity : AppCompatActivity() {
         }
         Logger.d("MainActivity", "onCreate: ")
         val data = (intent?.data ?: intent?.getStringExtra(Intent.EXTRA_TEXT)?.toUri())?.toKmpUriOrNull()
-        if (data != null) {
+        val handledVoiceRequest = savedInstanceState == null && handleVoiceRequest(intent)
+        if (!handledVoiceRequest && data != null) {
             viewModel.setIntent(
                 GenericIntent(
                     action = intent.action,
@@ -299,6 +309,27 @@ class MainActivity : AppCompatActivity() {
         viewModel.isServiceRunning = true
         shouldUnbind = true
         Logger.d("Service", "Service started")
+    }
+
+    private fun handleVoiceRequest(intent: Intent?): Boolean {
+        if (intent?.action != MediaStore.INTENT_ACTION_MEDIA_PLAY_FROM_SEARCH) return false
+        voiceRequest?.cancel()
+        voiceRequest = lifecycleScope.launch {
+            val played = try {
+                voicePlayback.play(
+                    intent.getStringExtra(SearchManager.QUERY).orEmpty(),
+                    intent.getStringExtra(MediaStore.EXTRA_MEDIA_TITLE),
+                    intent.getStringExtra(MediaStore.EXTRA_MEDIA_ARTIST),
+                )
+            } catch (cancelled: CancellationException) {
+                throw cancelled
+            } catch (error: Exception) {
+                Logger.w("VoicePlayback", "Media search failed: ${error.message}")
+                false
+            }
+            if (!played) Toast.makeText(this@MainActivity, R.string.voice_no_track, Toast.LENGTH_SHORT).show()
+        }
+        return true
     }
 
     private fun checkForUpdate() {

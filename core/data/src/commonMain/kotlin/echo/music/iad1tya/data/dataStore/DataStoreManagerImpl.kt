@@ -839,7 +839,7 @@ internal class DataStoreManagerImpl(
 
     override val themeColorSource =
         settingsDataStore.data.map { preferences ->
-            preferences[THEME_COLOR_SOURCE] ?: DataStoreManager.THEME_COLOR_WALLPAPER
+            preferences[THEME_COLOR_SOURCE] ?: DataStoreManager.THEME_COLOR_SONG
         }
 
     override suspend fun setThemeColorSource(source: String) {

@@ -207,6 +207,8 @@ private val mediaServiceModule =
             ).also { it.start() }
         }
 
+        single { echo.music.iad1tya.media3.service.VoicePlayback(get(), get(), get(), get()) }
+
         // MediaSession Callback for main player
         single<MediaLibrarySession.Callback>(createdAtStart = true) {
             SimpleMediaSessionCallback(
@@ -219,6 +221,7 @@ private val mediaServiceModule =
                 get<PlaylistRepository>(),
                 get<HomeRepository>(),
                 get<StreamRepository>(),
+                get(),
             )
         }
 

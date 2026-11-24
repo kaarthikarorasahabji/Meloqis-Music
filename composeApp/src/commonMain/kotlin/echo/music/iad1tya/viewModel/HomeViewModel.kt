@@ -61,24 +61,28 @@ class HomeViewModel(
     val explicitContentEnabled = dataStoreManager.explicitContentEnabled
 
     @OptIn(ExperimentalCoroutinesApi::class)
-    val youtubeListeningHistory = combine(dataStoreManager.cookie, dataStoreManager.pageId, historyRefresh) { cookie, pageId, _ ->
+    val youtubeListeningHistory = combine(dataStoreManager.cookie, dataStoreManager.pageId) { cookie, pageId ->
         cookie to pageId
-    }.flatMapLatest { (cookie, pageId) ->
+    }.distinctUntilChanged().flatMapLatest { (cookie, pageId) ->
         if (cookie.isBlank()) return@flatMapLatest flowOf(YouTubeListeningHistory.SignedOut)
         flow<YouTubeListeningHistory> {
             emit(YouTubeListeningHistory.Loading)
-            try {
-                val tracks = withTimeoutOrNull(10_000) {
-                    homeRepository.getYouTubeListeningHistory(cookie, pageId.takeIf { it.isNotBlank() })
+            var lastLoaded: YouTubeListeningHistory.Loaded? = null
+            historyRefresh.mapLatest {
+                val tracks = try {
+                    withTimeoutOrNull(10_000) {
+                        homeRepository.getYouTubeListeningHistory(cookie, pageId.takeIf { it.isNotBlank() })
+                    }
+                } catch (cancelled: CancellationException) {
+                    throw cancelled
+                } catch (_: Exception) {
+                    null
                 }
-                emit(if (tracks == null) YouTubeListeningHistory.Unavailable else YouTubeListeningHistory.Loaded(tracks))
-            } catch (cancelled: CancellationException) {
-                throw cancelled
-            } catch (_: Exception) {
-                emit(YouTubeListeningHistory.Unavailable)
-            }
+                if (tracks != null) lastLoaded = YouTubeListeningHistory.Loaded(tracks)
+                lastLoaded ?: YouTubeListeningHistory.Unavailable
+            }.collect { emit(it) }
         }
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(replayExpirationMillis = 0), YouTubeListeningHistory.Loading)
+    }.stateIn(viewModelScope, SharingStarted.Lazily, YouTubeListeningHistory.Loading)
 
     fun refreshYouTubeListeningHistory() {
         historyRefresh.update { it + 1 }
@@ -89,15 +93,18 @@ class HomeViewModel(
         .distinctUntilChanged()
         .flatMapLatest { tracking ->
             if (tracking == TRUE) {
-                analyticsRepository.observeRecentlyPlayedIds(12).mapLatest { ids ->
-                    if (ids.isEmpty()) emptyList() else songRepository.getSongsByListVideoId(ids).first()
+                analyticsRepository.observeRecentlyPlayedIds(18).mapLatest { ids ->
+                    if (ids.isEmpty()) emptyList() else {
+                        val songsById = songRepository.getSongsByListVideoId(ids).first().associateBy { it.videoId }
+                        ids.mapNotNull(songsById::get)
+                    }
                 }
             } else {
                 flowOf(emptyList())
             }
         }
         .catch { emit(emptyList()) }
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(replayExpirationMillis = 0), emptyList())
+        .stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
 
     suspend fun claimWeeklySupportPrompt(): Boolean {
         val now = kotlin.time.Clock.System.now().toEpochMilliseconds()

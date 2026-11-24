@@ -38,6 +38,7 @@ import kotlinx.coroutines.CancellationException
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.key
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -149,7 +150,7 @@ fun App(viewModel: SharedViewModel = koinInject()) {
     val showAnalyticsTab = isLocalTrackingEnabled == TRUE
 
     val themeMode by viewModel.getThemeMode().collectAsStateWithLifecycle(DataStoreManager.THEME_MODE_DARK)
-    val themeColorSource by viewModel.getThemeColorSource().collectAsStateWithLifecycle(DataStoreManager.THEME_COLOR_WALLPAPER)
+    val themeColorSource by viewModel.getThemeColorSource().collectAsStateWithLifecycle(DataStoreManager.THEME_COLOR_SONG)
     val customThemeColorHex by viewModel.getCustomThemeColor().collectAsStateWithLifecycle(DataStoreManager.DEFAULT_THEME_COLOR_HEX)
     val batterySaverPreference by viewModel.batterySaver.collectAsStateWithLifecycle()
     val batterySaver = batterySaverPreference || echo.music.iad1tya.expect.rememberDeviceReducedEffects()
@@ -368,49 +369,45 @@ if (data.scheme == "wordbyword" && data.host == "lastfm-auth") {
     val isTablet = windowSize.isWidthAtLeastBreakpoint(WIDTH_DP_MEDIUM_LOWER_BOUND)
     val isTabletLandscape = isTablet && currentOrientation() == Orientation.LANDSCAPE
 
-    AppTheme(
-        themeMode = themeMode,
-        themeColorSource = themeColorSource,
-        customThemeColor = parseThemeColorHex(customThemeColorHex),
-        batterySaver = batterySaver,
-    ) {
-        // Backdrop base must match the theme: white page → white glass, dark/AMOLED → black glass.
-        // Read inside AppTheme so MaterialTheme reflects the resolved scheme (light background is #FFFFFF).
-        val backdrop =
-            rememberBackdrop(
-                if (MaterialTheme.colorScheme.background.luminance() > 0.5f) Color.White else Color.Black,
-            )
-        // === Song-driven recolour (surfaces & accents only) ===
-        // Extract the dominant colour of the CURRENT track's artwork with the same kmpalette pattern
-        // HomeScreen uses, then publish it as LocalNowPlayingColor so the Home header, page-background
-        // tint and mini-player breathe in the playing song's colour. The base MaterialKolor scheme
-        // (buttons/chips) is left untouched → satisfies the "surfaces & accents only" scope.
-        val nowPlayingThumb = nowPlayingScreenData.thumbnailURL
-        val songNetworkLoader = rememberNetworkLoader(rememberArtworkNetworkClient())
-        val songDominantColorState =
-            rememberDominantColorState(
-                defaultColor = MaterialTheme.colorScheme.primary,
-                defaultOnColor = MaterialTheme.colorScheme.onPrimary,
-                loader = songNetworkLoader,
-            )
-        LaunchedEffect(nowPlayingThumb) {
+    val artworkUrl = nowPlayingScreenData.thumbnailURL?.takeIf(String::isNotBlank)
+    val artworkLoader = rememberNetworkLoader(rememberArtworkNetworkClient())
+    var artworkColor by remember(artworkUrl) { mutableStateOf<Color?>(null) }
+    val palette = key(artworkUrl) {
+        rememberDominantColorState(
+            defaultColor = Color.Transparent,
+            defaultOnColor = Color.White,
+            loader = artworkLoader,
+        )
+    }
+    LaunchedEffect(artworkUrl) {
+        if (artworkUrl != null) {
             try {
-            nowPlayingThumb?.let { songDominantColorState.updateFrom(Url(it)) }
+                palette.updateFrom(Url(artworkUrl))
+                artworkColor = palette.color.takeIf { it.alpha > 0f }
             } catch (cancelled: CancellationException) {
                 throw cancelled
             } catch (error: Exception) {
                 Logger.w("ArtworkColor", "Could not load artwork color: ${error.message}")
             }
         }
-        // Ease on each song change; Battery Saver snaps (one-shot re-tint is fine — skip the clock).
-        val rawSongColor = songDominantColorState.color
-        val easedSongColor by animateColorAsState(rawSongColor, tween(if (batterySaver) 0 else 600), label = "nowPlayingColor")
-        val songColor: Color? =
-            when {
-                nowPlayingThumb.isNullOrBlank() -> null
-                batterySaver -> rawSongColor
-                else -> easedSongColor
-            }
+    }
+    val easedSongColor by animateColorAsState(
+        artworkColor ?: Color.Transparent,
+        tween(if (batterySaver) 0 else 500),
+        label = "nowPlayingColor",
+    )
+    val songColor = easedSongColor.takeIf { artworkColor != null }
+
+    AppTheme(
+        themeMode = themeMode,
+        themeColorSource = themeColorSource,
+        customThemeColor = parseThemeColorHex(customThemeColorHex),
+        batterySaver = batterySaver,
+        songColor = artworkColor,
+    ) {
+        val backdrop = rememberBackdrop(
+            if (MaterialTheme.colorScheme.background.luminance() > 0.5f) Color.White else Color.Black,
+        )
         CompositionLocalProvider(LocalNowPlayingColor provides songColor) {
         Scaffold(
             bottomBar = {

@@ -369,6 +369,7 @@ import echomusic.composeapp.generated.resources.theme_color
 import echomusic.composeapp.generated.resources.theme_color_custom
 import echomusic.composeapp.generated.resources.theme_color_default
 import echomusic.composeapp.generated.resources.theme_color_wallpaper
+import echomusic.composeapp.generated.resources.theme_color_song
 import echomusic.composeapp.generated.resources.theme_mode_dark
 import echomusic.composeapp.generated.resources.theme_mode_light
 import echomusic.composeapp.generated.resources.theme_mode_system
@@ -533,7 +534,7 @@ fun SettingScreen(
     val updateChannel by viewModel.updateChannel.collectAsStateWithLifecycle()
     val enableLiquidGlass by viewModel.enableLiquidGlass.collectAsStateWithLifecycle()
     val themeMode by sharedViewModel.getThemeMode().collectAsStateWithLifecycle(DataStoreManager.THEME_MODE_DARK)
-    val themeColorSource by sharedViewModel.getThemeColorSource().collectAsStateWithLifecycle(DataStoreManager.THEME_COLOR_WALLPAPER)
+    val themeColorSource by sharedViewModel.getThemeColorSource().collectAsStateWithLifecycle(DataStoreManager.THEME_COLOR_SONG)
     val customThemeColorHex by sharedViewModel.getCustomThemeColor().collectAsStateWithLifecycle(DataStoreManager.DEFAULT_THEME_COLOR_HEX)
     var showColorPickerDialog by rememberSaveable { mutableStateOf(false) }
     val lastfmLoggedIn by viewModel.lastfmLoggedIn.collectAsStateWithLifecycle()
@@ -703,6 +704,7 @@ fun SettingScreen(
                 )
                 val colorSourceLabels =
                     buildList {
+                        add(DataStoreManager.THEME_COLOR_SONG to stringResource(Res.string.theme_color_song))
                         add(DataStoreManager.THEME_COLOR_DEFAULT to stringResource(Res.string.theme_color_default))
                         if (isWallpaperDynamicColorSupported()) {
                             add(DataStoreManager.THEME_COLOR_WALLPAPER to stringResource(Res.string.theme_color_wallpaper))

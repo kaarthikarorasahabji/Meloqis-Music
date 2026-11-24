@@ -32,6 +32,7 @@ import echo.music.iad1tya.logger.Logger
 import echo.music.iad1tya.media3.R
 import echo.music.iad1tya.media3.extension.toCommandButton
 import echo.music.iad1tya.media3.utils.CoilBitmapLoader
+import echo.music.iad1tya.media3.service.widget.PlaybackWidgetUpdater
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import org.koin.core.component.KoinComponent
@@ -50,6 +51,7 @@ internal class SimpleMediaService :
 
     private var mediaSession: MediaLibrarySession? = null
     private var controllerFuture: ListenableFuture<MediaController>? = null
+    private var widgetUpdater: PlaybackWidgetUpdater? = null
 
     private val simpleMediaSessionCallback: MediaLibrarySession.Callback by inject<MediaLibrarySession.Callback>()
 
@@ -123,6 +125,7 @@ internal class SimpleMediaService :
 
         val sessionToken = SessionToken(this, ComponentName(this, SimpleMediaService::class.java))
         controllerFuture = MediaController.Builder(this, sessionToken).buildAsync()
+        widgetUpdater = PlaybackWidgetUpdater(this, player, coilBitmapLoader).also { it.start() }
 
         if (runBlocking { dataStoreManager.keepServiceAlive.first() == DataStoreManager.TRUE }) {
             val notificationManager = getSystemService<NotificationManager>()
@@ -229,6 +232,8 @@ internal class SimpleMediaService :
     }
 
     private fun releaseSessionResources() {
+        widgetUpdater?.stop()
+        widgetUpdater = null
         simpleMediaServiceHandler.onUpdateNotification = {}
         if (::playerNotificationManager.isInitialized) {
             playerNotificationManager.setPlayer(null)

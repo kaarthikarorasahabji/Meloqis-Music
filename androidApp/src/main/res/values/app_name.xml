@@ -1,3 +1,4 @@
 <resources>
     <string name="app_name">Meloqis Music</string>
+    <string name="voice_no_track">Meloqis could not find a song to play.</string>
 </resources>
